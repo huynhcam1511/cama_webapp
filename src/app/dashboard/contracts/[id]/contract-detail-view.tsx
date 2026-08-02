@@ -46,7 +46,7 @@ interface ContractDetailViewProps {
 export default function ContractDetailView({ contract }: ContractDetailViewProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    "overview" | "items" | "schedules" | "garments" | "payments" | "documents" | "activities"
+    "overview" | "items" | "schedules" | "garments" | "payments" | "documents" | "activities" | "orders"
   >("overview");
 
   // Modals state
