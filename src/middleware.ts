@@ -60,9 +60,19 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = pathname === '/login' || pathname.startsWith('/403');
   const isDashboardRoute = pathname.startsWith('/dashboard');
 
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+  
+  const redirectUrl = (path: string) => {
+    if (forwardedHost) {
+      return NextResponse.redirect(`${forwardedProto}://${forwardedHost}${path}`);
+    }
+    return NextResponse.redirect(new URL(path, request.url));
+  };
+
   if (isDashboardRoute) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      return redirectUrl('/login')
     }
 
     // Check user status in database
@@ -73,20 +83,20 @@ export async function middleware(request: NextRequest) {
       .single()
 
     if (!dbUser) {
-      return NextResponse.redirect(new URL('/403?reason=not_found', request.url))
+      return redirectUrl('/403?reason=not_found')
     }
 
     if (!dbUser.is_active) {
-      return NextResponse.redirect(new URL('/403?reason=disabled', request.url))
+      return redirectUrl('/403?reason=disabled')
     }
 
     if (!dbUser.is_working || dbUser.employment_status === 'resigned' || dbUser.employment_status === 'terminated') {
-      return NextResponse.redirect(new URL('/403?reason=resigned', request.url))
+      return redirectUrl('/403?reason=resigned')
     }
   }
 
   if (pathname === '/login' && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return redirectUrl('/dashboard')
   }
 
   return response
