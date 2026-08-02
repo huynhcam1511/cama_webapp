@@ -102,10 +102,10 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
     try {
       await createOrder({
         order_code: newOrderCode,
-        contract_id: newContractId || null,
+        contract_id: newContractId || undefined,
         service_type: newServiceType,
-        event_date: newEventDate || null,
-        pic_id: newPicId || null,
+        event_date: newEventDate || undefined,
+        pic_id: newPicId || undefined,
         notes: newNotes
       });
       alert("Tạo đơn hàng thành công!");
