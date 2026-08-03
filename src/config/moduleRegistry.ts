@@ -20,9 +20,12 @@ export type ModuleCode =
   | "CASHFLOW"
   | "OVERDUE_INVOICES"
   | "PROFIT_TRACKER"
-  | "SUBSCRIPTIONS";
+  | "SUBSCRIPTIONS"
+  | "TRAINING"
+  | "RECRUITMENT"
+  | "CONTENT_MARKETING";
 
-export type ModuleGroup = "DASHBOARD" | "BUSINESS" | "OPERATIONS" | "HR" | "ADMIN" | "FINANCE";
+export type ModuleGroup = "DASHBOARD" | "BUSINESS" | "OPERATIONS" | "HR" | "ADMIN" | "FINANCE" | "MARKETING";
 
 export interface ModuleConfig {
   moduleCode: ModuleCode;
@@ -283,6 +286,50 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "HR",
     parentCode: null,
     sortOrder: 4,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
+    moduleCode: "TRAINING",
+    label: "Đào tạo nội bộ",
+    shortLabel: "Đào tạo",
+    route: "/dashboard/training",
+    icon: "GraduationCap",
+    group: "HR",
+    parentCode: null,
+    sortOrder: 6,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
+    moduleCode: "RECRUITMENT",
+    label: "Tuyển dụng",
+    shortLabel: "Tuyển dụng",
+    route: "/dashboard/recruitment",
+    icon: "UserPlus",
+    group: "HR",
+    parentCode: null,
+    sortOrder: 7,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+
+  // MARKETING
+  {
+    moduleCode: "CONTENT_MARKETING",
+    label: "Quản trị nội dung (Content)",
+    shortLabel: "Content",
+    route: "/dashboard/marketing/content",
+    icon: "Megaphone",
+    group: "MARKETING",
+    parentCode: null,
+    sortOrder: 1,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",
