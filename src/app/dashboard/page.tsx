@@ -6,6 +6,7 @@ import { MODULE_REGISTRY, ModuleGroup } from "@/config/moduleRegistry";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import AttendanceWidget from "@/components/AttendanceWidget";
 import SalesKpiCard from "./sales-kpi-card";
 import QuickContractModal from "./quick-contract-modal";
 
@@ -27,7 +28,8 @@ const GROUP_LABELS: Record<ModuleGroup, string> = {
   FINANCE: "TÀI CHÍNH",
   OPERATIONS: "VẬN HÀNH",
   HR: "NHÂN SỰ",
-  ADMIN: "QUẢN TRỊ"
+  ADMIN: "QUẢN TRỊ",
+  MARKETING: "MARKETING",
 };
 
 export default function DashboardHome() {
@@ -45,7 +47,7 @@ export default function DashboardHome() {
   }, {} as Record<ModuleGroup, typeof dashboardModules>);
 
   // Custom sort order for groups
-  const groupOrder: ModuleGroup[] = ["DASHBOARD", "BUSINESS", "FINANCE", "OPERATIONS", "HR", "ADMIN"];
+  const groupOrder: ModuleGroup[] = ["DASHBOARD", "BUSINESS", "FINANCE", "OPERATIONS", "HR", "MARKETING", "ADMIN"];
 
   return (
     <div className="space-y-8 relative">
@@ -63,66 +65,43 @@ export default function DashboardHome() {
       {/* SALES KPI & BENCHMARK */}
       <SalesKpiCard />
 
-      {/* THỐNG KÊ NHÂN SỰ & VẬN HÀNH HÔM NAY */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Khối Nhân sự hôm nay */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="bg-blue-50/50 p-4 border-b border-slate-100 flex items-center gap-3">
-            <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
-              <icons.Users className="w-5 h-5" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between group hover:shadow-md transition-shadow">
+            <div>
+              <p className="text-sm font-semibold text-slate-500 mb-1">Doanh thu tháng này</p>
+              <h3 className="text-2xl font-bold text-slate-800">450.000.000đ</h3>
+              <p className="text-xs font-medium text-emerald-600 mt-2 flex items-center gap-1"><icons.ArrowUpRight className="w-3 h-3"/> +12.5% so với tháng trước</p>
             </div>
-            <h2 className="font-bold text-slate-800">Nhân Sự Hôm Nay</h2>
+            <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 group-hover:bg-indigo-100 transition-colors">
+              <icons.TrendingUp className="w-6 h-6" />
+            </div>
           </div>
-          <div className="grid grid-cols-4 gap-4 p-5">
-            <div className="flex flex-col items-center">
-              <span className="text-2xl font-bold text-slate-700">24</span>
-              <span className="text-xs text-slate-500 mt-1 font-medium text-center">Dự kiến</span>
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between group hover:shadow-md transition-shadow">
+            <div>
+              <p className="text-sm font-semibold text-slate-500 mb-1">Hợp đồng mới</p>
+              <h3 className="text-2xl font-bold text-slate-800">124</h3>
+              <p className="text-xs font-medium text-emerald-600 mt-2 flex items-center gap-1"><icons.ArrowUpRight className="w-3 h-3"/> +8 so với tuần trước</p>
             </div>
-            <div className="flex flex-col items-center">
-              <span className="text-2xl font-bold text-emerald-600">20</span>
-              <span className="text-xs text-slate-500 mt-1 font-medium text-center">Có mặt</span>
+            <div className="p-3 bg-amber-50 rounded-xl text-amber-600 group-hover:bg-amber-100 transition-colors">
+              <icons.FileText className="w-6 h-6" />
             </div>
-            <div className="flex flex-col items-center">
-              <span className="text-2xl font-bold text-rose-500">2</span>
-              <span className="text-xs text-slate-500 mt-1 font-medium text-center">Nghỉ</span>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between group hover:shadow-md transition-shadow">
+            <div>
+              <p className="text-sm font-semibold text-slate-500 mb-1">Khách hàng cần chăm sóc</p>
+              <h3 className="text-2xl font-bold text-slate-800">15</h3>
+              <p className="text-xs font-medium text-rose-600 mt-2 flex items-center gap-1"><icons.ArrowRight className="w-3 h-3"/> 5 lịch hẹn hôm nay</p>
             </div>
-            <div className="flex flex-col items-center">
-              <span className="text-2xl font-bold text-amber-500">2</span>
-              <span className="text-xs text-slate-500 mt-1 font-medium text-center">Đi trễ</span>
+            <div className="p-3 bg-rose-50 rounded-xl text-rose-600 group-hover:bg-rose-100 transition-colors">
+              <icons.Users className="w-6 h-6" />
             </div>
           </div>
         </div>
-
-        {/* Khối Vận hành hôm nay */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="bg-indigo-50/50 p-4 border-b border-slate-100 flex items-center gap-3">
-            <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
-              <icons.CalendarCheck className="w-5 h-5" />
-            </div>
-            <h2 className="font-bold text-slate-800">Vận Hành Hôm Nay</h2>
-          </div>
-          <div className="grid grid-cols-5 gap-2 p-5">
-            <div className="flex flex-col items-center">
-              <span className="text-xl font-bold text-slate-700">5</span>
-              <span className="text-[10px] text-slate-500 mt-1 font-medium text-center uppercase tracking-wider">Khách hẹn</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-xl font-bold text-indigo-600">3</span>
-              <span className="text-[10px] text-slate-500 mt-1 font-medium text-center uppercase tracking-wider">Thử váy</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-xl font-bold text-indigo-600">2</span>
-              <span className="text-[10px] text-slate-500 mt-1 font-medium text-center uppercase tracking-wider">Fitting</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-xl font-bold text-emerald-600">4</span>
-              <span className="text-[10px] text-slate-500 mt-1 font-medium text-center uppercase tracking-wider">Cần giao</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-xl font-bold text-emerald-600">1</span>
-              <span className="text-[10px] text-slate-500 mt-1 font-medium text-center uppercase tracking-wider">Nhận trả</span>
-            </div>
-          </div>
+        
+        {/* Widget Chấm Công */}
+        <div className="md:col-span-1">
+          <AttendanceWidget />
         </div>
       </div>
 
