@@ -31,7 +31,12 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
     value: G-PZECWVXCEJ
     availability: [BUILD, RUNTIME]
-
+  - variable: NEXT_PUBLIC_SUPABASE_URL
+    value: https://scthnppbdshbnmmrdfep.supabase.co
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_SUPABASE_ANON_KEY
+    value: sb_publishable_A6Pst_Bef5IM_AlSCFdkaQ_yd6h0j94
+    availability: [BUILD, RUNTIME]
   # Grant access to secrets in Cloud Secret Manager.
   # You can create secrets with the CLI command `firebase apphosting:secrets:set <secretName>`.
   # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters

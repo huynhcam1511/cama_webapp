@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 import { X, QrCode } from "lucide-react";
 
 interface QRScannerProps {
@@ -10,39 +10,48 @@ interface QRScannerProps {
 }
 
 export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
     // Create instance
-    const scanner = new Html5QrcodeScanner(
-      "qr-reader",
+    const html5QrCode = new Html5Qrcode("qr-reader");
+    scannerRef.current = html5QrCode;
+
+    html5QrCode.start(
+      { facingMode: "environment" }, // Prefer back camera
       {
         fps: 10,
         qrbox: { width: 250, height: 250 },
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-        rememberLastUsedCamera: true,
         aspectRatio: 1.0,
       },
-      false
-    );
-    
-    scannerRef.current = scanner;
-
-    const onScanError = (errorMessage: string) => {
-      // Html5QrcodeScanner calls this frequently when no QR is found.
-      // We generally ignore this unless we want to show specific errors.
-    };
-
-    scanner.render((text) => {
-      scanner.clear();
-      onScanSuccess(text);
-    }, onScanError);
+      (decodedText) => {
+        // Stop scanning on success
+        if (scannerRef.current) {
+          scannerRef.current.stop().then(() => {
+             scannerRef.current?.clear();
+             onScanSuccess(decodedText);
+          }).catch(console.error);
+        } else {
+          onScanSuccess(decodedText);
+        }
+      },
+      (errorMessage) => {
+        // Ignore scan errors, they happen every frame a QR code is not found
+      }
+    ).catch((err) => {
+      console.error("Failed to start scanner:", err);
+      setError("Không thể truy cập camera. Vui lòng cấp quyền hoặc thử lại.");
+    });
 
     // Cleanup on unmount
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.clear().catch(e => console.error("Failed to clear scanner", e));
+        scannerRef.current.stop().then(() => {
+          scannerRef.current?.clear();
+        }).catch(e => {
+          // Might error if stopped before fully started, ignore
+        });
       }
     };
   }, [onScanSuccess]);

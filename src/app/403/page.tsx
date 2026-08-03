@@ -1,11 +1,17 @@
-import Link from "next/link";
-import { AlertTriangle, Ban, UserX } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, Ban, UserX, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ForbiddenPage({
   searchParams,
 }: {
   searchParams: { reason?: string };
 }) {
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const reason = searchParams.reason || "unknown";
 
   let title = "Không Có Quyền Truy Cập";
@@ -38,6 +44,13 @@ export default function ForbiddenPage({
     borderColor = "border-red-200";
   }
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <div className={`max-w-md w-full p-8 rounded-2xl border ${borderColor} ${bgColor} text-center shadow-sm`}>
@@ -48,12 +61,14 @@ export default function ForbiddenPage({
         <p className="text-sm text-slate-600 mb-8 leading-relaxed">
           {message}
         </p>
-        <Link
-          href="/login"
-          className="inline-flex items-center justify-center px-6 py-2.5 rounded-lg bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm"
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm disabled:opacity-50"
         >
+          {isLoggingOut && <Loader2 className="w-4 h-4 animate-spin" />}
           Quay lại Đăng nhập
-        </Link>
+        </button>
       </div>
     </div>
   );
