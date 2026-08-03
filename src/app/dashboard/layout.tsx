@@ -244,7 +244,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <QRScanner 
           onClose={() => setIsScannerOpen(false)}
           onScanSuccess={(text) => {
-            setIsScannerOpen(false);
+            // Scanner stays open, we just show the alert!
             
             // Mock data for demo
             const MOCK_DB: Record<string, any> = {

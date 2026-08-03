@@ -19,6 +19,9 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
     scannerRef.current = html5QrCode;
     let isStopping = false;
 
+    let lastScannedText = "";
+    let lastScannedTime = 0;
+
     html5QrCode.start(
       { facingMode: "environment" }, // Prefer back camera
       {
@@ -27,22 +30,11 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
         aspectRatio: 1.0,
       },
       (decodedText) => {
-        // Stop scanning on success
-        if (scannerRef.current && !isStopping) {
-          isStopping = true;
-          try {
-            scannerRef.current.stop().then(() => {
-               scannerRef.current?.clear();
-               onScanSuccess(decodedText);
-            }).catch((e) => {
-               console.error("Async stop error", e);
-               onScanSuccess(decodedText);
-            });
-          } catch (e) {
-            console.error("Sync stop error", e);
-            onScanSuccess(decodedText);
-          }
-        } else if (!isStopping) {
+        const now = Date.now();
+        // Prevent spamming the same code within 3 seconds
+        if (decodedText !== lastScannedText || now - lastScannedTime > 3000) {
+          lastScannedText = decodedText;
+          lastScannedTime = now;
           onScanSuccess(decodedText);
         }
       },
