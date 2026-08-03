@@ -17,6 +17,7 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
     // Create instance
     const html5QrCode = new Html5Qrcode("qr-reader");
     scannerRef.current = html5QrCode;
+    let isStopping = false;
 
     html5QrCode.start(
       { facingMode: "environment" }, // Prefer back camera
@@ -27,12 +28,21 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
       },
       (decodedText) => {
         // Stop scanning on success
-        if (scannerRef.current) {
-          scannerRef.current.stop().then(() => {
-             scannerRef.current?.clear();
-             onScanSuccess(decodedText);
-          }).catch(console.error);
-        } else {
+        if (scannerRef.current && !isStopping) {
+          isStopping = true;
+          try {
+            scannerRef.current.stop().then(() => {
+               scannerRef.current?.clear();
+               onScanSuccess(decodedText);
+            }).catch((e) => {
+               console.error("Async stop error", e);
+               onScanSuccess(decodedText);
+            });
+          } catch (e) {
+            console.error("Sync stop error", e);
+            onScanSuccess(decodedText);
+          }
+        } else if (!isStopping) {
           onScanSuccess(decodedText);
         }
       },
@@ -46,12 +56,17 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
 
     // Cleanup on unmount
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().then(() => {
-          scannerRef.current?.clear();
-        }).catch(e => {
-          // Might error if stopped before fully started, ignore
-        });
+      if (scannerRef.current && !isStopping) {
+        isStopping = true;
+        try {
+          scannerRef.current.stop().then(() => {
+            scannerRef.current?.clear();
+          }).catch(e => {
+            // Might error if stopped before fully started, ignore
+          });
+        } catch (e) {
+          console.error("Sync cleanup stop error", e);
+        }
       }
     };
   }, [onScanSuccess]);
