@@ -1,0 +1,90 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode";
+import { X, QrCode } from "lucide-react";
+
+interface QRScannerProps {
+  onScanSuccess: (decodedText: string) => void;
+  onClose: () => void;
+}
+
+export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    // Create instance
+    const scanner = new Html5QrcodeScanner(
+      "qr-reader",
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+        rememberLastUsedCamera: true,
+        aspectRatio: 1.0,
+      },
+      false
+    );
+    
+    scannerRef.current = scanner;
+
+    const onScanError = (errorMessage: string) => {
+      // Html5QrcodeScanner calls this frequently when no QR is found.
+      // We generally ignore this unless we want to show specific errors.
+    };
+
+    scanner.render((text) => {
+      scanner.clear();
+      onScanSuccess(text);
+    }, onScanError);
+
+    // Cleanup on unmount
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(e => console.error("Failed to clear scanner", e));
+      }
+    };
+  }, [onScanSuccess]);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+        
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+          <h3 className="font-bold flex items-center gap-2">
+            <QrCode className="w-5 h-5 text-blue-400" /> Quét Mã QR Sản Phẩm
+          </h3>
+          <button 
+            onClick={onClose} 
+            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Scanner Body */}
+        <div className="p-6 flex-1 overflow-y-auto bg-slate-50 flex flex-col items-center justify-center">
+          <div className="w-full max-w-sm aspect-square bg-slate-200 rounded-xl overflow-hidden relative shadow-inner border-2 border-slate-300">
+            {/* The div where html5-qrcode will render the video stream */}
+            <div id="qr-reader" className="w-full h-full"></div>
+            
+            {/* Overlay target frame - html5-qrcode adds its own, but we can style around it if needed */}
+          </div>
+          
+          <p className="text-sm text-slate-500 mt-6 text-center font-medium">
+            Đưa mã QR trên tem sản phẩm vào khung hình để quét.<br/>
+            Hệ thống sẽ tự động nhận diện.
+          </p>
+
+          {error && (
+            <div className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-bold w-full text-center">
+              {error}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

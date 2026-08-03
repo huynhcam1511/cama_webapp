@@ -8,12 +8,14 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { MODULE_REGISTRY, getModuleByRoute, getModuleByCode, ModuleGroup, ModuleCode } from "@/config/moduleRegistry";
+import QRScanner from "@/components/qr-scanner";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [isPinned, setIsPinned] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const isCollapsed = !isPinned && !isHovered;
   const [userProfile, setUserProfile] = useState<{name: string, email: string, initial: string} | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { hasPermission, isLoading } = usePermissions();
@@ -207,6 +209,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 className="bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 w-48"
               />
             </div>
+            <button 
+              onClick={() => setIsScannerOpen(true)}
+              className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              title="Quét QR Sản Phẩm"
+            >
+              <icons.QrCode className="w-4 h-4" />
+            </button>
             <button className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
               <icons.Bell className="w-4 h-4" />
             </button>
@@ -230,6 +239,31 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+
+      {isScannerOpen && (
+        <QRScanner 
+          onClose={() => setIsScannerOpen(false)}
+          onScanSuccess={(text) => {
+            setIsScannerOpen(false);
+            
+            // Mock data for demo
+            const MOCK_DB: Record<string, any> = {
+              "VC001-M-W-01": { name: "Váy Cưới Công Chúa Ren Pháp", size: "M", color: "Trắng (W)", loc: "Lầu 1 - Kệ A - Tầng 2" },
+              "VC001-S-W-01": { name: "Váy Cưới Công Chúa Ren Pháp", size: "S", color: "Trắng (W)", loc: "Lầu 1 - Kệ A - Tầng 2" },
+              "VS012-L-B-01": { name: "Suit Nam Tuxedo Đen", size: "L", color: "Đen (B)", loc: "Lầu 2 - Kệ V1 - Tầng 1" },
+              "AD005-F-R-01": { name: "Áo Dài Cặp Long Phụng (Nữ)", size: "Free", color: "Đỏ (R)", loc: "Lầu 1 - Kệ C - Tầng 3" },
+              "PK001-F-W-01": { name: "Lúp Cô Dâu Đính Đá Cao Cấp", size: "Free", color: "Trắng (W)", loc: "Lầu 3 - Tủ P - Ngăn 1" }
+            };
+
+            const garment = MOCK_DB[text];
+            if (garment) {
+              alert(`✅ TÌM THẤY SẢN PHẨM!\n\nMã: ${text}\nTên: ${garment.name}\nSize: ${garment.size} | Màu: ${garment.color}\nVị trí: ${garment.loc}\n\n(Đây là dữ liệu test để chứng minh QR Code hoạt động)`);
+            } else {
+              alert(`❌ KHÔNG TÌM THẤY!\n\nMã: ${text}\nSản phẩm này không có trong kho hệ thống.`);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

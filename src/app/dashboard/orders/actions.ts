@@ -24,14 +24,15 @@ export interface Order {
   service_type: string;
   pic_id: string;
   total_value: number;
-  contract: {
-    contract_code: string;
-    customer: {
-      bride_name: string;
-      groom_name: string;
-      phone: string;
-    }
-  };
+    contract: {
+      contract_code: string;
+      customer: {
+        bride_name: string;
+        groom_name: string;
+        phone: string;
+      };
+      garments?: any[];
+    };
   pic: {
     full_name: string;
   };
@@ -45,7 +46,8 @@ export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> 
     *,
     contract:contracts (
       contract_code,
-      customer:customers ( bride_name, groom_name, phone )
+      customer:customers ( bride_name, groom_name, phone ),
+      garments:contract_garments (*)
     ),
     pic:users!pic_id ( full_name ),
     operation_schedules (*)
