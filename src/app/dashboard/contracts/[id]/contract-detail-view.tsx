@@ -28,6 +28,8 @@ import {
   Upload,
   ExternalLink,
   Check,
+  ScanLine,
+  X,
 } from "lucide-react";
 import RecordPaymentDialog from "../record-payment-dialog";
 import CancelContractDialog from "../cancel-contract-dialog";
@@ -36,8 +38,10 @@ import {
   addContractDocument,
   addContractSchedule,
   toggleScheduleCompleted,
+  addGarmentToContractByQR,
 } from "../actions";
 import { Contract } from "../types";
+import QRScanner from "@/components/qr-scanner";
 
 interface ContractDetailViewProps {
   contract: Contract;
@@ -53,6 +57,7 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // New Schedule form state
   const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
@@ -422,6 +427,15 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
       {/* TAB 4: TRANG PHỤC */}
       {activeTab === "garments" && (
         <div className="space-y-4 text-xs">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsScannerOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2"
+            >
+              <ScanLine className="w-4 h-4" /> Quét QR Thêm Trang Phục
+            </button>
+          </div>
+
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold text-blue-700 uppercase">
               Danh Sách Giữ Chỗ Váy Cưới & Suit Chú Rể
@@ -685,6 +699,27 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
           onClose={() => setIsPrintOpen(false)}
         />
       )}
+
+      {isScannerOpen && (
+        <QRScanner 
+          onClose={() => setIsScannerOpen(false)}
+          onScanSuccess={async (qrCode) => {
+            setIsScannerOpen(false); // Close first
+            
+            try {
+              const res = await addGarmentToContractByQR(contract.id, qrCode);
+              if (res.success) {
+                alert("✅ Thêm trang phục thành công:\n" + res.garment?.name);
+              } else {
+                alert("❌ Lỗi: " + res.error);
+              }
+            } catch (err: any) {
+              alert("❌ Lỗi hệ thống khi thêm trang phục.");
+            }
+          }}
+        />
+      )}
+
     </div>
   );
 }

@@ -798,3 +798,77 @@ export async function deleteContract(id: string) {
   revalidatePath("/dashboard/contracts");
   return { success: true };
 }
+
+export async function addGarmentToContractByQR(contractId: string, qrCode: string) {
+  const supabase = createClient();
+  
+  // 1. Fetch Garment by QR
+  const { data: garment, error: garError } = await supabase
+    .from("garments_inventory")
+    .select("*")
+    .eq("qr_code", qrCode)
+    .single();
+
+  if (garError || !garment) {
+    return { success: false, error: "Không tìm thấy sản phẩm với mã QR này trong hệ thống kho." };
+  }
+
+  if (garment.status !== "AVAILABLE") {
+    return { success: false, error: `Sản phẩm này đang ở trạng thái ${garment.status} và không sẵn sàng để giữ chỗ.` };
+  }
+
+  // 2. Fetch Contract
+  const currentContract = await getContractById(contractId);
+  if (!currentContract) {
+    return { success: false, error: "Hợp đồng không tồn tại." };
+  }
+
+  // 3. Check if already added
+  const existingGarment = currentContract.garments.find((g) => g.garment_code === qrCode);
+  if (existingGarment) {
+    return { success: false, error: "Sản phẩm này đã được thêm vào hợp đồng rồi!" };
+  }
+
+  // 4. Create new ContractGarment
+  const newContractGarment: ContractGarment = {
+    id: `gar-${Date.now()}`,
+    garment_code: garment.qr_code,
+    product_name: garment.name,
+    product_type: "Váy Cưới / Vest",
+    size: garment.size,
+    deliver_date: currentContract.contract_date, // Default to contract date, can be edited later
+    return_date: currentContract.contract_date,
+    reservation_status: "RESERVED",
+    fitting_notes: "",
+  };
+
+  const newActivity: ContractActivity = {
+    id: `act-${Date.now()}`,
+    actor_name: "Nhân viên Kho",
+    action_type: "UPDATE_CONTRACT",
+    content: `Quét mã QR thêm trang phục: ${garment.name} (${garment.qr_code})`,
+    created_at: new Date().toISOString(),
+  };
+
+  const metaData = {
+    ...parseMetadata(currentContract.notes || null),
+    garments: [...currentContract.garments, newContractGarment],
+    activities: [newActivity, ...currentContract.activities],
+  };
+
+  const { error } = await supabase
+    .from("contracts")
+    .update({
+      notes: stringifyMetadata(metaData),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", contractId);
+
+  if (error) {
+    console.error("Error adding garment:", error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath(`/dashboard/contracts/${contractId}`);
+  return { success: true, garment: garment };
+}
