@@ -116,10 +116,8 @@ export default function DashboardHome() {
           const modulesInGroup = groupedModules[group];
           if (!modulesInGroup || modulesInGroup.length === 0) return null;
 
-          // Filter by permissions
-          const visibleModules = modulesInGroup.filter(m => {
-            return hasPermission(m.moduleCode, "view");
-          });
+          // Show all active modules on the dashboard grid
+          const visibleModules = modulesInGroup.filter(m => m.isActive);
 
           if (visibleModules.length === 0) return null;
 
