@@ -141,7 +141,7 @@ export default function PayrollDashboardPage() {
         <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-bold text-amber-800">Tự động khấu trừ khi phát sinh lỗi bàn giao</p>
-          <p className="text-xs text-amber-700 mt-0.5">Mỗi lần nhân viên bấm <strong>"Báo Lỗi / Bẩn"</strong> hoặc trạng thái đơn hàng chuyển sang <strong>Sự Cố (ISSUE)</strong>, hệ thống sẽ tự động ghi nhận 1 dòng khấu trừ vào bảng lương của nhân viên phụ trách. Bấm vào cột <strong>Khấu trừ</strong> để xem chi tiết.</p>
+          <p className="text-xs text-amber-700 mt-0.5">Mỗi lần nhân viên bấm <strong>&quot;Báo Lỗi / Bẩn&quot;</strong> hoặc trạng thái đơn hàng chuyển sang <strong>Sự Cố (ISSUE)</strong>, hệ thống sẽ tự động ghi nhận 1 dòng khấu trừ vào bảng lương của nhân viên phụ trách. Bấm vào cột <strong>Khấu trừ</strong> để xem chi tiết.</p>
         </div>
       </div>
 
