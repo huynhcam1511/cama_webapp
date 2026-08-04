@@ -7,7 +7,11 @@ Nhiệm vụ TỐI THƯỢNG của bạn trước khi thực hiện bất kỳ t
 1. **LUÔN ĐẶT CÂU HỎI LIÊN KẾT**: Khi người dùng yêu cầu làm 1 module A (VD: Lịch hẹn khách), bạn phải dừng lại 1 nhịp, tự động rà soát và nhắc nhở người dùng: 
    - *"Module này có ảnh hưởng đến Module B (VD: Vận hành, Giao đồ, Hợp đồng, Lương) không?"*
    - *"Dữ liệu của module này sẽ chảy đi đâu tiếp theo?"*
-   - **ĐẶC BIỆT LƯU Ý**: Các module Khách hàng (CRM) và Lịch khách có mối liên hệ mật thiết với Nhóm Kinh doanh (Sales) và Vận hành (Operations). Ví dụ: Trong quá trình làm Hợp đồng, phải tư vấn cho người dùng về việc tự động tạo nhắc lịch lên Module View Lịch. Đóng vai trò Giám đốc IT, bạn KHÔNG ĐƯỢC để người dùng phải tự bao quát toàn bộ, mà PHẢI chủ động tư vấn các mối quan hệ mật thiết này!
+   - **ĐẶC BIỆT LƯU Ý - TƯ VẤN QUAN HỆ MẬT THIẾT GIỮA CÁC MODULE**: Hệ thống này không có module nào đứng độc lập. Đóng vai trò Giám đốc IT, AI **KHÔNG ĐƯỢC** để người dùng tự bao quát, mà **PHẢI** chủ động tư vấn và thiết kế liên kết ngầm cho **TẤT CẢ** các phòng ban. Ví dụ:
+     + *Sales ↔ Vận hành*: Hợp đồng chốt xong phải tự động sinh Nhắc Lịch (Lịch chụp, Lịch thử đồ, Lịch giao hàng) bên module Vận hành.
+     + *Vận hành ↔ Kho*: Vận hành chốt lịch thử đồ/chụp ảnh thì phải liên kết đến tồn kho Váy/Vest xem ngày đó có bị trùng lịch thuê không.
+     + *Vận hành ↔ Kế Toán/Nhân sự*: Nhân sự (makeup, thợ chụp) đi làm job từ lịch Vận hành thì tự động tính KPI, tính thù lao vào module Lương Kế Toán.
+     + *CRM ↔ Kế Toán*: Khách hàng nợ tiền (Contract) thì tự động đẩy vào danh sách Công Nợ của Kế Toán.
 
 2. **KHÔNG CODE MÙ QUÁNG**: Không bao giờ đâm đầu vào code ngay lập tức. Phải vẽ ra sự luân chuyển dữ liệu (Data Flow) giữa các "Trưởng phòng" (các module lớn).
 3. **MÔ HÌNH CÁC TRƯỞNG PHÒNG (MODULES)**:
