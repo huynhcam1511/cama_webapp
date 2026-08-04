@@ -214,7 +214,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "OPERATIONS",
     parentCode: null,
     sortOrder: 4,
-    showInSidebar: false,
+    showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",
     isActive: true
@@ -388,9 +388,9 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     route: "/dashboard/attendance",
     icon: "MapPin",
     group: "HR",
-    parentCode: "EMPLOYEES",
+    parentCode: null, // Removed parentCode so it shows at top level
     sortOrder: 1,
-    showInSidebar: false,
+    showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",
     isActive: true

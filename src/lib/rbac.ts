@@ -34,9 +34,22 @@ export async function getUserPermissions(userId: string) {
   // Get User Role Permissions
   const { data: userRow } = await supabase
     .from("users")
-    .select("role_id")
+    .select("role_id, roles(role_name)")
     .eq("id", userId)
     .single();
+
+  const isAdmin = userRow?.roles?.role_name === "Admin" || userRow?.roles?.role_name === "Administrator";
+  const mergedMap = new Map<string, any>();
+
+  if (isAdmin) {
+    // Admin bypass: automatically grant all permissions for all modules
+    // To avoid importing MODULE_REGISTRY and causing circular dependencies,
+    // we just return true for any module requested via a proxy or we can 
+    // fetch the module list if needed, or we just rely on `mergedMap.get(moduleCode)` 
+    // returning full permissions. Wait, `mergedMap` is an explicit map. 
+    // We can just populate it dynamically later or return a special map.
+    // Better yet, just import MODULE_REGISTRY!
+  }
 
   let rolePermissions: any[] = [];
   if (userRow?.role_id) {
@@ -55,9 +68,6 @@ export async function getUserPermissions(userId: string) {
   
   const userPermissions = up || [];
 
-  // Merge permissions (User specific overrides Role)
-  const mergedMap = new Map<string, any>();
-  
   rolePermissions.forEach(rp => {
     if (rp.modules?.module_code) {
       mergedMap.set(rp.modules.module_code, {
@@ -79,6 +89,19 @@ export async function getUserPermissions(userId: string) {
       });
     }
   });
+
+  if (isAdmin) {
+    // Override: Admin gets everything
+    const { MODULE_REGISTRY } = await import("@/config/moduleRegistry");
+    MODULE_REGISTRY.forEach(m => {
+      mergedMap.set(m.moduleCode, {
+        can_view: true,
+        can_create: true,
+        can_update: true,
+        can_delete: true
+      });
+    });
+  }
 
   return mergedMap;
 }
