@@ -40,7 +40,7 @@ export async function getUserPermissions(userId: string) {
 
   const roles: any = userRow?.roles;
   const roleName = (Array.isArray(roles) ? roles[0]?.role_name : roles?.role_name)?.toLowerCase() || "";
-  const isAdmin = ["super admin", "administrator", "super_admin"].includes(roleName);
+  const isAdmin = ["super admin", "administrator", "super_admin", "admin", "quản trị viên", "giám đốc", "quản lý"].includes(roleName);
   const mergedMap = new Map<string, any>();
 
   if (isAdmin) {
@@ -127,8 +127,6 @@ export async function requirePermission(moduleCode: string, action: PermissionAc
   }
 
   if (!hasPermission) {
-    // If it's a view action, redirect. Otherwise throw so server actions can catch it if needed.
-    // Or just redirect anyway.
     if (action === "view") {
       redirect("/dashboard?error=permission_denied");
     } else {
