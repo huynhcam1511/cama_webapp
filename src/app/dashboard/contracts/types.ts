@@ -107,10 +107,18 @@ export interface ContractActivity {
   created_at: string;
 }
 
+export interface ContractChecklistItem {
+  id: string;
+  title: string;
+  status: "PENDING" | "COMPLETED";
+  due_date?: string;
+  assigned_to?: string;
+}
+
 export type ContractStatus = "DRAFT" | "CONFIRMED" | "EFFECTIVE" | "SUSPENDED" | "CANCELLED" | "COMPLETED" | "ARCHIVED";
-export type PaymentStatus = "UNPAID" | "DEPOSITED" | "PARTIALLY_PAID" | "FULLY_PAID" | "OVERDUE" | "REFUNDED";
+export type PaymentStatus = "UNPAID" | "DEPOSITED" | "PARTIALLY_PAID" | "FULLY_PAID" | "OVERDUE" | "REFUNDED" | "VALUE_UNDETERMINED";
 export type ExecutionStatus = "PENDING" | "FITTING_WAIT" | "SAMPLE_WAIT" | "MEASURE_WAIT" | "PREPARING" | "SHOOT_WAIT" | "EXECUTING" | "DELIVERING_WAIT" | "RENTING" | "RETURN_WAIT" | "PRODUCT_WAIT" | "COMPLETED";
-export type DebtStatus = "IN_TERM" | "NEAR_DUE" | "OVERDUE" | "FULLY_COLLECTED";
+export type DebtStatus = "IN_TERM" | "NEAR_DUE" | "OVERDUE" | "FULLY_COLLECTED" | "NO_DEBT";
 
 export interface Contract {
   id: string;
@@ -137,6 +145,7 @@ export interface Contract {
   payment_status: PaymentStatus;
   execution_status: ExecutionStatus;
   debt_status: DebtStatus;
+  payment_due_date?: string;
   cancel_reason?: string;
   canceled_at?: string;
   canceled_by_name?: string;
@@ -147,6 +156,8 @@ export interface Contract {
   garments: ContractGarment[];
   documents: ContractDocument[];
   activities: ContractActivity[];
+  checklist?: ContractChecklistItem[];
+  assigned_staff_names?: string[];
   orders?: any[];
   notes?: string;
   link_pdf?: string;

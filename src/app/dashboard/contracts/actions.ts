@@ -128,19 +128,25 @@ function normalizeContract(row: any): Contract {
   const finalPayments = paymentsFromDb.length > 0 ? paymentsFromDb : meta.payments || [];
 
   // Compute status fields
-  let paymentStatus: PaymentStatus = meta.payment_status || "UNPAID";
-  if (paidAmount >= totalAmount && totalAmount > 0) {
-    paymentStatus = "FULLY_PAID";
-  } else if (paidAmount > 0) {
-    paymentStatus = paidAmount >= (meta.required_deposit || 5000000) ? "DEPOSITED" : "PARTIALLY_PAID";
-  } else {
-    paymentStatus = "UNPAID";
+  let paymentStatus: PaymentStatus = meta.payment_status;
+  if (!paymentStatus) {
+    if (totalAmount === 0 || isNaN(totalAmount)) {
+      paymentStatus = "VALUE_UNDETERMINED";
+    } else if (paidAmount >= totalAmount && totalAmount > 0) {
+      paymentStatus = "FULLY_PAID";
+    } else if (paidAmount > 0) {
+      paymentStatus = paidAmount >= (meta.required_deposit || 5000000) ? "DEPOSITED" : "PARTIALLY_PAID";
+    } else {
+      paymentStatus = "UNPAID";
+    }
   }
 
   let debtStatus: DebtStatus = meta.debt_status || "IN_TERM";
-  if (remainingAmount <= 0) {
+  if (totalAmount === 0 || isNaN(totalAmount)) {
+    debtStatus = "NO_DEBT";
+  } else if (remainingAmount <= 0) {
     debtStatus = "FULLY_COLLECTED";
-  } else if (meta.is_overdue) {
+  } else if (meta.is_overdue || (meta.payment_due_date && new Date(meta.payment_due_date).getTime() < Date.now())) {
     debtStatus = "OVERDUE";
   }
 
@@ -158,6 +164,7 @@ function normalizeContract(row: any): Contract {
     contract_date: meta.contract_date || row.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
     branch: meta.branch || "CAMA Haute Couture",
     assigned_staff_name: meta.assigned_staff_name || "Lễ Tân Studio",
+    assigned_staff_names: meta.assigned_staff_names || (meta.assigned_staff_name ? [meta.assigned_staff_name] : ["Lễ Tân Studio"]),
     created_by_name: meta.created_by_name || "Admin",
     updated_by_name: meta.updated_by_name || "Admin",
     subtotal_amount: meta.subtotal_amount || calculatedSubtotal,
@@ -174,12 +181,14 @@ function normalizeContract(row: any): Contract {
     payment_status: paymentStatus,
     execution_status: executionStatus,
     debt_status: debtStatus,
+    payment_due_date: meta.payment_due_date,
     cancel_reason: meta.cancel_reason,
     canceled_at: meta.canceled_at,
     canceled_by_name: meta.canceled_by_name,
     refund_amount: meta.refund_amount || 0,
     items: finalItems,
     payments: finalPayments,
+    checklist: meta.checklist || [],
     schedules: meta.schedules || [
       {
         id: "sch-1",
@@ -362,6 +371,7 @@ export async function createContract(payload: {
   contract_date?: string;
   branch?: string;
   assigned_staff_name?: string;
+  assigned_staff_names?: string[];
   items: ContractItem[];
   subtotal_amount: number;
   discount_amount: number;
@@ -378,6 +388,7 @@ export async function createContract(payload: {
     account_fund?: string;
     notes?: string;
   };
+  payment_due_date?: string;
   notes?: string;
 }) {
   try {
@@ -397,7 +408,9 @@ export async function createContract(payload: {
 
     const initialStatus: ContractStatus = "CONFIRMED";
     let paymentStatus: PaymentStatus = "UNPAID";
-    if (initialPaid >= payload.total_amount && payload.total_amount > 0) {
+    if (payload.total_amount === 0 || isNaN(payload.total_amount)) {
+      paymentStatus = "VALUE_UNDETERMINED";
+    } else if (initialPaid >= payload.total_amount && payload.total_amount > 0) {
       paymentStatus = "FULLY_PAID";
     } else if (initialPaid > 0) {
       paymentStatus = initialPaid >= payload.required_deposit ? "DEPOSITED" : "PARTIALLY_PAID";
@@ -427,7 +440,8 @@ export async function createContract(payload: {
       paper_contract_number: paperNo,
       contract_date: payload.contract_date || new Date().toISOString().split("T")[0],
       branch: payload.branch || "CAMA Haute Couture",
-      assigned_staff_name: payload.assigned_staff_name || "Lễ Tân Studio",
+      assigned_staff_name: payload.assigned_staff_names?.[0] || payload.assigned_staff_name || "Lễ Tân Studio",
+      assigned_staff_names: payload.assigned_staff_names || (payload.assigned_staff_name ? [payload.assigned_staff_name] : ["Lễ Tân Studio"]),
       created_by_name: "Admin",
       updated_by_name: "Admin",
       subtotal_amount: payload.subtotal_amount,
@@ -442,8 +456,10 @@ export async function createContract(payload: {
       contract_status: initialStatus,
       payment_status: paymentStatus,
       execution_status: "PREPARING" as ExecutionStatus,
-      debt_status: initialPaid >= payload.total_amount ? "FULLY_COLLECTED" : ("IN_TERM" as DebtStatus),
+      debt_status: (payload.total_amount === 0 || isNaN(payload.total_amount)) ? "NO_DEBT" : (initialPaid >= payload.total_amount ? "FULLY_COLLECTED" : "IN_TERM" as DebtStatus),
+      payment_due_date: payload.payment_due_date,
       items: payload.items,
+      checklist: [],
       schedules: payload.schedules || [],
       payments: payload.initial_payment
         ? [
@@ -577,7 +593,9 @@ export async function recordPaymentTransaction(
     .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
   let newPaymentStatus: PaymentStatus = "UNPAID";
-  if (newTotalPaid >= currentContract.total_amount && currentContract.total_amount > 0) {
+  if (currentContract.total_amount === 0) {
+    newPaymentStatus = "VALUE_UNDETERMINED";
+  } else if (newTotalPaid >= currentContract.total_amount && currentContract.total_amount > 0) {
     newPaymentStatus = "FULLY_PAID";
   } else if (newTotalPaid > 0) {
     newPaymentStatus = newTotalPaid >= currentContract.required_deposit ? "DEPOSITED" : "PARTIALLY_PAID";
@@ -608,9 +626,11 @@ export async function recordPaymentTransaction(
     contract_status: newTotalPaid >= currentContract.total_amount ? "COMPLETED" : currentContract.contract_status,
     payment_status: newPaymentStatus,
     execution_status: currentContract.execution_status,
-    debt_status: newTotalPaid >= currentContract.total_amount ? "FULLY_COLLECTED" : ("IN_TERM" as DebtStatus),
+    debt_status: (currentContract.total_amount === 0) ? "NO_DEBT" : (newTotalPaid >= currentContract.total_amount ? "FULLY_COLLECTED" : "IN_TERM" as DebtStatus),
+    payment_due_date: currentContract.payment_due_date,
     items: currentContract.items,
     payments: updatedPayments,
+    checklist: currentContract.checklist,
     schedules: currentContract.schedules,
     garments: currentContract.garments,
     documents: currentContract.documents,

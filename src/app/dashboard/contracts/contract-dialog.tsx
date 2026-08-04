@@ -64,6 +64,10 @@ export default function ContractDialog({
   const [gifts, setGifts] = useState("");
   const [dressDeliverDate, setDressDeliverDate] = useState("");
   const [dressReturnDate, setDressReturnDate] = useState("");
+  
+  // Custom Fields
+  const [paymentDueDate, setPaymentDueDate] = useState("");
+  const [assignedStaffInput, setAssignedStaffInput] = useState("");
 
   // 3. Bảng Dịch Vụ (Hợp nhất)
   const [services, setServices] = useState<{category: string, detail: string, quantity: number, price: number, notes: string}[]>([
@@ -223,6 +227,8 @@ export default function ContractDialog({
       surcharge_amount: 0,
       total_amount: totalAmount,
       required_deposit: totalAmount * 0.5,
+      payment_due_date: paymentDueDate || undefined,
+      assigned_staff_names: assignedStaffInput.split(",").map(s => s.trim()).filter(s => s.length > 0),
       initial_payment: installments[0]?.status === "PAID" ? {
         amount: Number(installments[0].amount),
         payment_method: installments[0].method,
@@ -322,6 +328,12 @@ export default function ContractDialog({
                   <div>
                     <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Số HĐ giấy (Để trống tự sinh mã hệ thống)</label>
                     <input type="text" placeholder="Số: 0012492" value={paperContractCode} onChange={(e) => setPaperContractCode(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 text-xs font-mono text-slate-700 outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1" title="Nhập tên nhân viên Sale, cách nhau bởi dấu phẩy">
+                      Phụ trách (Sale) <span className="text-slate-400 font-normal lowercase">(nhiều người cách nhau dấu phẩy)</span>
+                    </label>
+                    <input type="text" placeholder="VD: Hiền, Nam" value={assignedStaffInput} onChange={(e) => setAssignedStaffInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 text-xs text-slate-700 outline-none" />
                   </div>
                 </div>
               </section>
@@ -693,6 +705,12 @@ export default function ContractDialog({
                         />
                         Có giữ cọc giấy tờ (CCCD/Bằng lái)
                       </label>
+                    </div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-slate-200 w-full flex items-center gap-3">
+                    <label className="text-[11px] font-bold text-slate-600 w-32">Hạn thanh toán HĐ:</label>
+                    <div className="flex-1">
+                      <CustomDatePicker value={paymentDueDate} onChange={setPaymentDueDate} />
                     </div>
                   </div>
                 </div>
