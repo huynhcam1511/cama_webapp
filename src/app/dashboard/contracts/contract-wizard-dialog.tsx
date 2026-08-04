@@ -277,14 +277,19 @@ export default function ContractWizardDialog({
       notes: contractNotes,
     };
 
-    const res = await createContract(payload);
-    setLoading(false);
-
-    if (res.success) {
-      onSaved();
-      onClose();
-    } else {
-      setErrorMsg(res.error || "Không thể tạo hợp đồng, vui lòng thử lại.");
+    try {
+      const res = await createContract(payload);
+      setLoading(false);
+  
+      if (res.success) {
+        onSaved();
+        onClose();
+      } else {
+        setErrorMsg(res.error || "Không thể tạo hợp đồng, vui lòng thử lại.");
+      }
+    } catch (err: any) {
+      setLoading(false);
+      setErrorMsg(err.message === "PERMISSION_DENIED" ? "Bạn không có quyền thực hiện thao tác này." : (err.message || "Lỗi hệ thống."));
     }
   };
 
