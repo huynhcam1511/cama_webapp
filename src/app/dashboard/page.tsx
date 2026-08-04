@@ -144,8 +144,8 @@ export default function DashboardHome() {
           const modulesInGroup = groupedModules[group];
           if (!modulesInGroup || modulesInGroup.length === 0) return null;
 
-          // Show all active modules on the dashboard grid
-          const visibleModules = modulesInGroup.filter(m => m.isActive);
+          // Lọc các module mà user có quyền xem
+          const visibleModules = modulesInGroup.filter(m => m.isActive && hasPermission(m.moduleCode, "view"));
 
           if (visibleModules.length === 0) return null;
 
