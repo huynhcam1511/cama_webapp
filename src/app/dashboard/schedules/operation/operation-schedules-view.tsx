@@ -233,8 +233,8 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
               {daysInWeek.map(day => {
                 const dateStr = format(day, "yyyy-MM-dd");
                 const daySchedules = filteredSchedules
-                  .filter(s => s.date === dateStr)
-                  .sort((a, b) => a.start_time.localeCompare(b.start_time));
+                  .filter(s => (s.date ? s.date.split('T')[0] : '') === dateStr)
+                  .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""));
 
                 return (
                   <div key={dateStr} className={`relative min-h-[960px] border-r border-slate-200 ${isToday(day) ? 'bg-indigo-50/30' : ''}`}>
@@ -267,7 +267,7 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
                           </div>
                           
                           <div className="font-bold mb-1 text-[10px] line-clamp-1 leading-tight flex-1">
-                            {schedule.customer?.bride_name ? schedule.customer.bride_name : schedule.title}
+                            {schedule.customer?.bride_name ? schedule.customer.bride_name : (schedule.customer_name || schedule.title)}
                           </div>
                           
                           <div className="flex items-center gap-1 text-[9px] mt-auto font-medium truncate shrink-0">
