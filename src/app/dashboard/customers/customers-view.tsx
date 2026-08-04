@@ -6,6 +6,7 @@ import CustomerDialog from "./customer-dialog";
 import { deleteCustomer } from "./actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface CustomersViewProps {
   initialCustomers: any[];
@@ -19,6 +20,12 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission("CUSTOMERS", "create");
+  const canUpdate = hasPermission("CUSTOMERS", "update");
+  const canDelete = hasPermission("CUSTOMERS", "delete");
+  const canCreateContract = hasPermission("STUDIO_CONTRACTS", "create");
 
   // Filter customers logic
   const filteredCustomers = customers.filter((customer) => {
@@ -78,13 +85,15 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
               Tổng cộng: <strong className="text-blue-600">{filteredCustomers.length}</strong> hồ sơ khách hàng
             </p>
           </div>
-          <button
-            onClick={handleOpenAdd}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shrink-0"
-          >
-            <UserPlus className="w-4 h-4" />
-            Thêm Khách Hàng Mới
-          </button>
+          {canCreate && (
+            <button
+              onClick={handleOpenAdd}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shrink-0"
+            >
+              <UserPlus className="w-4 h-4" />
+              Thêm Khách Hàng Mới
+            </button>
+          )}
         </div>
 
         {/* Search & Filter Bar */}
@@ -198,29 +207,35 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleOpenEdit(customer)}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors"
-                        title="Chỉnh sửa thông tin"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <Link
-                        href={`/dashboard/contracts?newFor=${customer.id}`}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition-colors flex items-center gap-1"
-                        title="Tạo Hợp Đồng Cho KH này"
-                      >
-                        <FileText className="w-4 h-4" />
-                        <span className="text-xs font-semibold hidden sm:inline-block">Tạo HĐ</span>
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(customer.id)}
-                        disabled={deletingId === customer.id}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
-                        title="Xóa khách hàng"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canUpdate && (
+                        <button
+                          onClick={() => handleOpenEdit(customer)}
+                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors"
+                          title="Chỉnh sửa thông tin"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
+                      {canCreateContract && (
+                        <Link
+                          href={`/dashboard/contracts?newFor=${customer.id}`}
+                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition-colors flex items-center gap-1"
+                          title="Tạo Hợp Đồng Cho KH này"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span className="text-xs font-semibold hidden sm:inline-block">Tạo HĐ</span>
+                        </Link>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDelete(customer.id)}
+                          disabled={deletingId === customer.id}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
+                          title="Xóa khách hàng"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

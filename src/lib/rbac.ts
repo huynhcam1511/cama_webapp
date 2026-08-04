@@ -40,7 +40,7 @@ export async function getUserPermissions(userId: string) {
 
   const roles: any = userRow?.roles;
   const roleName = (Array.isArray(roles) ? roles[0]?.role_name : roles?.role_name)?.toLowerCase() || "";
-  const isAdmin = roleName === "admin" || roleName === "administrator" || roleName.includes("quản trị");
+  const isAdmin = ["super admin", "administrator", "super_admin"].includes(roleName);
   const mergedMap = new Map<string, any>();
 
   if (isAdmin) {

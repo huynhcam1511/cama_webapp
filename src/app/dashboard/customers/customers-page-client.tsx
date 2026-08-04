@@ -5,10 +5,13 @@ import BookingScheduleClient from "./booking-schedule-client";
 import CustomersView from "./customers-view";
 import QuickContractModal from "../quick-contract-modal";
 import * as icons from "lucide-react";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function CustomersPageClient({ bookings, users, customers }: { bookings: any[], users: any[], customers: any[] }) {
   const [activeTab, setActiveTab] = useState<"customers" | "schedules">("customers");
   const [showQuickContract, setShowQuickContract] = useState(false);
+  const { hasPermission } = usePermissions();
+  const canCreateContract = hasPermission("STUDIO_CONTRACTS", "create") && hasPermission("CUSTOMERS", "create");
 
   return (
     <div className="space-y-6 relative">
@@ -33,13 +36,15 @@ export default function CustomersPageClient({ bookings, users, customers }: { bo
           Booking Schedule
         </button>
         </div>
-        <button 
-          onClick={() => setShowQuickContract(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm transition-colors flex items-center gap-1.5 mb-2"
-        >
-          <icons.Zap className="w-3.5 h-3.5" />
-          Tạo nhanh Hợp đồng
-        </button>
+        {canCreateContract && (
+          <button 
+            onClick={() => setShowQuickContract(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm transition-colors flex items-center gap-1.5 mb-2"
+          >
+            <icons.Zap className="w-3.5 h-3.5" />
+            Tạo nhanh Hợp đồng
+          </button>
+        )}
       </div>
 
       {activeTab === "customers" && <CustomersView initialCustomers={customers} />}

@@ -123,7 +123,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           {/* Dynamic Sidebar Groups */}
           {SIDEBAR_GROUP_ORDER.map(groupCode => {
             const groupModules = sidebarModules.filter(m => m.group === groupCode);
-            const visibleModules = groupModules.filter(m => isLoading || hasPermission(m.moduleCode, "view") || m.route === "/dashboard");
+            const visibleModules = groupModules.filter(m => hasPermission(m.moduleCode, "view") || m.route === "/dashboard");
             
             if (visibleModules.length === 0) return null;
 

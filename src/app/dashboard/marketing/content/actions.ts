@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 
 export async function getMarketingContents() {
@@ -17,6 +18,7 @@ export async function getMarketingContents() {
 }
 
 export async function createMarketingContent(payload: any) {
+  await requirePermission("CONTENT_MARKETING", "create");
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -35,6 +37,7 @@ export async function createMarketingContent(payload: any) {
 }
 
 export async function updateMarketingContent(id: string, payload: any) {
+  await requirePermission("CONTENT_MARKETING", "update");
   const supabase = await createClient();
   const { error } = await supabase
     .from("marketing_contents")
@@ -50,6 +53,7 @@ export async function updateMarketingContent(id: string, payload: any) {
 }
 
 export async function deleteMarketingContent(id: string) {
+  await requirePermission("CONTENT_MARKETING", "delete");
   const supabase = await createClient();
   const { error } = await supabase
     .from("marketing_contents")

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import {
   Contract,
@@ -29,6 +30,7 @@ export async function recordPayment(
   receiptUrl?: string,
   notes?: string
 ) {
+  await requirePermission("STUDIO_CONTRACTS", "update");
   return recordPaymentTransaction(contractId, {
     amount: 0,
     payment_method: paymentMethod || "TRANSFER",
@@ -378,6 +380,7 @@ export async function createContract(payload: {
   };
   notes?: string;
 }) {
+  await requirePermission("STUDIO_CONTRACTS", "create");
   const supabase = createClient();
 
   // Generate code
@@ -538,6 +541,7 @@ export async function recordPaymentTransaction(
     notes?: string;
   }
 ) {
+  await requirePermission("STUDIO_CONTRACTS", "update");
   const supabase = createClient();
   const currentContract = await getContractById(contractId);
   if (!currentContract) {
@@ -648,6 +652,7 @@ export async function recordPaymentTransaction(
 }
 
 export async function cancelContract(contractId: string, reason: string, refundAmount: number = 0) {
+  await requirePermission("STUDIO_CONTRACTS", "update");
   const supabase = createClient();
   const currentContract = await getContractById(contractId);
   if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại" };
@@ -687,6 +692,7 @@ export async function cancelContract(contractId: string, reason: string, refundA
 }
 
 export async function addContractSchedule(contractId: string, schedule: Omit<ContractSchedule, "id">) {
+  await requirePermission("STUDIO_CONTRACTS", "update");
   const supabase = createClient();
   const currentContract = await getContractById(contractId);
   if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại" };
@@ -721,6 +727,7 @@ export async function addContractSchedule(contractId: string, schedule: Omit<Con
 }
 
 export async function toggleScheduleCompleted(contractId: string, scheduleId: string) {
+  await requirePermission("STUDIO_CONTRACTS", "update");
   const supabase = createClient();
   const currentContract = await getContractById(contractId);
   if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại" };
@@ -752,6 +759,7 @@ export async function toggleScheduleCompleted(contractId: string, scheduleId: st
 }
 
 export async function addContractDocument(contractId: string, doc: Omit<ContractDocument, "id" | "created_at">) {
+  await requirePermission("STUDIO_CONTRACTS", "update");
   const supabase = createClient();
   const currentContract = await getContractById(contractId);
   if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại" };
@@ -787,6 +795,7 @@ export async function addContractDocument(contractId: string, doc: Omit<Contract
 }
 
 export async function deleteContract(id: string) {
+  await requirePermission("STUDIO_CONTRACTS", "delete");
   const supabase = createClient();
   const { error } = await supabase
     .from("contracts")

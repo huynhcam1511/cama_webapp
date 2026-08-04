@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 
 export type OrderChecklistItem = {
@@ -49,7 +50,7 @@ export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> 
       customer:customers ( bride_name, groom_name, phone ),
       garments:contract_garments (*)
     ),
-    pic:users!pic_id ( full_name ),
+    pic:users ( full_name ),
     operation_schedules (*)
   `).is("deleted_at", null).order("created_at", { ascending: false });
 
@@ -66,6 +67,7 @@ export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> 
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
+  await requirePermission("ORDERS", "update");
   const supabase = createClient();
   const { error } = await supabase.from("orders").update({ completion_status: status }).eq("id", orderId);
   if (error) throw new Error(error.message);
@@ -73,6 +75,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 }
 
 export async function updateOrderChecklist(orderId: string, checklist: OrderChecklistItem[]) {
+  await requirePermission("ORDERS", "update");
   const supabase = createClient();
   const { error } = await supabase.from("orders").update({ checklist: JSON.stringify(checklist) }).eq("id", orderId);
   if (error) throw new Error(error.message);
