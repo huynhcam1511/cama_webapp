@@ -38,7 +38,8 @@ export async function getUserPermissions(userId: string) {
     .eq("id", userId)
     .single();
 
-  const roleName = userRow?.roles?.role_name?.toLowerCase() || "";
+  const roles: any = userRow?.roles;
+  const roleName = (Array.isArray(roles) ? roles[0]?.role_name : roles?.role_name)?.toLowerCase() || "";
   const isAdmin = roleName === "admin" || roleName === "administrator" || roleName.includes("quản trị");
   const mergedMap = new Map<string, any>();
 
