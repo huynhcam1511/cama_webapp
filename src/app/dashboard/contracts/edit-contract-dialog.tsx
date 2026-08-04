@@ -324,7 +324,7 @@ export default function EditContractDialog({
               {step}/6
             </div>
             <div>
-              </p>
+              <p className="font-bold text-sm">Chỉnh sửa Hợp Đồng</p>
             </div>
           </div>
           <button
