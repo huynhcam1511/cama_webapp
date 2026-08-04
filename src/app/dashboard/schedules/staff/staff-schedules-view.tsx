@@ -397,47 +397,7 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
             </div>
           )}
 
-          {/* Dòng Tổng Kết Nhân Sự Có Mặt */}
-          <div className="grid grid-cols-[200px_repeat(7,1fr)] bg-slate-800 text-white rounded-b-xl overflow-hidden shadow-inner">
-            <div className="p-3 border-r border-slate-700 flex items-center font-bold text-xs uppercase tracking-wide">
-              <icons.Users className="w-4 h-4 mr-2 text-amber-400" /> Tổng nhân sự có mặt
-            </div>
-            {daysInWeek.map(day => {
-              const dateStr = format(day, "yyyy-MM-dd");
-              
-              // Count users who are physically present (WORKING, LATE) and APPROVED or PENDING
-              let presentCount = 0;
-              filteredUsers.forEach(u => {
-                const daySchedules = optimisticSchedules.filter(s => s.user_id === u.id && s.date === dateStr);
-                let isWorking = false;
-                
-                if (daySchedules.length > 0) {
-                  // If they have a working schedule, they are present
-                  isWorking = daySchedules.some(s => 
-                    (s.schedule_type === 'WORKING' || s.schedule_type === 'LATE' || s.schedule_type === 'EARLY_LEAVE') && 
-                    s.approval_status !== 'REJECTED'
-                  );
-                } else {
-                  // Fallback to default
-                  const defDays = Array.isArray(u.default_work_days) ? u.default_work_days : [];
-                  isWorking = defDays.includes(day.getDay());
-                }
 
-                if (isWorking) presentCount++;
-              });
-
-              // Warning if less than 2 people
-              const isWarning = presentCount < 2 && presentCount > 0;
-              const isZero = presentCount === 0;
-
-              return (
-                <div key={`summary-${dateStr}`} className={`p-3 text-center border-r border-slate-700 last:border-0 font-mono text-sm font-bold flex flex-col items-center justify-center ${isWarning ? 'bg-rose-900/50 text-rose-300' : isZero ? 'text-slate-500' : 'text-emerald-400'}`}>
-                  <span>{presentCount} <span className="text-[10px] font-sans font-normal opacity-70">người</span></span>
-                  {isWarning && <span className="text-[9px] uppercase tracking-wider font-sans mt-0.5 bg-rose-500 text-white px-1 rounded shadow-sm">Thiếu NS</span>}
-                </div>
-              );
-            })}
-          </div>
 
         </div>
       </div>
