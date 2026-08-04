@@ -7,10 +7,13 @@ import { requirePermission } from "@/lib/rbac";
 export async function saveBooking(booking: any) {
   const supabase = createAdminClient();
   
+  // Remove joined fields to prevent schema cache error
+  const { users, contract_orders, ...payload } = booking;
+
   if (booking.id) {
     const { data, error } = await supabase
       .from("operation_schedules")
-      .update(booking)
+      .update(payload)
       .eq("id", booking.id)
       .select("*, users:primary_assignee_id(full_name)")
       .single();
@@ -18,7 +21,7 @@ export async function saveBooking(booking: any) {
   } else {
     const { data, error } = await supabase
       .from("operation_schedules")
-      .insert({ ...booking, schedule_category: "SALE_BOOKING", title: booking.customer_name || "Lịch hẹn khách hàng", event_type: booking.appointment_type || "CUSTOMER_APPOINTMENT", end_time: booking.start_time || "00:00:00" })
+      .insert({ ...payload, schedule_category: "SALE_BOOKING", title: booking.customer_name || "Lịch hẹn khách hàng", event_type: booking.appointment_type || "CUSTOMER_APPOINTMENT", end_time: booking.start_time || "00:00:00" })
       .select("*, users:primary_assignee_id(full_name)")
       .single();
     return { data, error: error?.message };

@@ -72,6 +72,12 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
   const [newDocUrl, setNewDocUrl] = useState("");
   const [newDocType, setNewDocType] = useState<any>("PAPER_CONTRACT_IMAGE");
 
+  // New Order form state
+  const [isAddOrderOpen, setIsAddOrderOpen] = useState(false);
+  const [newOrderType, setNewOrderType] = useState("Vận Hành Trang Phục");
+  const [newOrderDate, setNewOrderDate] = useState("");
+  const [newOrderNotes, setNewOrderNotes] = useState("");
+
   const customer = contract.customers || ({} as any);
 
   const handleSaved = () => {
@@ -157,6 +163,12 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
             <Printer className="w-3.5 h-3.5" /> In / Tải PDF
           </button>
           <button
+            onClick={() => alert("Tính năng chỉnh sửa hợp đồng đang được phát triển...")}
+            className="px-3 py-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 font-bold text-[11px] flex items-center gap-1.5 transition-colors border border-indigo-200"
+          >
+            <Edit className="w-3.5 h-3.5" /> Sửa HĐ
+          </button>
+          <button
             onClick={() => setIsCancelOpen(true)}
             className="px-3 py-1.5 rounded-lg text-red-600 hover:bg-red-50 font-bold text-[11px] flex items-center gap-1.5 transition-colors border border-red-200"
           >
@@ -196,10 +208,11 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
         </div>
       </div>
 
-      {/* 7 Tabs Navigation */}
+      {/* 8 Tabs Navigation */}
       <div className="border-b border-slate-200 flex items-center gap-2 overflow-x-auto text-[11px] font-semibold">
         {[
           { key: "overview", label: "Tổng quan" },
+          { key: "lifecycle", label: "Checklist Vòng Đời" },
           { key: "items", label: `Dịch vụ (${contract.items.length})` },
           { key: "schedules", label: `Lịch trình (${contract.schedules.length})` },
           { key: "garments", label: `Trang phục (${contract.garments.length})` },
@@ -292,6 +305,113 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
         </div>
       )}
 
+      {/* TAB LIFECYCLE (VÒNG ĐỜI) */}
+      {activeTab === "lifecycle" && (
+        <div className="space-y-6 text-xs">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <h3 className="font-bold text-blue-700 uppercase mb-4 flex items-center gap-2">
+              <Sparkles className="w-4 h-4" /> Trạng Thái Chụp Hình
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              {[
+                "Đã Chụp Hình",
+                "Đã Gửi File Gốc",
+                "Đã Nhận File Chỉnh Sửa",
+                "Đã In Ảnh/Album",
+                "Đã Bàn Giao Thành Phẩm"
+              ].map((step, idx) => (
+                <div key={idx} className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                  <input type="checkbox" className="w-4 h-4 accent-blue-600 rounded" />
+                  <span className="font-semibold text-slate-700">{step}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <h3 className="font-bold text-emerald-700 uppercase mb-4 flex items-center gap-2">
+              <Shirt className="w-4 h-4" /> Trạng Thái Trang Phục Ngày Cưới
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" className="w-4 h-4 accent-emerald-600 rounded" />
+                  <span className="font-semibold text-slate-700">Khách đã thử & chốt đồ</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" className="w-4 h-4 accent-emerald-600 rounded" />
+                  <span className="font-semibold text-slate-700">Khách đã thử lại (final)</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-slate-600">Ngày bàn giao dự kiến:</label>
+                  <input type="date" className="border border-slate-300 rounded px-2 py-1 outline-none" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-slate-600">Số ngày mượn:</label>
+                  <input type="number" className="border border-slate-300 rounded px-2 py-1 outline-none w-20" defaultValue={3} />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg mt-2">
+                  <input type="checkbox" className="w-5 h-5 accent-amber-600 rounded" />
+                  <span className="font-bold text-amber-800 text-sm">Khách Đã Trả Lại Đồ</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <h3 className="font-bold text-purple-700 uppercase mb-4 flex items-center gap-2">
+                <User className="w-4 h-4" /> Dịch Vụ & Nhân Sự Ngoài
+              </h3>
+              <div className="space-y-3">
+                {[
+                  "Đã book Thợ Chụp",
+                  "Đã book Thợ Quay",
+                  "Đã book Makeup Artist",
+                  "Thợ đã trả file hoàn thiện"
+                ].map((step, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input type="checkbox" className="w-4 h-4 accent-purple-600 rounded" />
+                    <span className="font-semibold text-slate-700">{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <h3 className="font-bold text-rose-700 uppercase mb-4 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> Hạng Mục Đi Kèm Hợp Đồng
+              </h3>
+              <div className="space-y-3">
+                {[
+                  "Áo dài bà sui",
+                  "Áo dài đỡ tráp",
+                  "Vest ông sui",
+                  "Hoa cầm tay ngày cưới",
+                  "Makeup tiệc",
+                  "Makeup chú rể",
+                  "Loại hình quay/chụp: Phóng sự"
+                ].map((step, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input type="checkbox" className="w-4 h-4 accent-rose-600 rounded" />
+                    <span className="font-semibold text-slate-700">{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button className="px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors">
+              Lưu Checklist Vòng Đời
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* TAB 2: HẠNG MỤC DỊCH VỤ */}
       {activeTab === "items" && (
         <div className="space-y-4 text-xs">
@@ -371,13 +491,18 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
                   onChange={(e) => setNewSchDate(e.target.value)}
                   className="bg-white border border-slate-300 rounded px-2.5 py-1.5 outline-none"
                 />
-                <input
-                  type="text"
-                  placeholder="Người phụ trách..."
+                <select
                   value={newSchAssigned}
                   onChange={(e) => setNewSchAssigned(e.target.value)}
                   className="bg-white border border-slate-300 rounded px-2.5 py-1.5 outline-none"
-                />
+                >
+                  <option value="">-- Chọn người phụ trách --</option>
+                  <option value="Lễ Tân Studio">Lễ Tân Studio</option>
+                  <option value="Ekip Phóng Sự">Ekip Phóng Sự</option>
+                  <option value="Phòng Trang Phục">Phòng Trang Phục</option>
+                  <option value="Make-up Artist">Make-up Artist</option>
+                  <option value="Thợ Chụp Studio">Thợ Chụp Studio</option>
+                </select>
               </div>
               <div className="flex justify-end gap-2">
                 <button type="button" onClick={() => setIsAddScheduleOpen(false)} className="px-3 py-1 text-slate-500">Hủy</button>
@@ -596,13 +721,68 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
               <p className="text-slate-500 mt-1">Đơn hàng là nơi đội vận hành (Ekip chụp, Makeup, Trả đồ) tiếp nhận và xử lý.</p>
             </div>
             
-            <Link
-              href="/dashboard/orders"
+            <button
+              onClick={() => setIsAddOrderOpen(!isAddOrderOpen)}
               className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/30 transition-colors"
             >
-              <Plus className="w-3.5 h-3.5" /> Tạo Đơn Hàng Mới
-            </Link>
+              <Plus className="w-3.5 h-3.5" /> Tạo Đơn Trực Tiếp
+            </button>
           </div>
+
+          {isAddOrderOpen && (
+            <div className="p-4 bg-slate-50 border border-blue-200 rounded-xl space-y-4">
+              <h4 className="font-bold text-blue-700">Khởi Tạo Đơn Hàng Mới (Gắn liền với HĐ này)</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600">Loại Đơn / Dịch Vụ</label>
+                  <select
+                    value={newOrderType}
+                    onChange={(e) => setNewOrderType(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-500"
+                  >
+                    <option value="Vận Hành Trang Phục">Vận Hành Trang Phục</option>
+                    <option value="Chụp Pre-wedding">Chụp Pre-wedding</option>
+                    <option value="Chụp Phóng Sự Cưới">Chụp Phóng Sự Cưới</option>
+                    <option value="Make-up">Make-up</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600">Ngày Thực Hiện Dự Kiến</label>
+                  <input
+                    type="date"
+                    value={newOrderDate}
+                    onChange={(e) => setNewOrderDate(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600">Ghi Chú Đơn Hàng (Không bắt buộc)</label>
+                  <input
+                    type="text"
+                    placeholder="VD: Cần sửa eo váy size S thành M..."
+                    value={newOrderNotes}
+                    onChange={(e) => setNewOrderNotes(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                <button type="button" onClick={() => setIsAddOrderOpen(false)} className="px-4 py-1.5 text-slate-500 font-bold text-xs hover:bg-slate-200 rounded-lg transition-colors">
+                  Hủy
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    alert("Đã lưu đơn hàng trực tiếp!");
+                    setIsAddOrderOpen(false);
+                  }} 
+                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition-colors shadow-sm"
+                >
+                  Lưu & Khởi Tạo Đơn
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <table className="w-full text-left">

@@ -686,7 +686,7 @@ export default function ContractDialog({
                 </div>
 
                 {/* Extra Notes & Asset Deposit */}
-                <div className="mt-1.5 pt-1.5 flex items-center justify-between bg-slate-50/50 p-2 rounded-lg border shrink-0">
+                <div className="mt-1.5 pt-1.5 flex flex-col bg-slate-50/50 p-2 rounded-lg border shrink-0">
                   <div className="flex-1 flex gap-3">
                     <input
                       type="text"

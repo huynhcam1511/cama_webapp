@@ -647,9 +647,7 @@ export default function ContractWizardDialog({
                       />
                     </div>
                     <div className="sm:col-span-3">
-                      <input
-                        type="text"
-                        placeholder="Địa điểm / Người phụ trách..."
+                      <select
                         value={sch.assigned_to}
                         onChange={(e) => {
                           const updated = [...schedules];
@@ -657,7 +655,14 @@ export default function ContractWizardDialog({
                           setSchedules(updated);
                         }}
                         className="w-full bg-white border border-slate-300 text-slate-900 rounded-md px-2.5 py-1.5 text-xs outline-none"
-                      />
+                      >
+                        <option value="">-- Chọn người phụ trách --</option>
+                        <option value="Lễ Tân Studio">Lễ Tân Studio</option>
+                        <option value="Ekip Phóng Sự">Ekip Phóng Sự</option>
+                        <option value="Phòng Trang Phục">Phòng Trang Phục</option>
+                        <option value="Make-up Artist">Make-up Artist</option>
+                        <option value="Thợ Chụp Studio">Thợ Chụp Studio</option>
+                      </select>
                     </div>
                     <div className="sm:col-span-1 text-right">
                       <button

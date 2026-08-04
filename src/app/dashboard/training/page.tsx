@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap, BookOpen, PlayCircle, CheckCircle2, Search, Video } from "lucide-react";
+import { GraduationCap, BookOpen, PlayCircle, CheckCircle2, Search, Video, ClipboardList } from "lucide-react";
 import { useState } from "react";
 
 export default function TrainingDashboardPage() {
@@ -23,13 +23,21 @@ export default function TrainingDashboardPage() {
           </h1>
           <p className="text-slate-500 mt-2 font-medium">Nâng cao nghiệp vụ và chuyên môn cho đội ngũ CAMA</p>
         </div>
-        <div className="relative w-full md:w-auto">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Tìm kiếm khoá học..." 
-            className="w-full md:w-72 pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all shadow-sm"
-          />
+        <div className="flex gap-3 items-center">
+          <div className="relative w-full md:w-auto">
+            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Tìm kiếm khoá học..." 
+              className="w-full md:w-72 pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all shadow-sm"
+            />
+          </div>
+          <a 
+            href="/dashboard/training/exams"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all shadow-sm flex items-center gap-2 whitespace-nowrap"
+          >
+            <ClipboardList className="w-4 h-4" /> Sát Hạch
+          </a>
         </div>
       </div>
 

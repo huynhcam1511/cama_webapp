@@ -209,7 +209,13 @@ export default function BookingScheduleClient({ initialData, users }: { initialD
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-slate-700 mb-1">Nguồn (Fanpage/Tiktok...)</label>
-                      <input type="text" value={formData.source || ''} onChange={e => setFormData({...formData, source: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg text-sm" />
+                      <select value={formData.source || ''} onChange={e => setFormData({...formData, source: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white">
+                        <option value="">-- Chọn Nguồn --</option>
+                        <option value="KHÁCH CŨ">KHÁCH CŨ</option>
+                        <option value="Facebook - Cama Haute Couture">Facebook - Cama Haute Couture</option>
+                        <option value="Facebook - Cama Suit">Facebook - Cama Suit</option>
+                        <option value="ZALO">ZALO</option>
+                      </select>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-700 mb-1">PIC Giữ khách</label>
@@ -220,16 +226,36 @@ export default function BookingScheduleClient({ initialData, users }: { initialD
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-700 mb-1">Nhóm dịch vụ</label>
-                      <input type="text" value={formData.service_group || ''} placeholder="VD: Wedding Studio" onChange={e => setFormData({...formData, service_group: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg text-sm" />
+                      <select value={formData.service_group || ''} onChange={e => setFormData({...formData, service_group: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white">
+                        <option value="">-- Nhóm dịch vụ --</option>
+                        <option value="Bridal">Bridal</option>
+                        <option value="Suit">Suit</option>
+                        <option value="Wedding Studio">Wedding Studio</option>
+                        <option value="Combo Bridal + Suit">Combo Bridal + Suit</option>
+                        <option value="Combo Wedding">Combo Wedding</option>
+                        <option value="TSTT">TSTT</option>
+                      </select>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-700 mb-1">Loại lịch</label>
                       <select value={formData.appointment_type || ''} onChange={e => setFormData({...formData, appointment_type: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white">
                         <option value="">-- Loại lịch --</option>
-                        <option value="Tư vấn studio">Tư vấn studio</option>
-                        <option value="TRẢI NGHIỆM VÁY VEST">TRẢI NGHIỆM VÁY VEST</option>
-                        <option value="Thử váy">Thử váy</option>
-                        <option value="Khác">Khác</option>
+                        <option value="Thuê váy">Thuê váy</option>
+                        <option value="May váy cưới">May váy cưới</option>
+                        <option value="Thuê vest">Thuê vest</option>
+                        <option value="May vest">May vest</option>
+                        <option value="Tuxedo">Tuxedo</option>
+                        <option value="Măng tô">Măng tô</option>
+                        <option value="Sơ mi / phụ kiện">Sơ mi / phụ kiện</option>
+                        <option value="Chụp STU">Chụp STU</option>
+                        <option value="Chụp NCSG">Chụp NCSG</option>
+                        <option value="Quay PRE">Quay PRE</option>
+                        <option value="TSTT">TSTT</option>
+                        <option value="Combo Váy Vest">Combo Váy Vest</option>
+                        <option value="Chụp PT">Chụp PT</option>
+                        <option value="CHỤP PT + NCSG">CHỤP PT + NCSG</option>
+                        <option value="CHỤP PT + STU">CHỤP PT + STU</option>
+                        <option value="TRỌN GÓI NC">TRỌN GÓI NC</option>
                       </select>
                     </div>
                   </div>
@@ -264,7 +290,10 @@ export default function BookingScheduleClient({ initialData, users }: { initialD
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-700 mb-1">Follow-up tiếp theo</label>
-                      <input type="text" value={formData.next_follow_up || ''} onChange={e => setFormData({...formData, next_follow_up: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg text-sm" />
+                      <CustomDatePicker 
+                        value={formData.next_follow_up} 
+                        onChange={val => setFormData({...formData, next_follow_up: val})} 
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-700 mb-1">Ngày cưới / chụp</label>
