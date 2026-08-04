@@ -19,7 +19,20 @@ const IMPLEMENTED_ROUTES = [
   "/dashboard/schedules/staff",
   "/dashboard/schedules/operation",
   "/dashboard/orders",
-  "/dashboard/policies"
+  "/dashboard/policies",
+  "/dashboard/attendance",
+  "/dashboard/garments",
+  "/dashboard/garments/scan",
+  "/dashboard/kpi",
+  "/dashboard/payroll",
+  "/dashboard/cashflow",
+  "/dashboard/overdue-invoices",
+  "/dashboard/profit",
+  "/dashboard/subscriptions",
+  "/dashboard/training",
+  "/dashboard/recruitment",
+  "/dashboard/marketing/content",
+  "/dashboard/employees?tab=permissions"
 ];
 
 const GROUP_LABELS: Record<ModuleGroup, string> = {
