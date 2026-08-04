@@ -147,20 +147,26 @@ export default function ContractDialog({
     let finalCustomerId = matchedCustomerId;
     if (!finalCustomerId) {
       setLoading(true);
-      const custRes = await createCustomer({
-        customer_code: `KH-${Date.now().toString().slice(-6)}`,
-        bride_name: nameInput,
-        phone: phoneInput,
-        wedding_date: weddingDate || undefined,
-        source: "Khác",
-        lead_status: "Đã chốt (Win)",
-      });
-      if (!custRes.success) {
-        setErrorMsg("Lỗi tạo khách hàng mới: " + custRes.error);
+      try {
+        const custRes = await createCustomer({
+          customer_code: `KH-${Date.now().toString().slice(-6)}`,
+          bride_name: nameInput,
+          phone: phoneInput,
+          wedding_date: weddingDate || undefined,
+          source: "Khác",
+          lead_status: "Đã chốt (Win)",
+        });
+        if (!custRes.success) {
+          setErrorMsg("Lỗi tạo khách hàng mới: " + custRes.error);
+          setLoading(false);
+          return;
+        }
+        finalCustomerId = custRes.data.id;
+      } catch (err: any) {
+        setErrorMsg(err.message === "PERMISSION_DENIED" ? "Bạn không có quyền thêm khách hàng." : (err.message || "Lỗi tạo khách hàng."));
         setLoading(false);
         return;
       }
-      finalCustomerId = custRes.data.id;
     }
 
     // Format services
@@ -224,14 +230,19 @@ export default function ContractDialog({
       installments: finalInstallments,
     };
 
-    const res = await createContract(payload);
-    setLoading(false);
-
-    if (res.success) {
-      onSaved();
-      onClose();
-    } else {
-      setErrorMsg(res.error || "Không thể khởi tạo hợp đồng.");
+    try {
+      const res = await createContract(payload);
+      setLoading(false);
+  
+      if (res.success) {
+        onSaved();
+        onClose();
+      } else {
+        setErrorMsg(res.error || "Không thể khởi tạo hợp đồng.");
+      }
+    } catch (err: any) {
+      setLoading(false);
+      setErrorMsg(err.message === "PERMISSION_DENIED" ? "Bạn không có quyền thực hiện thao tác này." : (err.message || "Lỗi hệ thống."));
     }
   };
 

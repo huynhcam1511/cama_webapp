@@ -23,7 +23,7 @@ import {
   Ban,
   TrendingUp,
 } from "lucide-react";
-import ContractDialog from "./contract-dialog";
+import ContractWizardDialog from "./contract-wizard-dialog";
 import RecordPaymentDialog from "./record-payment-dialog";
 import CancelContractDialog from "./cancel-contract-dialog";
 import PrintableContract from "./printable-contract";
@@ -469,7 +469,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
       </div>
 
       {/* Modal Contract Create/Edit */}
-      <ContractDialog
+      <ContractWizardDialog
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
         customers={allCustomers}
