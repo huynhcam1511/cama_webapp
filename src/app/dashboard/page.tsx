@@ -62,41 +62,56 @@ export default function DashboardHome() {
         </button>
       </div>
 
-      {/* SALES KPI & BENCHMARK */}
-      <SalesKpiCard />
+      {/* SALES KPI & BENCHMARK - Chỉ hiển thị cho Admin hoặc người có quyền xem Dòng tiền (Tài chính) */}
+      {hasPermission("CASHFLOW", "view") && (
+        <SalesKpiCard />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between group hover:shadow-md transition-shadow">
-            <div>
-              <p className="text-sm font-semibold text-slate-500 mb-1">Doanh thu tháng này</p>
-              <h3 className="text-2xl font-bold text-slate-800">450.000.000đ</h3>
-              <p className="text-xs font-medium text-emerald-600 mt-2 flex items-center gap-1"><icons.ArrowUpRight className="w-3 h-3"/> +12.5% so với tháng trước</p>
+          
+          {/* Doanh thu - Cần quyền xem Dòng tiền */}
+          {hasPermission("CASHFLOW", "view") && (
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between group hover:shadow-md transition-shadow">
+              <div>
+                <p className="text-sm font-semibold text-slate-500 mb-1">Doanh thu tháng này</p>
+                <h3 className="text-2xl font-bold text-slate-800">450.000.000đ</h3>
+                <p className="text-xs font-medium text-emerald-600 mt-2 flex items-center gap-1"><icons.ArrowUpRight className="w-3 h-3"/> +12.5% so với tháng trước</p>
+              </div>
+              <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 group-hover:bg-indigo-100 transition-colors">
+                <icons.TrendingUp className="w-6 h-6" />
+              </div>
             </div>
-            <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 group-hover:bg-indigo-100 transition-colors">
-              <icons.TrendingUp className="w-6 h-6" />
+          )}
+
+          {/* Hợp đồng mới - Cần quyền xem Hợp đồng */}
+          {hasPermission("STUDIO_CONTRACTS", "view") && (
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between group hover:shadow-md transition-shadow">
+              <div>
+                <p className="text-sm font-semibold text-slate-500 mb-1">Hợp đồng mới</p>
+                <h3 className="text-2xl font-bold text-slate-800">124</h3>
+                <p className="text-xs font-medium text-emerald-600 mt-2 flex items-center gap-1"><icons.ArrowUpRight className="w-3 h-3"/> +8 so với tuần trước</p>
+              </div>
+              <div className="p-3 bg-amber-50 rounded-xl text-amber-600 group-hover:bg-amber-100 transition-colors">
+                <icons.FileText className="w-6 h-6" />
+              </div>
             </div>
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between group hover:shadow-md transition-shadow">
-            <div>
-              <p className="text-sm font-semibold text-slate-500 mb-1">Hợp đồng mới</p>
-              <h3 className="text-2xl font-bold text-slate-800">124</h3>
-              <p className="text-xs font-medium text-emerald-600 mt-2 flex items-center gap-1"><icons.ArrowUpRight className="w-3 h-3"/> +8 so với tuần trước</p>
+          )}
+
+          {/* Khách hàng - Cần quyền xem CRM */}
+          {hasPermission("CUSTOMERS", "view") && (
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between group hover:shadow-md transition-shadow">
+              <div>
+                <p className="text-sm font-semibold text-slate-500 mb-1">Khách hàng cần chăm sóc</p>
+                <h3 className="text-2xl font-bold text-slate-800">15</h3>
+                <p className="text-xs font-medium text-rose-600 mt-2 flex items-center gap-1"><icons.ArrowRight className="w-3 h-3"/> 5 lịch hẹn hôm nay</p>
+              </div>
+              <div className="p-3 bg-rose-50 rounded-xl text-rose-600 group-hover:bg-rose-100 transition-colors">
+                <icons.Users className="w-6 h-6" />
+              </div>
             </div>
-            <div className="p-3 bg-amber-50 rounded-xl text-amber-600 group-hover:bg-amber-100 transition-colors">
-              <icons.FileText className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between group hover:shadow-md transition-shadow">
-            <div>
-              <p className="text-sm font-semibold text-slate-500 mb-1">Khách hàng cần chăm sóc</p>
-              <h3 className="text-2xl font-bold text-slate-800">15</h3>
-              <p className="text-xs font-medium text-rose-600 mt-2 flex items-center gap-1"><icons.ArrowRight className="w-3 h-3"/> 5 lịch hẹn hôm nay</p>
-            </div>
-            <div className="p-3 bg-rose-50 rounded-xl text-rose-600 group-hover:bg-rose-100 transition-colors">
-              <icons.Users className="w-6 h-6" />
-            </div>
-          </div>
+          )}
+
         </div>
         
         {/* Widget Chấm Công */}
