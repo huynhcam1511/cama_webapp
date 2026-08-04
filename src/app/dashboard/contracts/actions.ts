@@ -380,153 +380,158 @@ export async function createContract(payload: {
   };
   notes?: string;
 }) {
-  await requirePermission("STUDIO_CONTRACTS", "create");
-  const supabase = createClient();
+  try {
+    await requirePermission("STUDIO_CONTRACTS", "create");
+    const supabase = createClient();
 
-  // Generate code
-  let code = payload.contract_code?.trim();
-  if (!code) {
-    const { count } = await supabase.from("contracts").select("*", { count: "exact", head: true });
-    const nextNum = (count || 0) + 1;
-    code = `CAMA-2026-${String(nextNum).padStart(5, "0")}`;
-  }
+    // Generate code
+    let code = payload.contract_code?.trim();
+    if (!code) {
+      const { count } = await supabase.from("contracts").select("*", { count: "exact", head: true });
+      const nextNum = (count || 0) + 1;
+      code = `CAMA-2026-${String(nextNum).padStart(5, "0")}`;
+    }
 
-  const paperNo = payload.paper_contract_number?.trim() || String(Math.floor(1000000 + Math.random() * 9000000));
-  const initialPaid = payload.initial_payment ? Number(payload.initial_payment.amount || 0) : 0;
+    const paperNo = payload.paper_contract_number?.trim() || String(Math.floor(1000000 + Math.random() * 9000000));
+    const initialPaid = payload.initial_payment ? Number(payload.initial_payment.amount || 0) : 0;
 
-  const initialStatus: ContractStatus = "CONFIRMED";
-  let paymentStatus: PaymentStatus = "UNPAID";
-  if (initialPaid >= payload.total_amount && payload.total_amount > 0) {
-    paymentStatus = "FULLY_PAID";
-  } else if (initialPaid > 0) {
-    paymentStatus = initialPaid >= payload.required_deposit ? "DEPOSITED" : "PARTIALLY_PAID";
-  }
+    const initialStatus: ContractStatus = "CONFIRMED";
+    let paymentStatus: PaymentStatus = "UNPAID";
+    if (initialPaid >= payload.total_amount && payload.total_amount > 0) {
+      paymentStatus = "FULLY_PAID";
+    } else if (initialPaid > 0) {
+      paymentStatus = initialPaid >= payload.required_deposit ? "DEPOSITED" : "PARTIALLY_PAID";
+    }
 
-  const initialActivities: ContractActivity[] = [
-    {
-      id: `act-${Date.now()}`,
-      actor_name: "Admin",
-      action_type: "CREATE_CONTRACT",
-      content: `Khởi tạo hợp đồng ${code} (Số HĐ giấy: ${paperNo}) với tổng giá trị ${new Intl.NumberFormat("vi-VN").format(payload.total_amount)} ₫`,
-      created_at: new Date().toISOString(),
-    },
-  ];
-
-  if (initialPaid > 0) {
-    initialActivities.push({
-      id: `act-${Date.now() + 1}`,
-      actor_name: "Kế Toán Studio",
-      action_type: "RECORD_PAYMENT",
-      content: `Thu cọc ban đầu: ${new Intl.NumberFormat("vi-VN").format(initialPaid)} ₫ qua ${payload.initial_payment?.payment_method || "TRANSFER"}`,
-      created_at: new Date().toISOString(),
-    });
-  }
-
-  const metaData = {
-    paper_contract_number: paperNo,
-    contract_date: payload.contract_date || new Date().toISOString().split("T")[0],
-    branch: payload.branch || "CAMA Haute Couture",
-    assigned_staff_name: payload.assigned_staff_name || "Lễ Tân Studio",
-    created_by_name: "Admin",
-    updated_by_name: "Admin",
-    subtotal_amount: payload.subtotal_amount,
-    discount_amount: payload.discount_amount,
-    discount_type: payload.discount_type,
-    surcharge_amount: payload.surcharge_amount,
-    total_amount: payload.total_amount,
-    paid_amount: initialPaid,
-    required_deposit: payload.required_deposit,
-    discount_notes: payload.discount_notes || "",
-    voucher_code: payload.voucher_code || "",
-    contract_status: initialStatus,
-    payment_status: paymentStatus,
-    execution_status: "PREPARING" as ExecutionStatus,
-    debt_status: initialPaid >= payload.total_amount ? "FULLY_COLLECTED" : ("IN_TERM" as DebtStatus),
-    items: payload.items,
-    schedules: payload.schedules || [],
-    payments: payload.initial_payment
-      ? [
-          {
-            id: `pay-${Date.now()}`,
-            receipt_code: `PT-2026-${String(Math.floor(Math.random() * 90000 + 10000))}`,
-            amount: initialPaid,
-            payment_date: new Date().toISOString(),
-            payment_method: payload.initial_payment.payment_method,
-            account_fund: payload.initial_payment.account_fund || "Tài khoản Ngân hàng CAMA",
-            collector_name: "Kế Toán Studio",
-            content: "Đặt cọc ban đầu khi lập hợp đồng",
-            status: "COMPLETED",
-            created_by: "Kế Toán Studio",
-            created_at: new Date().toISOString(),
-          },
-        ]
-      : [],
-    activities: initialActivities,
-    userNotes: payload.notes || "",
-  };
-
-  const { data: contract, error } = await supabase
-    .from("contracts")
-    .insert([
+    const initialActivities: ContractActivity[] = [
       {
-        contract_code: code,
-        customer_id: payload.customer_id,
-        total_amount: payload.total_amount,
-        paid_amount: initialPaid,
-        status: "IN_PROGRESS",
-        notes: stringifyMetadata(metaData),
+        id: `act-${Date.now()}`,
+        actor_name: "Admin",
+        action_type: "CREATE_CONTRACT",
+        content: `Khởi tạo hợp đồng ${code} (Số HĐ giấy: ${paperNo}) với tổng giá trị ${new Intl.NumberFormat("vi-VN").format(payload.total_amount)} ₫`,
+        created_at: new Date().toISOString(),
       },
-    ])
-    .select()
-    .single();
+    ];
 
-  if (error || !contract) {
-    console.error("Error creating contract:", error);
-    return { success: false, error: error?.message || "Lỗi tạo hợp đồng" };
-  }
+    if (initialPaid > 0) {
+      initialActivities.push({
+        id: `act-${Date.now() + 1}`,
+        actor_name: "Kế Toán Studio",
+        action_type: "RECORD_PAYMENT",
+        content: `Thu cọc ban đầu: ${new Intl.NumberFormat("vi-VN").format(initialPaid)} ₫ qua ${payload.initial_payment?.payment_method || "TRANSFER"}`,
+        created_at: new Date().toISOString(),
+      });
+    }
 
-  // Insert contract_services for legacy compatibility
-  if (payload.items.length > 0) {
-    const servicesToInsert = payload.items.map((i, idx) => ({
-      contract_id: contract.id,
-      service_name: i.item_name,
-      price: i.unit_price,
-      quantity: i.quantity,
-      notes: stringifyMetadata({
-        category: i.category,
-        item_type: i.item_type,
-        unit: i.unit,
-        line_discount: i.line_discount,
-        surcharge: i.surcharge,
-        staff_assigned: i.staff_assigned,
-        display_order: idx + 1,
-      }),
-    }));
-    await supabase.from("contract_services").insert(servicesToInsert);
-  }
+    const metaData = {
+      paper_contract_number: paperNo,
+      contract_date: payload.contract_date || new Date().toISOString().split("T")[0],
+      branch: payload.branch || "CAMA Haute Couture",
+      assigned_staff_name: payload.assigned_staff_name || "Lễ Tân Studio",
+      created_by_name: "Admin",
+      updated_by_name: "Admin",
+      subtotal_amount: payload.subtotal_amount,
+      discount_amount: payload.discount_amount,
+      discount_type: payload.discount_type,
+      surcharge_amount: payload.surcharge_amount,
+      total_amount: payload.total_amount,
+      paid_amount: initialPaid,
+      required_deposit: payload.required_deposit,
+      discount_notes: payload.discount_notes || "",
+      voucher_code: payload.voucher_code || "",
+      contract_status: initialStatus,
+      payment_status: paymentStatus,
+      execution_status: "PREPARING" as ExecutionStatus,
+      debt_status: initialPaid >= payload.total_amount ? "FULLY_COLLECTED" : ("IN_TERM" as DebtStatus),
+      items: payload.items,
+      schedules: payload.schedules || [],
+      payments: payload.initial_payment
+        ? [
+            {
+              id: `pay-${Date.now()}`,
+              receipt_code: `PT-2026-${String(Math.floor(Math.random() * 90000 + 10000))}`,
+              amount: initialPaid,
+              payment_date: new Date().toISOString(),
+              payment_method: payload.initial_payment.payment_method,
+              account_fund: payload.initial_payment.account_fund || "Tài khoản Ngân hàng CAMA",
+              collector_name: "Kế Toán Studio",
+              content: "Đặt cọc ban đầu khi lập hợp đồng",
+              status: "COMPLETED",
+              created_by: "Kế Toán Studio",
+              created_at: new Date().toISOString(),
+            },
+          ]
+        : [],
+      activities: initialActivities,
+      userNotes: payload.notes || "",
+    };
 
-  // Insert initial payment installment for legacy compatibility
-  if (payload.initial_payment && initialPaid > 0) {
-    await supabase.from("payment_installments").insert([
-      {
+    const { data: contract, error } = await supabase
+      .from("contracts")
+      .insert([
+        {
+          contract_code: code,
+          customer_id: payload.customer_id,
+          total_amount: payload.total_amount,
+          paid_amount: initialPaid,
+          status: "IN_PROGRESS",
+          notes: stringifyMetadata(metaData),
+        },
+      ])
+      .select()
+      .single();
+
+    if (error || !contract) {
+      console.error("Error creating contract:", error);
+      return { success: false, error: error?.message || "Lỗi tạo hợp đồng" };
+    }
+
+    // Insert contract_services for legacy compatibility
+    if (payload.items && payload.items.length > 0) {
+      const servicesToInsert = payload.items.map((i, idx) => ({
         contract_id: contract.id,
-        installment_type: "DEPOSIT",
-        amount: initialPaid,
-        payment_date: new Date().toISOString(),
-        payment_method: payload.initial_payment.payment_method,
-        status: "PAID",
+        service_name: i.item_name,
+        price: i.unit_price,
+        quantity: i.quantity,
         notes: stringifyMetadata({
-          receipt_code: metaData.payments[0].receipt_code,
-          collector_name: "Kế Toán Studio",
-          account_fund: payload.initial_payment.account_fund,
+          category: i.category,
+          item_type: i.item_type,
+          unit: i.unit,
+          line_discount: i.line_discount,
+          surcharge: i.surcharge,
+          staff_assigned: i.staff_assigned,
+          display_order: idx + 1,
         }),
-      },
-    ]);
-  }
+      }));
+      await supabase.from("contract_services").insert(servicesToInsert);
+    }
 
-  revalidatePath("/dashboard/contracts");
-  revalidatePath(`/dashboard/contracts/${contract.id}`);
-  return { success: true, data: contract };
+    // Insert initial payment installment for legacy compatibility
+    if (payload.initial_payment && initialPaid > 0) {
+      await supabase.from("payment_installments").insert([
+        {
+          contract_id: contract.id,
+          installment_type: "DEPOSIT",
+          amount: initialPaid,
+          payment_date: new Date().toISOString(),
+          payment_method: payload.initial_payment.payment_method,
+          status: "PAID",
+          notes: stringifyMetadata({
+            receipt_code: metaData.payments[0].receipt_code,
+            collector_name: "Kế Toán Studio",
+            account_fund: payload.initial_payment.account_fund,
+          }),
+        },
+      ]);
+    }
+
+    revalidatePath("/dashboard/contracts");
+    revalidatePath(`/dashboard/contracts/${contract.id}`);
+    return { success: true, data: contract };
+  } catch (error: any) {
+    console.error("Caught error in createContract:", error);
+    return { success: false, error: error.message };
+  }
 }
 
 export async function recordPaymentTransaction(

@@ -63,13 +63,18 @@ export async function getCustomers() {
 }
 
 export async function createCustomer(customer: CustomerFormData) {
-  await requirePermission("CUSTOMERS", "create");
-  const supabase = createClient();
-  if (!customer.customer_code) {
-    customer.customer_code = "KH-" + Math.floor(1000 + Math.random() * 9000);
+  try {
+    await requirePermission("CUSTOMERS", "create");
+    const supabase = createClient();
+    if (!customer.customer_code) {
+      customer.customer_code = "KH-" + Math.floor(1000 + Math.random() * 9000);
+    }
+    const { data, error } = await supabase.from("customers").insert(customer).select().single();
+    return { success: !error, data, error: error?.message };
+  } catch (err: any) {
+    console.error("Error in createCustomer:", err);
+    return { success: false, error: err.message };
   }
-  const { data, error } = await supabase.from("customers").insert(customer).select().single();
-  return { success: !error, data, error: error?.message };
 }
 
 export async function updateCustomer(id: string, customer: CustomerFormData) {
