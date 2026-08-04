@@ -192,67 +192,95 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
 
         {/* Timeline Grid (Weekly) */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden">
-          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/50">
-            {daysInWeek.map(day => {
-              const isTodayDate = isToday(day);
-              return (
-                <div key={day.toISOString()} className={`py-4 text-center border-r last:border-0 border-slate-200 ${isTodayDate ? 'bg-indigo-50/50' : ''}`}>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                    {format(day, "EEEE", { locale: vi })}
+          <div className="flex border-b border-slate-200 bg-slate-50/50">
+            <div className="w-16 shrink-0 border-r border-slate-200"></div>
+            <div className="flex-1 grid grid-cols-7">
+              {daysInWeek.map(day => {
+                const isTodayDate = isToday(day);
+                return (
+                  <div key={day.toISOString()} className={`py-4 text-center border-r last:border-0 border-slate-200 ${isTodayDate ? 'bg-indigo-50/50' : ''}`}>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {format(day, "EEEE", { locale: vi })}
+                    </div>
+                    <div className={`text-xl font-bold inline-flex items-center justify-center w-8 h-8 rounded-full ${isTodayDate ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-800'}`}>
+                      {format(day, "d")}
+                    </div>
                   </div>
-                  <div className={`text-xl font-bold inline-flex items-center justify-center w-8 h-8 rounded-full ${isTodayDate ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-800'}`}>
-                    {format(day, "d")}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
           
-          <div className="grid grid-cols-7 bg-slate-100 gap-px flex-1 overflow-y-auto">
-            {daysInWeek.map(day => {
-              const dateStr = format(day, "yyyy-MM-dd");
-              const daySchedules = filteredSchedules
-                .filter(s => s.date === dateStr)
-                .sort((a, b) => a.start_time.localeCompare(b.start_time));
-
-              return (
-                <div key={dateStr} className={`bg-white p-2 min-h-[400px] flex flex-col gap-2 ${isToday(day) ? 'bg-indigo-50/10' : ''}`}>
-                  {daySchedules.map(schedule => {
-                    const eventInfo = EVENT_TYPE_MAP[schedule.event_type] || EVENT_TYPE_MAP.OTHER;
-                    const isSelected = selectedSchedule?.id === schedule.id;
-                    const overdueBadge = getOverdueWarning(schedule);
-                    
-                    return (
-                      <div 
-                        key={schedule.id}
-                        onClick={() => setSelectedSchedule(schedule)}
-                        className={`p-2 rounded-lg border text-xs cursor-pointer shadow-sm hover:shadow-md transition-all group relative overflow-hidden flex flex-col ${isSelected ? 'ring-2 ring-indigo-500 ' : ''} ${schedule.status === 'COMPLETED' ? 'opacity-60 bg-slate-50 border-slate-200' : eventInfo.color}`}
-                      >
-                        {schedule.status === 'COMPLETED' && <div className="absolute inset-0 bg-white/40 z-10 pointer-events-none"></div>}
-                        
-                        <div className="flex flex-wrap items-start justify-between gap-1 mb-1 w-full">
-                          <span className="font-mono font-bold text-[10px] shrink-0">{schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}</span>
-                          {overdueBadge && <div className="ml-auto">{overdueBadge}</div>}
-                        </div>
-                        
-                        <div className="font-bold mb-1 line-clamp-2 leading-tight">
-                          {schedule.customer?.bride_name ? schedule.customer.bride_name : schedule.title}
-                        </div>
-                        
-                        <div className="text-[10px] uppercase font-bold opacity-80 mb-1 flex items-center gap-1">
-                          {eventInfo.label}
-                        </div>
-
-                        <div className="flex items-center gap-1 text-[10px] mt-1 pt-1 border-t border-current/20 font-medium">
-                          <icons.User className="w-3 h-3" />
-                          <span className="truncate">{schedule.primary_assignee?.full_name || 'Chưa gán'}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+          <div className="flex bg-slate-100 flex-1 overflow-y-auto">
+            {/* Time Axis 8h - 22h */}
+            <div className="w-16 shrink-0 bg-white border-r border-slate-200">
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div key={i} className="h-16 flex items-start justify-end pr-2 pt-1 text-[10px] font-bold text-slate-400 border-b border-slate-100">
+                  {i + 8}:00
                 </div>
-              );
-            })}
+              ))}
+            </div>
+
+            {/* Days Grid */}
+            <div className="flex-1 grid grid-cols-7 relative bg-white">
+              {/* Horizontal Grid Lines */}
+              <div className="absolute inset-0 pointer-events-none flex flex-col">
+                {Array.from({ length: 15 }).map((_, i) => (
+                  <div key={i} className="h-16 border-b border-slate-100 w-full" />
+                ))}
+              </div>
+
+              {daysInWeek.map(day => {
+                const dateStr = format(day, "yyyy-MM-dd");
+                const daySchedules = filteredSchedules
+                  .filter(s => s.date === dateStr)
+                  .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+                return (
+                  <div key={dateStr} className={`relative min-h-[960px] border-r border-slate-200 ${isToday(day) ? 'bg-indigo-50/30' : ''}`}>
+                    {daySchedules.map(schedule => {
+                      const eventInfo = EVENT_TYPE_MAP[schedule.event_type] || EVENT_TYPE_MAP.OTHER;
+                      const isSelected = selectedSchedule?.id === schedule.id;
+                      const overdueBadge = getOverdueWarning(schedule);
+                      
+                      // Calculate position based on time
+                      const startHour = parseInt(schedule.start_time.split(':')[0] || '8');
+                      const startMin = parseInt(schedule.start_time.split(':')[1] || '0');
+                      const endHour = parseInt(schedule.end_time.split(':')[0] || '9');
+                      const endMin = parseInt(schedule.end_time.split(':')[1] || '0');
+                      
+                      const top = Math.max(0, (startHour - 8) * 64 + (startMin / 60) * 64);
+                      const height = Math.max(24, (endHour - startHour) * 64 + ((endMin - startMin) / 60) * 64);
+                      
+                      return (
+                        <div 
+                          key={schedule.id}
+                          onClick={() => setSelectedSchedule(schedule)}
+                          style={{ top: `${top}px`, height: `${height}px` }}
+                          className={`absolute inset-x-1 p-1.5 rounded-lg border text-xs cursor-pointer shadow-sm hover:shadow-md transition-all group overflow-hidden flex flex-col z-10 ${isSelected ? 'ring-2 ring-indigo-500 z-20' : ''} ${schedule.status === 'COMPLETED' ? 'opacity-60 bg-slate-50 border-slate-200' : eventInfo.color}`}
+                        >
+                          {schedule.status === 'COMPLETED' && <div className="absolute inset-0 bg-white/40 z-10 pointer-events-none"></div>}
+                          
+                          <div className="flex items-start justify-between gap-1 w-full shrink-0">
+                            <span className="font-mono font-bold text-[9px] shrink-0">{schedule.start_time.slice(0, 5)}</span>
+                            {overdueBadge && <div className="ml-auto hidden xl:block">{overdueBadge}</div>}
+                          </div>
+                          
+                          <div className="font-bold mb-1 text-[10px] line-clamp-1 leading-tight flex-1">
+                            {schedule.customer?.bride_name ? schedule.customer.bride_name : schedule.title}
+                          </div>
+                          
+                          <div className="flex items-center gap-1 text-[9px] mt-auto font-medium truncate shrink-0">
+                            <icons.User className="w-2.5 h-2.5 shrink-0" />
+                            <span className="truncate">{schedule.primary_assignee?.full_name || 'Chưa gán'}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

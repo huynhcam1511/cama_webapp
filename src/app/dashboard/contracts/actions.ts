@@ -672,6 +672,58 @@ export async function recordPaymentTransaction(
     },
   ]);
 
+  // Automation 1 & 2: Kích hoạt khi vừa đạt trạng thái Đã Cọc hoặc Đã Thu Đủ
+  if (
+    (newPaymentStatus === "DEPOSITED" || newPaymentStatus === "FULLY_PAID") &&
+    currentContract.payment_status !== "DEPOSITED" &&
+    currentContract.payment_status !== "FULLY_PAID"
+  ) {
+    // Automation 1: Sinh Lịch Trình Vận Hành từ meta.schedules
+    try {
+      const schedulesToCreate = (currentContract.schedules || []).map((sch: any) => ({
+        title: sch.title || "Lịch hẹn hợp đồng " + currentContract.contract_code,
+        event_type: sch.milestone_type === "TRY_DRESS" ? "DRESS_TRY_ON" : sch.milestone_type === "SHOOT" ? "FITTING" : "CUSTOMER_APPOINTMENT",
+        customer_id: currentContract.customer_id,
+        contract_id: contractId,
+        date: sch.scheduled_at ? sch.scheduled_at.split("T")[0] : new Date().toISOString().split("T")[0],
+        start_time: "09:00",
+        end_time: "11:00",
+        location: sch.location || "Studio",
+        status: "SCHEDULED",
+        priority: "NORMAL",
+        schedule_category: "OPERATION_TASK",
+        created_by: payload.collector_name || "System"
+      }));
+      
+      if (schedulesToCreate.length > 0) {
+        await supabase.from("operation_schedules").insert(schedulesToCreate);
+      }
+    } catch (err) {
+      console.error("Automation 1 Error:", err);
+    }
+
+    // Automation 2: Đẩy sang hệ thống Thu Chi Kế Toán (Cashflow)
+    try {
+      // Giả lập đẩy sang bảng cashflow (nếu có)
+      await supabase.from("cashflow").insert([
+        {
+          transaction_type: "INCOME",
+          amount: payload.amount,
+          category: "Thu Tiền Hợp Đồng",
+          reference_id: contractId,
+          reference_type: "CONTRACT",
+          payment_method: payload.payment_method,
+          account_fund: payload.account_fund || "Tiền Mặt",
+          description: payload.content || "Tự động hạch toán thu cọc hợp đồng",
+          transaction_date: new Date().toISOString(),
+          created_by: payload.collector_name || "System"
+        }
+      ]);
+    } catch (err) {
+      console.error("Automation 2 Error:", err);
+    }
+  }
+
   revalidatePath("/dashboard/contracts");
   revalidatePath(`/dashboard/contracts/${contractId}`);
   return { success: true };
@@ -904,6 +956,77 @@ export async function addGarmentToContractByQR(contractId: string, qrCode: strin
     return { success: false, error: error.message };
   }
 
+  // Automation 3: Khoá tài sản trong Kho (Vận hành ↔ Kho)
+  try {
+    await supabase.from("garments_inventory").update({
+      status: "RENTED",
+      // current_contract_id: contractId, // If schema supports it
+    }).eq("id", garment.id);
+  } catch(err) {
+    console.error("Automation 3 Error:", err);
+  }
+
   revalidatePath(`/dashboard/contracts/${contractId}`);
   return { success: true, garment: garment };
+}
+
+export async function updateContract(contractId: string, payload: any) {
+  try {
+    await requirePermission("STUDIO_CONTRACTS", "update");
+    const supabase = createAdminClient();
+    
+    // fetch current
+    const { data: current, error: fetchErr } = await supabase.from("contracts").select("*").eq("id", contractId).single();
+    if (fetchErr || !current) return { error: "Không tìm thấy hợp đồng" };
+    
+    const meta = parseMetadata(current.notes);
+    
+    // Update basic fields in meta
+    meta.paper_contract_number = payload.paper_contract_number || meta.paper_contract_number;
+    meta.contract_date = payload.contract_date || meta.contract_date;
+    meta.branch = payload.branch || meta.branch;
+    meta.assigned_staff_name = payload.assigned_staff_name || meta.assigned_staff_name;
+    meta.assigned_staff_names = payload.assigned_staff_names || meta.assigned_staff_names;
+    meta.subtotal_amount = payload.subtotal_amount ?? meta.subtotal_amount;
+    meta.discount_amount = payload.discount_amount ?? meta.discount_amount;
+    meta.discount_type = payload.discount_type || meta.discount_type;
+    meta.surcharge_amount = payload.surcharge_amount ?? meta.surcharge_amount;
+    meta.required_deposit = payload.required_deposit ?? meta.required_deposit;
+    meta.items = payload.items || meta.items;
+    
+    // recalculate total
+    let total = meta.subtotal_amount + meta.surcharge_amount;
+    if (meta.discount_type === "AMOUNT") total -= meta.discount_amount;
+    else if (meta.discount_type === "PERCENT") total -= (meta.subtotal_amount * meta.discount_amount) / 100;
+    
+    meta.total_amount = total;
+    meta.updated_at = new Date().toISOString();
+    
+    const newActivity: ContractActivity = {
+      id: `act-${Date.now()}`,
+      actor_name: "Admin",
+      action_type: "UPDATE_CONTRACT",
+      content: `Chỉnh sửa thông tin hợp đồng`,
+      created_at: new Date().toISOString(),
+    };
+    meta.activities = [newActivity, ...(meta.activities || [])];
+
+    const { data, error } = await supabase
+      .from("contracts")
+      .update({
+        total_amount: total,
+        notes: stringifyMetadata(meta),
+      })
+      .eq("id", contractId)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    revalidatePath("/dashboard/contracts");
+    revalidatePath(`/dashboard/contracts/${contractId}`);
+    return { success: true, contractId };
+  } catch (err: any) {
+    console.error("updateContract error:", err);
+    return { error: err.message };
+  }
 }

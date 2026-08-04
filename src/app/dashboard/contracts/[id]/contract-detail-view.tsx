@@ -34,6 +34,7 @@ import {
 import RecordPaymentDialog from "../record-payment-dialog";
 import CancelContractDialog from "../cancel-contract-dialog";
 import PrintableContract from "../printable-contract";
+import EditContractDialog from "../edit-contract-dialog";
 import {
   addContractDocument,
   addContractSchedule,
@@ -54,6 +55,7 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
   >("overview");
 
   // Modals state
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
@@ -163,7 +165,7 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
             <Printer className="w-3.5 h-3.5" /> In / Tải PDF
           </button>
           <button
-            onClick={() => alert("Tính năng chỉnh sửa hợp đồng đang được phát triển...")}
+            onClick={() => setIsEditOpen(true)}
             className="px-3 py-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 font-bold text-[11px] flex items-center gap-1.5 transition-colors border border-indigo-200"
           >
             <Edit className="w-3.5 h-3.5" /> Sửa HĐ
@@ -896,6 +898,19 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
             } catch (err: any) {
               alert("❌ Lỗi hệ thống khi thêm trang phục.");
             }
+          }}
+        />
+      )}
+
+      {isEditOpen && (
+        <EditContractDialog
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+          customers={contract.customers ? [contract.customers] : []}
+          contract={contract}
+          onSaved={() => {
+            setIsEditOpen(false);
+            router.refresh();
           }}
         />
       )}

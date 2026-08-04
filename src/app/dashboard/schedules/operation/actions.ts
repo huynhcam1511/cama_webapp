@@ -103,6 +103,25 @@ export async function createOperationSchedule(payload: any) {
 
   if (error) throw new Error(error.message);
 
+  // Automation 4: Vận hành ↔ Nhân Sự (Tự động đẩy vào lịch cá nhân / chấm công)
+  if (schedule && schedule.primary_assignee_id) {
+    try {
+      // Giả lập hệ thống Nhân sự
+      await supabase.from("attendance").insert([
+        {
+          user_id: schedule.primary_assignee_id,
+          date: schedule.date,
+          status: "WORKING",
+          check_in_time: schedule.start_time,
+          check_out_time: schedule.end_time,
+          notes: `Lịch tự động: ${schedule.title} (${schedule.event_type})`
+        }
+      ]);
+    } catch (err) {
+      console.error("Automation 4 Error:", err);
+    }
+  }
+
   // Thêm nhân sự phối hợp
   if (payload.secondary_assignees && payload.secondary_assignees.length > 0) {
     const assignees = payload.secondary_assignees.map((userId: string) => ({

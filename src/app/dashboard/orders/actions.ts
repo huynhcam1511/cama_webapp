@@ -71,6 +71,27 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   const supabase = createAdminClient();
   const { error } = await supabase.from("orders").update({ completion_status: status }).eq("id", orderId);
   if (error) throw new Error(error.message);
+
+  // Automation 5: Vận hành ↔ Kế Toán Lương (Trừ lương tự động khi có ISSUE)
+  if (status === "ISSUE") {
+    try {
+      const { data: order } = await supabase.from("orders").select("pic_id, order_code").eq("id", orderId).single();
+      if (order && order.pic_id) {
+        await supabase.from("payroll_deductions").insert([
+          {
+            user_id: order.pic_id,
+            amount: 200000, // Ví dụ phạt 200k
+            reason: `Lỗi xử lý đơn hàng ${order.order_code}`,
+            date: new Date().toISOString(),
+            status: "PENDING"
+          }
+        ]);
+      }
+    } catch (err) {
+      console.error("Automation 5 Error:", err);
+    }
+  }
+
   revalidatePath("/dashboard/orders");
 }
 
