@@ -322,7 +322,9 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
                 );
 
                 // Add default schedule if no leave exists
-                const defDays = Array.isArray(user.default_work_days) ? user.default_work_days : [];
+                let defDays = Array.isArray(user.default_work_days) ? user.default_work_days : [];
+                if (defDays.length === 0) defDays = [1, 2, 3, 4, 5, 6]; // Default to Mon-Sat if missing
+                  
                 if (defDays.includes(day.getDay()) && !hasLeave) {
                   daySchedules = [{
                     id: `default-${user.id}-${dateStr}`,

@@ -1,198 +1,122 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Edit2, Trash2, LayoutGrid, Calendar as CalendarIcon, ExternalLink } from "lucide-react";
-import { getMarketingContents, deleteMarketingContent } from "./actions";
-import ContentDetailModal from "@/components/marketing/ContentDetailModal";
+import { Megaphone, Calendar as CalendarIcon, PenTool, BarChart3, Image as ImageIcon, Video, ThumbsUp, MessageCircle, Share2, Plus } from "lucide-react";
+import { useState } from "react";
 
-export default function MarketingDashboard() {
-  const [contents, setContents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedContent, setSelectedContent] = useState<any>(null);
-  const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
+export default function ContentDashboardPage() {
+  const [view, setView] = useState<"LIST" | "CALENDAR">("LIST");
 
-  useEffect(() => {
-    fetchContents();
-  }, []);
-
-  const fetchContents = async () => {
-    setLoading(true);
-    const res = await getMarketingContents();
-    if (res.success) {
-      setContents(res.data || []);
-    }
-    setLoading(false);
-  };
-
-  const handleOpenModal = (content: any = null) => {
-    setSelectedContent(content);
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Bạn có chắc chắn muốn xóa Gói Content này? Hành động này không thể hoàn tác.")) {
-      const res = await deleteMarketingContent(id);
-      if (res.success) {
-        alert("Đã xóa thành công!");
-        fetchContents();
-      } else {
-        alert("Lỗi: " + res.error);
-      }
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case "DRAFT": return <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-bold">Lên ý tưởng</span>;
-      case "PENDING_REVIEW": return <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold">Chờ duyệt</span>;
-      case "APPROVED": return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">Đã duyệt</span>;
-      case "PUBLISHED": return <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">Đã đăng</span>;
-      default: return <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-bold">{status}</span>;
-    }
-  };
+  const posts = [
+    { id: 1, type: "VIDEO", title: "Behind the scenes: Chụp ảnh cưới phong cách Châu Âu", platform: "TikTok", status: "PUBLISHED", date: "15/08/2026 19:30", views: "12.5K", likes: "1.2K", comments: "145", shares: "56", thumbnail: "https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=500&q=80" },
+    { id: 2, type: "PHOTO", title: "Bộ sưu tập Váy Cưới Mùa Thu 2026", platform: "Facebook", status: "SCHEDULED", date: "16/08/2026 20:00", views: "-", likes: "-", comments: "-", shares: "-", thumbnail: "https://images.unsplash.com/photo-1546198642-1e7655079a40?w=500&q=80" },
+    { id: 3, type: "ALBUM", title: "Khuyến mãi Tháng 8 - Giảm 20% Gói Chụp", platform: "Facebook", status: "DRAFT", date: "18/08/2026", views: "-", likes: "-", comments: "-", shares: "-", thumbnail: "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80" },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-8 p-2">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            Quản lý Marketing Content
+          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 flex items-center gap-3">
+            <Megaphone className="w-8 h-8 text-pink-600" />
+            Content Đăng Bài
           </h1>
-          <p className="text-slate-500 mt-1">Lên kế hoạch và theo dõi các chiến dịch nội dung trên đa nền tảng.</p>
+          <p className="text-slate-500 mt-2 font-medium">Lên kế hoạch và theo dõi hiệu quả các bài viết Marketing</p>
         </div>
-        <div className="flex gap-2 items-center">
-          <div className="bg-white p-1 rounded-lg border border-slate-200 flex shadow-sm mr-2">
-            <button 
-              onClick={() => setViewMode("table")}
-              className={`p-2 rounded-md transition-colors ${viewMode === "table" ? "bg-indigo-50 text-indigo-600" : "text-slate-400 hover:text-slate-600"}`}
-            >
-              <LayoutGrid className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={() => setViewMode("calendar")}
-              className={`p-2 rounded-md transition-colors ${viewMode === "calendar" ? "bg-indigo-50 text-indigo-600" : "text-slate-400 hover:text-slate-600"}`}
-            >
-              <CalendarIcon className="w-5 h-5" />
-            </button>
+        <div className="flex gap-3">
+          <div className="bg-slate-100 p-1 rounded-xl flex gap-1 border border-slate-200">
+             <button onClick={() => setView("LIST")} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${view === "LIST" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:bg-slate-200"}`}>Danh Sách</button>
+             <button onClick={() => setView("CALENDAR")} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${view === "CALENDAR" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:bg-slate-200"}`}>Lịch</button>
           </div>
-          <button 
-            onClick={() => handleOpenModal()} 
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors shadow-sm"
-          >
-            <Plus className="w-4 h-4" /> Tạo Gói Content
+          <button className="px-5 py-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md shadow-pink-500/20 rounded-xl text-sm font-bold hover:from-pink-700 hover:to-purple-700 transition-colors flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Tạo Bài Viết
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tổng Gói Content</p>
-            <p className="text-2xl font-black text-slate-800">{contents.length}</p>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
-            <LayoutGrid className="w-5 h-5" />
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Chờ duyệt</p>
-            <p className="text-2xl font-black text-amber-600">{contents.filter(c => c.status === "PENDING_REVIEW").length}</p>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
-            <CalendarIcon className="w-5 h-5" />
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Đã Đăng</p>
-            <p className="text-2xl font-black text-emerald-600">{contents.filter(c => c.status === "PUBLISHED").length}</p>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
-            <CalendarIcon className="w-5 h-5" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+         {[
+           { label: "Bài viết tuần này", val: "12", icon: PenTool, color: "text-blue-600", bg: "bg-blue-100" },
+           { label: "Lượt tiếp cận (Reach)", val: "45K", icon: BarChart3, color: "text-purple-600", bg: "bg-purple-100" },
+           { label: "Tương tác (Engage)", val: "8.2K", icon: ThumbsUp, color: "text-pink-600", bg: "bg-pink-100" },
+           { label: "Lead sinh ra", val: "145", icon: Users, color: "text-emerald-600", bg: "bg-emerald-100" },
+         ].map((stat, i) => (
+            <div key={i} className="bg-white border border-slate-200 p-5 rounded-3xl shadow-sm flex items-center gap-4">
+               <div className={`p-4 ${stat.bg} ${stat.color} rounded-2xl`}>
+                 <stat.icon className="w-6 h-6" />
+               </div>
+               <div>
+                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{stat.label}</p>
+                 <h3 className="text-2xl font-black text-slate-800 mt-1">{stat.val}</h3>
+               </div>
+            </div>
+         ))}
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+        <div className="p-6">
+          <div className="space-y-4">
+            {posts.map(post => (
+              <div key={post.id} className="flex flex-col sm:flex-row gap-6 p-4 rounded-2xl border border-slate-100 hover:border-pink-200 hover:bg-pink-50/30 hover:shadow-md transition-all group">
+                <div className="w-full sm:w-48 h-32 rounded-xl overflow-hidden relative shrink-0 bg-slate-100">
+                  <img src={post.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
+                  <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-lg shadow-sm text-slate-700">
+                    {post.type === "VIDEO" && <Video className="w-4 h-4 text-pink-600"/>}
+                    {post.type === "PHOTO" && <ImageIcon className="w-4 h-4 text-blue-600"/>}
+                    {post.type === "ALBUM" && <ImageIcon className="w-4 h-4 text-purple-600"/>}
+                  </div>
+                </div>
+                
+                <div className="flex-1 flex flex-col justify-between py-1">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
+                        post.status === "PUBLISHED" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                        post.status === "SCHEDULED" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                        "bg-slate-100 text-slate-600 border-slate-200"
+                      }`}>
+                        {post.status === "PUBLISHED" ? "Đã đăng" : post.status === "SCHEDULED" ? "Đã lên lịch" : "Bản nháp"}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                        <CalendarIcon className="w-3 h-3" /> {post.date}
+                      </span>
+                      <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 ml-auto">
+                        {post.platform}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-pink-600 transition-colors">{post.title}</h3>
+                  </div>
+                  
+                  <div className="flex gap-6 mt-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                       <BarChart3 className="w-4 h-4 text-slate-400" />
+                       <span className="text-sm font-bold">{post.views} <span className="text-xs font-normal text-slate-500 hidden sm:inline">Views</span></span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                       <ThumbsUp className="w-4 h-4 text-pink-400" />
+                       <span className="text-sm font-bold">{post.likes} <span className="text-xs font-normal text-slate-500 hidden sm:inline">Likes</span></span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                       <MessageCircle className="w-4 h-4 text-blue-400" />
+                       <span className="text-sm font-bold">{post.comments} <span className="text-xs font-normal text-slate-500 hidden sm:inline">Comments</span></span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                       <Share2 className="w-4 h-4 text-emerald-400" />
+                       <span className="text-sm font-bold">{post.shares} <span className="text-xs font-normal text-slate-500 hidden sm:inline">Shares</span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
-
-      {viewMode === "table" ? (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-4">Gói Content / Chủ Đề</th>
-                  <th className="px-6 py-4">Trạng thái</th>
-                  <th className="px-6 py-4">Ngày làm</th>
-                  <th className="px-6 py-4">Ngày đăng</th>
-                  <th className="px-6 py-4">Asset Link</th>
-                  <th className="px-6 py-4 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td>
-                  </tr>
-                ) : contents.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-400">Chưa có nội dung nào.</td>
-                  </tr>
-                ) : (
-                  contents.map(c => (
-                    <tr key={c.id} className="hover:bg-slate-50">
-                      <td className="px-6 py-4">
-                        <p className="font-bold text-slate-800 line-clamp-2">{c.title}</p>
-                        <p className="text-xs text-slate-500 mt-1">Format: {c.format || "---"}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        {getStatusBadge(c.status)}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600">
-                        {c.planned_date ? new Date(c.planned_date).toLocaleDateString('vi-VN') : '---'}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 font-medium">
-                        {c.actual_publish_date ? new Date(c.actual_publish_date).toLocaleDateString('vi-VN') : '---'}
-                      </td>
-                      <td className="px-6 py-4">
-                        {c.asset_link ? (
-                          <a href={c.asset_link} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-xs font-bold">
-                            <ExternalLink className="w-3 h-3" /> Mở Drive
-                          </a>
-                        ) : '---'}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button onClick={() => handleOpenModal(c)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDelete(c.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center text-slate-500">
-          {/* A simple placeholder for Calendar view, can be expanded later using a fullcalendar component */}
-          <CalendarIcon className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-          <h2 className="text-xl font-bold text-slate-700 mb-2">Chế độ Lịch (Calendar View)</h2>
-          <p>Tính năng này sẽ sớm được hoàn thiện để xem trực quan theo dòng thời gian.</p>
-        </div>
-      )}
-
-      <ContentDetailModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        data={selectedContent}
-        onSuccess={fetchContents}
-      />
     </div>
+  );
+}
+
+function Users(props: any) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
   );
 }

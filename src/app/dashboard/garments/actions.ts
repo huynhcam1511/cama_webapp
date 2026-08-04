@@ -34,3 +34,10 @@ export async function getInventoryOverview() {
     contractGarments: contractGarments || [] 
   };
 }
+
+export async function createGarment(data: any) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('garments_inventory').insert([data]);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}

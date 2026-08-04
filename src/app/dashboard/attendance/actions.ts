@@ -130,7 +130,7 @@ export async function getAttendanceHistory(dateString: string) {
   
   const { data, error } = await supabase
     .from("attendance_logs")
-    .select("*, auth.users(email)")
+    .select("*, users:user_id(full_name, employee_code, avatar_url)")
     .eq("date", dateString)
     .order("check_in_time", { ascending: false });
 
