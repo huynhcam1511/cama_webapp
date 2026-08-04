@@ -170,14 +170,20 @@ export default function ContractDialog({
     }
 
     // Format services
-    const activeServices: ServiceItem[] = services.filter(s => s.category.trim()).map(s => ({
-      service_name: s.detail.trim() ? `${s.category} - ${s.detail}` : s.category,
-      quantity: s.quantity,
-      price: s.price,
-      notes: s.notes
+    const activeItems = services.filter(s => s.category.trim()).map((s, idx) => ({
+      item_name: s.detail.trim() ? `${s.category} - ${s.detail}` : s.category,
+      category: s.category,
+      item_type: "SERVICE",
+      quantity: Number(s.quantity) || 1,
+      unit_price: Number(s.price) || 0,
+      line_discount: 0,
+      surcharge: 0,
+      amount: (Number(s.price) || 0) * (Number(s.quantity) || 1),
+      notes: s.notes,
+      display_order: idx + 1
     }));
 
-    if (activeServices.length === 0) {
+    if (activeItems.length === 0) {
       setErrorMsg("Vui lòng nhập ít nhất 1 dịch vụ!");
       setLoading(false);
       return;
@@ -206,10 +212,22 @@ export default function ContractDialog({
       });
     }
 
-    const payload: ContractFormData = {
+    const payload: any = {
       customer_id: finalCustomerId,
       contract_code: contractCode,
       paper_contract_number: paperContractCode,
+      items: activeItems,
+      subtotal_amount: totalAmount,
+      discount_amount: 0,
+      discount_type: "AMOUNT",
+      surcharge_amount: 0,
+      total_amount: totalAmount,
+      required_deposit: totalAmount * 0.5,
+      initial_payment: installments[0]?.status === "PAID" ? {
+        amount: Number(installments[0].amount),
+        payment_method: installments[0].method,
+        notes: JSON.stringify({ title: installments[0].title, billLink: installments[0].billLink })
+      } : undefined,
       notes: JSON.stringify({
         userNotes: generalNotes,
         has_asset_deposit: hasAssetDeposit,
@@ -225,9 +243,8 @@ export default function ContractDialog({
         tang_kem: gifts,
         ngay_giao_vay: dressDeliverDate,
         ngay_tra_vay: dressReturnDate,
+        legacy_installments: finalInstallments,
       }),
-      services: activeServices,
-      installments: finalInstallments,
     };
 
     try {
