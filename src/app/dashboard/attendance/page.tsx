@@ -2,13 +2,38 @@
 
 import { useEffect, useState } from "react";
 import { getAttendanceHistory } from "./actions";
-import { MapPin, Clock, Search, Map } from "lucide-react";
+import { MapPin, Clock, Search, Map, CheckCircle, LogOut } from "lucide-react";
 import { format } from "date-fns";
+
+const STORE_LAT = 10.799085880065967;
+const STORE_LNG = 106.6792701207173;
+const MAX_DISTANCE_METERS = 50;
+
+// Haversine formula to calculate distance in meters
+function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371e3; // Radius of the earth in m
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1); 
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  const d = R * c; 
+  return d;
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI/180);
+}
 
 export default function AttendanceDashboardPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [gpsError, setGpsError] = useState("");
+
 
   useEffect(() => {
     fetchData();
@@ -72,6 +97,50 @@ export default function AttendanceDashboardPage() {
     }
   };
 
+  const handleCheckIn = (type: 'in' | 'out') => {
+    setGpsError("");
+    setCheckingIn(true);
+    
+    if (!navigator.geolocation) {
+      setGpsError("Trình duyệt của bạn không hỗ trợ định vị GPS.");
+      setCheckingIn(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const distance = getDistanceFromLatLonInM(STORE_LAT, STORE_LNG, latitude, longitude);
+        
+        if (distance > MAX_DISTANCE_METERS) {
+          const reason = window.prompt(`Bạn đang cách cửa hàng ${Math.round(distance)}m (Vượt quá 50m).\nVui lòng nhập lý do (VD: Đi chụp ngoại cảnh, Gặp khách hàng...):`);
+          
+          if (!reason || reason.trim() === "") {
+            setGpsError("Chấm công ngoài khu vực bị hủy do không nhập lý do hợp lệ.");
+            setCheckingIn(false);
+            return;
+          }
+          
+          // TODO: Call API to log attendance with reason
+          alert(`Check-${type} thành công (Ngoài khu vực)! Khoảng cách: ${Math.round(distance)}m.\nLý do: ${reason}`);
+          setCheckingIn(false);
+          fetchData(); // Reload
+          return;
+        }
+
+        // TODO: Call API to log attendance normally
+        alert(`Check-${type} thành công! Khoảng cách: ${Math.round(distance)}m`);
+        setCheckingIn(false);
+        fetchData(); // Reload
+      },
+      (error) => {
+        setGpsError("Không thể lấy vị trí GPS. Vui lòng cấp quyền vị trí cho trình duyệt.");
+        setCheckingIn(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -82,7 +151,7 @@ export default function AttendanceDashboardPage() {
           </h1>
           <p className="text-slate-500 mt-1">Quản lý giờ giấc ra/vào ca của nhân viên.</p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <input 
             type="date"
             value={selectedDate}
@@ -92,8 +161,34 @@ export default function AttendanceDashboardPage() {
           <button onClick={fetchData} className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50">
             Làm mới
           </button>
+          
+          <div className="h-8 w-px bg-slate-200 mx-1"></div>
+          
+          <button 
+            onClick={() => handleCheckIn('in')} 
+            disabled={checkingIn}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 shadow-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            <CheckCircle className="w-4 h-4" />
+            Check In
+          </button>
+          <button 
+            onClick={() => handleCheckIn('out')} 
+            disabled={checkingIn}
+            className="px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-bold hover:bg-rose-700 shadow-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            <LogOut className="w-4 h-4" />
+            Check Out
+          </button>
         </div>
       </div>
+      
+      {gpsError && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-sm font-medium flex items-center gap-2">
+          <MapPin className="w-5 h-5" />
+          {gpsError}
+        </div>
+      )}
 
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">

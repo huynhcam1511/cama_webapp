@@ -40,6 +40,17 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
   const [newPicId, setNewPicId] = useState("");
   const [newNotes, setNewNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // QA & Issue State
+  const [showQaModal, setShowQaModal] = useState(false);
+  const [qaChecked, setQaChecked] = useState({
+    buttons: false,
+    zippers: false,
+    stains: false,
+    accessories: false
+  });
+  const [showIssueModal, setShowIssueModal] = useState(false);
+  const [issueNote, setIssueNote] = useState("");
   
   // Custom Combobox State
   const [contractSearch, setContractSearch] = useState("");
@@ -66,6 +77,14 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
   });
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    if (newStatus === "DELIVERED") {
+      setShowQaModal(true);
+      return;
+    }
+    await confirmStatusChange(orderId, newStatus);
+  };
+
+  const confirmStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     setOrders(orders.map(o => o.id === orderId ? { ...o, completion_status: newStatus } : o));
     if (selectedOrder?.id === orderId) {
       setSelectedOrder({ ...selectedOrder, completion_status: newStatus });
@@ -74,6 +93,39 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
       await updateOrderStatus(orderId, newStatus);
     } catch (e) {
       alert("Lỗi cập nhật trạng thái");
+    }
+  };
+
+  const handleQaSubmit = () => {
+    if (!qaChecked.buttons || !qaChecked.zippers || !qaChecked.stains || !qaChecked.accessories) {
+      alert("Vui lòng kiểm tra đầy đủ các mục trước khi giao đồ!");
+      return;
+    }
+    if (selectedOrder) {
+      // Gắn thông tin người kiểm tra vào notes
+      const order = orders.find(o => o.id === selectedOrder.id);
+      if (order) {
+        order.notes = (order.notes || "") + `\n[QA PASSED: Đã kiểm tra giao đồ vào ${new Date().toLocaleString()}]`;
+      }
+      confirmStatusChange(selectedOrder.id, "DELIVERED");
+      setShowQaModal(false);
+      setQaChecked({ buttons: false, zippers: false, stains: false, accessories: false });
+    }
+  };
+
+  const handleIssueSubmit = () => {
+    if (!issueNote) {
+      alert("Vui lòng nhập lý do/tình trạng lỗi");
+      return;
+    }
+    if (selectedOrder) {
+      const order = orders.find(o => o.id === selectedOrder.id);
+      if (order) {
+        order.notes = (order.notes || "") + `\n[ISSUE REPORTED]: ${issueNote} - Yêu cầu xử lý giặt ủi/sửa chữa`;
+      }
+      confirmStatusChange(selectedOrder.id, "ISSUE");
+      setShowIssueModal(false);
+      setIssueNote("");
     }
   };
 
@@ -267,7 +319,15 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
           <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/30">
             {/* Status Control */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-600 uppercase">Cập nhật tiến độ</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-600 uppercase">Cập nhật tiến độ</label>
+                <button 
+                  onClick={() => setShowIssueModal(true)} 
+                  className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded flex items-center gap-1 hover:bg-rose-100 transition-colors"
+                >
+                  <icons.AlertTriangle className="w-3 h-3" /> Báo Lỗi / Bẩn
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(STATUS_MAP).map(([k, v]) => {
                   const isActive = selectedOrder.completion_status === k;
@@ -523,6 +583,106 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
         </div>
       )}
 
+      {/* QA Checklist Modal */}
+      {showQaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3 bg-emerald-50/50">
+              <div className="bg-emerald-100 p-2 rounded-full text-emerald-600">
+                <icons.ClipboardCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">Checklist Kiểm Tra (QA)</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Vui lòng xác nhận trước khi giao đồ</p>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <label className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+                <input type="checkbox" checked={qaChecked.buttons} onChange={e => setQaChecked(p => ({...p, buttons: e.target.checked}))} className="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                <div>
+                  <span className="text-sm font-bold text-slate-800 block">Đầy đủ cúc áo, nơ, khuy</span>
+                  <span className="text-xs text-slate-500 block mt-0.5">Không bị lỏng lẻo hay đứt chỉ</span>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+                <input type="checkbox" checked={qaChecked.zippers} onChange={e => setQaChecked(p => ({...p, zippers: e.target.checked}))} className="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                <div>
+                  <span className="text-sm font-bold text-slate-800 block">Khóa kéo mượt mà</span>
+                  <span className="text-xs text-slate-500 block mt-0.5">Không bị rít, lệch hoặc tuột khóa</span>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+                <input type="checkbox" checked={qaChecked.stains} onChange={e => setQaChecked(p => ({...p, stains: e.target.checked}))} className="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                <div>
+                  <span className="text-sm font-bold text-slate-800 block">Không có vết bẩn</span>
+                  <span className="text-xs text-slate-500 block mt-0.5">Đã giặt ủi sạch sẽ, thơm tho</span>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+                <input type="checkbox" checked={qaChecked.accessories} onChange={e => setQaChecked(p => ({...p, accessories: e.target.checked}))} className="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                <div>
+                  <span className="text-sm font-bold text-slate-800 block">Đúng bộ, đúng phụ kiện</span>
+                  <span className="text-xs text-slate-500 block mt-0.5">Đồng màu quần áo, đủ voan, lúp, mấn...</span>
+                </div>
+              </label>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowQaModal(false)} className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
+              <button 
+                type="button" 
+                onClick={handleQaSubmit} 
+                disabled={!qaChecked.buttons || !qaChecked.zippers || !qaChecked.stains || !qaChecked.accessories}
+                className="px-4 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition-colors"
+              >
+                Xác Nhận Đã Giao
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Issue Modal */}
+      {showIssueModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3 bg-rose-50/50">
+              <div className="bg-rose-100 p-2 rounded-full text-rose-600">
+                <icons.AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">Báo Cáo Sự Cố</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Chuyển đồ đi giặt ủi hoặc sửa chữa</p>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <label className="block text-sm font-bold text-slate-700 mb-2">Mô tả tình trạng lỗi / bẩn</label>
+              <textarea 
+                value={issueNote}
+                onChange={e => setIssueNote(e.target.value)}
+                placeholder="VD: Đứt cúc áo giữa, dính vết bẩn cà phê ở gấu váy..."
+                className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-rose-500 outline-none min-h-[120px] bg-slate-50"
+              />
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowIssueModal(false)} className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
+              <button 
+                type="button" 
+                onClick={handleIssueSubmit} 
+                className="px-4 py-2 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition-colors"
+              >
+                Lưu Báo Cáo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

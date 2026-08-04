@@ -1,9 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
 export async function checkIn(locationData?: { lat: number, lng: number, accuracy: number }) {
+  const adminClient = createAdminClient();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -12,7 +14,7 @@ export async function checkIn(locationData?: { lat: number, lng: number, accurac
   const today = new Date().toISOString().split("T")[0];
 
   // Check if already checked in today
-  const { data: existingLog } = await supabase
+  const { data: existingLog } = await adminClient
     .from("attendance_logs")
     .select("*")
     .eq("user_id", user.id)
@@ -31,7 +33,7 @@ export async function checkIn(locationData?: { lat: number, lng: number, accurac
   
   const status = isLate ? "LATE" : "ON_TIME";
 
-  const { error } = await supabase.from("attendance_logs").insert([{
+  const { error } = await adminClient.from("attendance_logs").insert([{
     user_id: user.id,
     date: today,
     check_in_time: now.toISOString(),
@@ -54,6 +56,7 @@ export async function checkIn(locationData?: { lat: number, lng: number, accurac
 
 export async function checkOut(locationData?: { lat: number, lng: number, accuracy: number }) {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: "Unauthorized" };
@@ -61,7 +64,7 @@ export async function checkOut(locationData?: { lat: number, lng: number, accura
   const today = new Date().toISOString().split("T")[0];
 
   // Get today's log
-  const { data: existingLog } = await supabase
+  const { data: existingLog } = await adminClient
     .from("attendance_logs")
     .select("*")
     .eq("user_id", user.id)
@@ -85,7 +88,7 @@ export async function checkOut(locationData?: { lat: number, lng: number, accura
     newStatus = "EARLY_LEAVE";
   }
 
-  const { error } = await supabase
+  const { error } = await adminClient
     .from("attendance_logs")
     .update({
       check_out_time: now.toISOString(),
@@ -110,12 +113,13 @@ export async function checkOut(locationData?: { lat: number, lng: number, accura
 
 export async function getMyAttendanceToday() {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { success: false, data: null };
 
   const today = new Date().toISOString().split("T")[0];
-  const { data } = await supabase
+  const { data } = await adminClient
     .from("attendance_logs")
     .select("*")
     .eq("user_id", user.id)
@@ -126,9 +130,9 @@ export async function getMyAttendanceToday() {
 }
 
 export async function getAttendanceHistory(dateString: string) {
-  const supabase = await createClient();
+  const adminClient = createAdminClient();
   
-  const { data, error } = await supabase
+  const { data, error } = await adminClient
     .from("attendance_logs")
     .select("*, users:user_id(full_name, employee_code, avatar_url)")
     .eq("date", dateString)

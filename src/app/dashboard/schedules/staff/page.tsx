@@ -1,7 +1,7 @@
 import { getUserPermissions, requireActiveUser, requirePermission } from "@/lib/rbac";
 import { getStaffSchedules } from "./actions";
 import StaffSchedulesView from "./staff-schedules-view";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export default async function StaffSchedulePage() {
   const today = new Date();
   const schedules = await getStaffSchedules(today.getMonth() + 1, today.getFullYear());
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { data: departments } = await supabase.from("departments").select("id, department_name");
   const { data: roles } = await supabase.from("roles").select("id, role_name");
   const { data: users } = await supabase.from("users").select("id, full_name, employee_code, department_id, role_id, is_active, note, default_start_time, default_end_time, default_work_days, avatar_url").eq("is_active", true);

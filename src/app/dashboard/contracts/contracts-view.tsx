@@ -479,8 +479,16 @@ export default function ContractsView({ initialContracts, initialStats, customer
            primaryBtn = <Link href={`/dashboard/contracts/${contract.id}`} className="px-2 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded text-[10px] font-bold flex items-center gap-1 transition-colors"><Eye className="w-3 h-3"/> Xem</Link>;
         }
 
+        // Tách riêng nút Sửa
+        const editBtn = canUpdate && (
+          <Link href={`/dashboard/contracts/${contract.id}`} className="px-2 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 rounded text-[10px] font-bold flex items-center gap-1 transition-colors">
+            <Edit3 className="w-3 h-3"/> Sửa
+          </Link>
+        );
+
         return (
           <>
+            {editBtn}
             {primaryBtn}
             {/* 3-Dots Menu */}
             <div className="relative">
@@ -489,7 +497,6 @@ export default function ContractsView({ initialContracts, initialStats, customer
               </button>
               {isDropdownOpen && (
                 <div className="absolute right-0 top-8 z-30 w-40 bg-white border border-slate-200 rounded-lg shadow-xl py-1 text-left animate-in fade-in">
-                  {canUpdate && <Link href={`/dashboard/contracts/${contract.id}`} className="w-full px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2"><Edit3 className="w-3.5 h-3.5" /> Sửa chi tiết</Link>}
                   <button onClick={() => { setActiveDropdownId(null); setSelectedForPrint(contract); }} className="w-full px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2"><Printer className="w-3.5 h-3.5" /> In hợp đồng</button>
                   {canDelete && <button onClick={() => { setActiveDropdownId(null); setSelectedForCancel(contract); }} className="w-full px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100 mt-1 pt-1.5"><Ban className="w-3.5 h-3.5" /> Hủy bỏ</button>}
                 </div>

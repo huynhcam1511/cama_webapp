@@ -50,11 +50,14 @@ export default function EmployeeDetailView({
       social_insurance: "",
     };
 
+    let cccdFront = "";
+
     if (rawNote.trim().startsWith("{") && rawNote.trim().endsWith("}")) {
       try {
         const meta = JSON.parse(rawNote);
         userNotes = meta.userNotes || meta.note || "";
         if (meta.avatar_url) avatar = meta.avatar_url;
+        if (meta.cccd_front_url) cccdFront = meta.cccd_front_url;
         if (meta.contract_info) {
           contractInfo = { ...contractInfo, ...meta.contract_info };
         }
@@ -66,6 +69,7 @@ export default function EmployeeDetailView({
       employee_code: initialData?.employee_code || (isNew ? `NV-${Math.floor(1000 + Math.random() * 9000)}` : ""),
       full_name: initialData?.full_name || "",
       avatar_url: avatar,
+      cccd_front_url: cccdFront,
       contract_info: contractInfo,
       gender: initialData?.gender || "Nam",
       phone: initialData?.phone || "",
@@ -140,6 +144,45 @@ export default function EmployeeDetailView({
           ctx.drawImage(img, 0, 0, width, height);
           const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
           setFormData(prev => ({ ...prev, avatar_url: dataUrl }));
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCccdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 800; // CCCD needs more detail than avatar
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+          setFormData(prev => ({ ...prev, cccd_front_url: dataUrl }));
         }
       };
       img.src = event.target?.result as string;
@@ -332,27 +375,55 @@ export default function EmployeeDetailView({
           <Tabs.Content value="info" className="space-y-6 focus:outline-none">
             <h2 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">Hồ sơ nhân viên</h2>
             
-            {/* Avatar Section */}
-            <div className="flex items-center gap-6 mb-6">
-              <div className="relative group">
-                {formData.avatar_url ? (
-                  <img src={formData.avatar_url} alt="Avatar" className="w-20 h-20 rounded-full object-cover border-2 border-slate-200 shadow-sm" />
-                ) : (
-                  <div className="w-20 h-20 rounded-full bg-slate-100 border-2 border-slate-200 border-dashed flex items-center justify-center text-slate-400">
-                    <User className="w-8 h-8" />
-                  </div>
-                )}
-                <label className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-full cursor-pointer shadow-md transition-colors transform translate-x-1 translate-y-1">
-                  <Camera className="w-4 h-4" />
-                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-                </label>
+            {/* Avatar Section & CCCD */}
+            <div className="flex flex-col sm:flex-row gap-8 mb-6 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="flex items-center gap-6">
+                <div className="relative group">
+                  {formData.avatar_url ? (
+                    <img src={formData.avatar_url} alt="Avatar" className="w-20 h-20 rounded-full object-cover border-2 border-slate-200 shadow-sm" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-slate-100 border-2 border-slate-200 border-dashed flex items-center justify-center text-slate-400">
+                      <User className="w-8 h-8" />
+                    </div>
+                  )}
+                  <label className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-full cursor-pointer shadow-md transition-colors transform translate-x-1 translate-y-1">
+                    <Camera className="w-4 h-4" />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                  </label>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Ảnh đại diện</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Khuyên dùng ảnh vuông.</p>
+                  {formData.avatar_url && (
+                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, avatar_url: "" }))} className="text-xs text-red-500 hover:text-red-700 font-semibold mt-1">Xóa ảnh</button>
+                  )}
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-800">Ảnh đại diện</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Hỗ trợ JPG, PNG. Khuyên dùng ảnh vuông.</p>
-                {formData.avatar_url && (
-                  <button type="button" onClick={() => setFormData(prev => ({ ...prev, avatar_url: "" }))} className="text-xs text-red-500 hover:text-red-700 font-semibold mt-1">Xóa ảnh</button>
-                )}
+
+              <div className="w-px h-16 bg-slate-200 hidden sm:block self-center"></div>
+
+              <div className="flex items-center gap-6">
+                <div className="relative group">
+                  {formData.cccd_front_url ? (
+                    <img src={formData.cccd_front_url} alt="CCCD" className="w-32 h-20 rounded object-cover border-2 border-slate-200 shadow-sm" />
+                  ) : (
+                    <div className="w-32 h-20 rounded bg-slate-100 border-2 border-slate-200 border-dashed flex flex-col items-center justify-center text-slate-400">
+                      <Briefcase className="w-6 h-6 mb-1" />
+                      <span className="text-[10px] font-medium uppercase">CCCD</span>
+                    </div>
+                  )}
+                  <label className="absolute -bottom-2 -right-2 bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded-full cursor-pointer shadow-md transition-colors">
+                    <Camera className="w-4 h-4" />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleCccdUpload} />
+                  </label>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Ảnh CCCD</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Yêu cầu bắt buộc.</p>
+                  {formData.cccd_front_url && (
+                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, cccd_front_url: "" }))} className="text-xs text-red-500 hover:text-red-700 font-semibold mt-1">Xóa CCCD</button>
+                  )}
+                </div>
               </div>
             </div>
 

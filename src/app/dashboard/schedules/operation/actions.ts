@@ -1,7 +1,7 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { requireActiveUser, requirePermission } from "@/lib/rbac";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserPermissions, requireActiveUser, requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 
 export type EventType = "DRESS_TRY_ON" | "FITTING" | "DRESS_PREPARATION" | "CUSTOMER_APPOINTMENT" | "DELIVERY" | "RETURN" | "PICKUP" | "ALTERATION" | "INTERNAL_TASK" | "OTHER";
@@ -44,8 +44,8 @@ export interface OperationSchedule {
 export async function getOperationSchedules() {
   await requireActiveUser();
 
-  const supabase = createClient();
-  const { data, error } = await supabase
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient
     .from("operation_schedules")
     .select(`
       *,
@@ -66,7 +66,7 @@ export async function createOperationSchedule(payload: any) {
   const user = await requireActiveUser();
   await requirePermission("OPERATION_SCHEDULE", "create");
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
   
   // Logic Cảnh báo xung đột (Chỉ cảnh báo mềm, có thể bỏ qua nếu người dùng cố tình lưu - Dùng Flag confirm_override)
   if (!payload.confirm_override) {

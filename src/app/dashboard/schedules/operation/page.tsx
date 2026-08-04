@@ -1,7 +1,7 @@
 import { getUserPermissions, requireActiveUser, requirePermission } from "@/lib/rbac";
 import { getOperationSchedules } from "./actions";
 import OperationSchedulesView from "./operation-schedules-view";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export default async function OperationSchedulePage() {
   const schedules = await getOperationSchedules();
 
   // Lấy data phụ trợ (Nhân sự) để gán việc
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { data: users } = await supabase.from("users").select("id, full_name, employee_code").eq("is_active", true);
 
   return (

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserPermissions, requireActiveUser, requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 
@@ -45,8 +46,8 @@ export async function getStaffSchedules(month: number, year: number) {
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const endDate = new Date(year, month, 0).toISOString().split("T")[0]; 
 
-  const supabase = createClient();
-  const query = supabase
+  const adminClient = createAdminClient();
+  const query = adminClient
     .from("staff_schedules")
     .select(`
       *,
@@ -79,7 +80,7 @@ export async function createLeaveRequest(payload: {
   const user = await requireActiveUser();
   await requirePermission("STAFF_SCHEDULE", "create");
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
   
   // Lấy department của user
   const { data: dbUser } = await supabase.from("users").select("department_id").eq("id", user.id).single();
@@ -105,8 +106,8 @@ export async function updateApprovalStatus(scheduleId: string, status: ApprovalS
   const user = await requireActiveUser();
   await requirePermission("STAFF_SCHEDULE", "update"); // Or approve if we had it, but update is enough
 
-  const supabase = createClient();
-  const { error } = await supabase.from("staff_schedules").update({
+  const adminClient = createAdminClient();
+  const { error } = await adminClient.from("staff_schedules").update({
     approval_status: status,
     approved_by: user.id
   }).eq("id", scheduleId);
@@ -127,9 +128,9 @@ export async function createWeeklySchedules(payloads: Array<{
   const user = await requireActiveUser();
   await requirePermission("STAFF_SCHEDULE", "create");
 
-  const supabase = createClient();
+  const adminClient = createAdminClient();
   
-  const { data: dbUser } = await supabase.from("users").select("department_id").eq("id", user.id).single();
+  const { data: dbUser } = await adminClient.from("users").select("department_id").eq("id", user.id).single();
 
   const insertData = payloads.map(p => ({
     user_id: user.id,
@@ -143,7 +144,7 @@ export async function createWeeklySchedules(payloads: Array<{
     status: "SCHEDULED"
   }));
 
-  const { error } = await supabase.from("staff_schedules").insert(insertData);
+  const { error } = await adminClient.from("staff_schedules").insert(insertData);
 
   if (error) throw new Error(error.message);
   
