@@ -1,11 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission, requireActiveUser } from "@/lib/rbac";
 
 export async function getPolicies() {
   const user = await requireActiveUser();
-  const supabase = createClient();
+  const supabase = createAdminClient();
   
   // Lấy role và department của user
   const { data: dbUser } = await supabase
@@ -41,7 +42,7 @@ export async function savePolicy(isNew: boolean, policyData: any) {
     await requirePermission("POLICIES", "update");
   }
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
   
   const payload = {
     title: policyData.title,
@@ -70,7 +71,7 @@ export async function savePolicy(isNew: boolean, policyData: any) {
 
 export async function deletePolicy(id: string) {
   await requirePermission("POLICIES", "delete");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   
   const { error } = await supabase.from("policies").delete().eq("id", id);
   if (error) return { success: false, error: error.message };

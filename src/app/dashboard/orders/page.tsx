@@ -2,6 +2,7 @@ import { requireActiveUser, requirePermission } from "@/lib/rbac";
 import { getOrders } from "./actions";
 import OrdersClient from "./orders-client";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export default async function OrdersPage() {
 
   const orders = await getOrders();
   
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { data: users } = await supabase.from("users").select("id, full_name").eq("is_active", true);
   const { data: contracts } = await supabase.from("contracts").select("id, contract_code, customer:customers(bride_name, phone)").is("deleted_at", null);
 

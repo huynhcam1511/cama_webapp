@@ -2,6 +2,7 @@ import { getPolicies } from "./actions";
 import PoliciesView from "./policies-view";
 import { getUserPermissions, requireActiveUser, requirePermission } from "@/lib/rbac";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function PoliciesPage() {
 
   const policies = await getPolicies();
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const [{ data: departments }, { data: roles }, { data: users }] = await Promise.all([
     supabase.from("departments").select("id, department_name"),
     supabase.from("roles").select("id, role_name"),

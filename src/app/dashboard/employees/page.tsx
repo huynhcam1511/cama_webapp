@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import EmployeeListView from "./employee-list-view";
 import OrgChartView from "./org-chart-view";
 import { requirePermission } from "@/lib/rbac";
@@ -10,7 +11,7 @@ export default async function EmployeesPage({
 }) {
   await requirePermission("EMPLOYEES", "view");
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const tab = searchParams.tab || "list";
 
   const { data: users, error } = await supabase

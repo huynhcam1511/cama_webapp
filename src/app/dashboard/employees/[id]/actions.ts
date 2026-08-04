@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 
 export async function saveEmployee(isNew: boolean, data: any, permissions: any[]) {
   const adminUser = await requireActiveUser();
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const adminClient = createAdminClient();
 
   if (isNew) {

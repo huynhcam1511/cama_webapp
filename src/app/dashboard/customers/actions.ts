@@ -1,10 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/rbac";
 
 export async function saveBooking(booking: any) {
-  const supabase = createClient();
+  const supabase = createAdminClient();
   
   if (booking.id) {
     const { data, error } = await supabase
@@ -25,7 +26,7 @@ export async function saveBooking(booking: any) {
 }
 
 export async function deleteBooking(id: string) {
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("operation_schedules").delete().eq("id", id);
   return { error: error?.message };
 }
@@ -53,7 +54,7 @@ export interface CustomerFormData {
 }
 
 export async function getCustomers() {
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase.from("customers").select("*").order("created_at", { ascending: false });
   if (error) {
     console.error("Error fetching customers:", error);
@@ -65,7 +66,7 @@ export async function getCustomers() {
 export async function createCustomer(customer: CustomerFormData) {
   try {
     await requirePermission("CUSTOMERS", "create");
-    const supabase = createClient();
+    const supabase = createAdminClient();
     if (!customer.customer_code) {
       customer.customer_code = "KH-" + Math.floor(1000 + Math.random() * 9000);
     }
@@ -79,14 +80,14 @@ export async function createCustomer(customer: CustomerFormData) {
 
 export async function updateCustomer(id: string, customer: CustomerFormData) {
   await requirePermission("CUSTOMERS", "update");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase.from("customers").update(customer).eq("id", id).select().single();
   return { success: !error, data, error: error?.message };
 }
 
 export async function deleteCustomer(id: string) {
   await requirePermission("CUSTOMERS", "delete");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("customers").delete().eq("id", id);
   return { success: !error, error: error?.message };
 }
@@ -94,7 +95,7 @@ export async function deleteCustomer(id: string) {
 export async function createQuickContract(data: { name: string, phone: string, amount: number, service: string }) {
   await requirePermission("CUSTOMERS", "create");
   await requirePermission("STUDIO_CONTRACTS", "create");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   
   // 1. Create Customer
   const customerCode = "KH-" + Math.floor(1000 + Math.random() * 9000);

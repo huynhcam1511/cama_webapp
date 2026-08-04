@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 
@@ -41,7 +42,7 @@ export interface Order {
 }
 
 export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> {
-  const supabase = createClient();
+  const supabase = createAdminClient();
   
   let query = supabase.from("orders").select(`
     *,
@@ -67,7 +68,7 @@ export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> 
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   await requirePermission("ORDERS", "update");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("orders").update({ completion_status: status }).eq("id", orderId);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/orders");
@@ -75,14 +76,14 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 
 export async function updateOrderChecklist(orderId: string, checklist: OrderChecklistItem[]) {
   await requirePermission("ORDERS", "update");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("orders").update({ checklist: JSON.stringify(checklist) }).eq("id", orderId);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/orders");
 }
 
 export async function createOrder(payload: Partial<Order>) {
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("orders")
     .insert([{

@@ -1,12 +1,13 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 
 export async function getRolesAndModules() {
   await requirePermission("PERMISSIONS", "view");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   
   const [rolesRes, modulesRes] = await Promise.all([
     supabase.from("roles").select("*").order("is_system_role", { ascending: false }).order("role_name"),
@@ -24,7 +25,7 @@ export async function getRolesAndModules() {
 
 export async function getRolePermissions(roleId: string) {
   await requirePermission("PERMISSIONS", "view");
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("role_permissions")
@@ -49,7 +50,7 @@ export interface PermissionPayload {
 
 export async function saveRolePermissions(roleId: string, permissions: PermissionPayload[]) {
   await requirePermission("PERMISSIONS", "update");
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   const { error: deleteError } = await supabase
     .from("role_permissions")

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import {
@@ -273,7 +274,7 @@ export async function getContracts(filters?: {
   debtOnly?: boolean;
   overdueOnly?: boolean;
 }) {
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("contracts")
     .select(`
@@ -343,7 +344,7 @@ export async function getContracts(filters?: {
 }
 
 export async function getContractById(id: string): Promise<Contract | null> {
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("contracts")
     .select(`
@@ -393,7 +394,7 @@ export async function createContract(payload: {
 }) {
   try {
     await requirePermission("STUDIO_CONTRACTS", "create");
-    const supabase = createClient();
+    const supabase = createAdminClient();
 
     // Generate code
     let code = payload.contract_code?.trim();
@@ -563,7 +564,7 @@ export async function recordPaymentTransaction(
   }
 ) {
   await requirePermission("STUDIO_CONTRACTS", "update");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const currentContract = await getContractById(contractId);
   if (!currentContract) {
     return { success: false, error: "Hợp đồng không tồn tại" };
@@ -678,7 +679,7 @@ export async function recordPaymentTransaction(
 
 export async function cancelContract(contractId: string, reason: string, refundAmount: number = 0) {
   await requirePermission("STUDIO_CONTRACTS", "update");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const currentContract = await getContractById(contractId);
   if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại" };
 
@@ -718,7 +719,7 @@ export async function cancelContract(contractId: string, reason: string, refundA
 
 export async function addContractSchedule(contractId: string, schedule: Omit<ContractSchedule, "id">) {
   await requirePermission("STUDIO_CONTRACTS", "update");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const currentContract = await getContractById(contractId);
   if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại" };
 
@@ -753,7 +754,7 @@ export async function addContractSchedule(contractId: string, schedule: Omit<Con
 
 export async function toggleScheduleCompleted(contractId: string, scheduleId: string) {
   await requirePermission("STUDIO_CONTRACTS", "update");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const currentContract = await getContractById(contractId);
   if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại" };
 
@@ -785,7 +786,7 @@ export async function toggleScheduleCompleted(contractId: string, scheduleId: st
 
 export async function addContractDocument(contractId: string, doc: Omit<ContractDocument, "id" | "created_at">) {
   await requirePermission("STUDIO_CONTRACTS", "update");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const currentContract = await getContractById(contractId);
   if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại" };
 
@@ -821,7 +822,7 @@ export async function addContractDocument(contractId: string, doc: Omit<Contract
 
 export async function deleteContract(id: string) {
   await requirePermission("STUDIO_CONTRACTS", "delete");
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from("contracts")
     .update({ deleted_at: new Date().toISOString() })
@@ -834,7 +835,7 @@ export async function deleteContract(id: string) {
 }
 
 export async function addGarmentToContractByQR(contractId: string, qrCode: string) {
-  const supabase = createClient();
+  const supabase = createAdminClient();
   
   // 1. Fetch Garment by QR
   const { data: garment, error: garError } = await supabase

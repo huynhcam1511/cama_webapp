@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import EmployeeDetailView from "./employee-detail-view";
 import { requirePermission } from "@/lib/rbac";
 import { redirect } from "next/navigation";
@@ -16,7 +17,7 @@ export default async function EmployeeDetailPage({
     await requirePermission("EMPLOYEES", "view");
   }
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   let user = null;
   let userPermissions = [];
