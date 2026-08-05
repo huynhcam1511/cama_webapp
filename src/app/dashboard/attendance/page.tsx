@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAttendanceHistory, checkIn, checkOut } from "./actions";
+import { getAttendanceHistory, checkIn, checkOut, getMyAttendanceToday } from "./actions";
 import { MapPin, Clock, Search, Map, CheckCircle, LogOut } from "lucide-react";
 import { format } from "date-fns";
 
@@ -34,10 +34,22 @@ export default function AttendanceDashboardPage() {
   const [checkingIn, setCheckingIn] = useState(false);
   const [gpsError, setGpsError] = useState("");
 
+  const [myAttendance, setMyAttendance] = useState<any>(null);
 
   useEffect(() => {
     fetchData();
+    checkMyAttendance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
+
+  const checkMyAttendance = async () => {
+    const res = await getMyAttendanceToday();
+    if (res.success) {
+      setMyAttendance(res.data);
+    } else {
+      setMyAttendance(null);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -132,6 +144,7 @@ export default function AttendanceDashboardPage() {
           }
           setCheckingIn(false);
           fetchData(); // Reload
+          checkMyAttendance();
           return;
         }
 
@@ -144,6 +157,7 @@ export default function AttendanceDashboardPage() {
         }
         setCheckingIn(false);
         fetchData(); // Reload
+        checkMyAttendance();
       },
       (error) => {
         setGpsError("Không thể lấy vị trí GPS. Vui lòng cấp quyền vị trí cho trình duyệt.");
@@ -176,22 +190,33 @@ export default function AttendanceDashboardPage() {
           
           <div className="h-8 w-px bg-slate-200 mx-1"></div>
           
-          <button 
-            onClick={() => handleCheckIn('in')} 
-            disabled={checkingIn}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 shadow-sm flex items-center gap-2 disabled:opacity-50"
-          >
-            <CheckCircle className="w-4 h-4" />
-            Check In
-          </button>
-          <button 
-            onClick={() => handleCheckIn('out')} 
-            disabled={checkingIn}
-            className="px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-bold hover:bg-rose-700 shadow-sm flex items-center gap-2 disabled:opacity-50"
-          >
-            <LogOut className="w-4 h-4" />
-            Check Out
-          </button>
+          {(() => {
+            // Check if selectedDate is today
+            const isToday = selectedDate === new Date().toISOString().split("T")[0];
+            const canCheckIn = isToday && !myAttendance;
+            const canCheckOut = isToday && myAttendance && !myAttendance.check_out_time;
+
+            return (
+              <>
+                <button 
+                  onClick={() => handleCheckIn('in')} 
+                  disabled={checkingIn || !canCheckIn}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-opacity ${(!canCheckIn || checkingIn) ? 'opacity-50 cursor-not-allowed bg-slate-300 text-slate-500' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Check In
+                </button>
+                <button 
+                  onClick={() => handleCheckIn('out')} 
+                  disabled={checkingIn || !canCheckOut}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-opacity ${(!canCheckOut || checkingIn) ? 'opacity-50 cursor-not-allowed bg-slate-300 text-slate-500' : 'bg-rose-600 text-white hover:bg-rose-700'}`}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Check Out
+                </button>
+              </>
+            );
+          })()}
         </div>
       </div>
       
