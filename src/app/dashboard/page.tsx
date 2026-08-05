@@ -31,7 +31,8 @@ const IMPLEMENTED_ROUTES = [
   "/dashboard/subscriptions",
   "/dashboard/training",
   "/dashboard/recruitment",
-  "/dashboard/marketing/content",
+  "/dashboard/marketing/content-feed",
+  "/dashboard/marketing/manager",
   "/dashboard/employees?tab=permissions"
 ];
 

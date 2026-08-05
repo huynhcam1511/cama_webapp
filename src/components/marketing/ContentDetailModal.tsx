@@ -59,10 +59,14 @@ export default function ContentDetailModal({ isOpen, onClose, data, onSuccess }:
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePlatformContentChange = (platform: string, value: string) => {
+  const handlePlatformContentChange = (platform: string, field: string, value: string) => {
+    const current = formData.platform_contents[platform] || {};
     setFormData({
       ...formData,
-      platform_contents: { ...formData.platform_contents, [platform]: value }
+      platform_contents: { 
+        ...formData.platform_contents, 
+        [platform]: { ...current, [field]: value } 
+      }
     });
   };
 
@@ -193,17 +197,53 @@ export default function ContentDetailModal({ isOpen, onClose, data, onSuccess }:
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {platforms.map(p => (
-                  <div key={p.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                    <label className="block text-xs font-bold text-slate-700 mb-2">{p.name}</label>
-                    <textarea 
-                      value={formData.platform_contents[p.id] || ""} 
-                      onChange={(e) => handlePlatformContentChange(p.id, e.target.value)} 
-                      className="w-full min-h-[120px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500" 
-                      placeholder={`Caption cho ${p.name}...`} 
-                    />
+                {platforms.map(p => {
+                  const pData = formData.platform_contents[p.id] || {};
+                  return (
+                  <div key={p.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                      <label className="block text-sm font-bold text-indigo-700">{p.name}</label>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Caption</label>
+                      <textarea 
+                        value={pData.caption || ""} 
+                        onChange={(e) => handlePlatformContentChange(p.id, "caption", e.target.value)} 
+                        className="w-full min-h-[80px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500" 
+                        placeholder={`Caption cho ${p.name}...`} 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Hashtags</label>
+                      <input 
+                        value={pData.hashtags || ""} 
+                        onChange={(e) => handlePlatformContentChange(p.id, "hashtags", e.target.value)} 
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500" 
+                        placeholder="#camawedding #vaycuoi..." 
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Giờ đăng (Time)</label>
+                        <input 
+                          value={pData.time || ""} 
+                          onChange={(e) => handlePlatformContentChange(p.id, "time", e.target.value)} 
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500" 
+                          placeholder="VD: 19h30 T6" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Mẹo (Tips)</label>
+                        <input 
+                          value={pData.tips || ""} 
+                          onChange={(e) => handlePlatformContentChange(p.id, "tips", e.target.value)} 
+                          className="w-full px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm outline-none focus:border-amber-500 text-amber-800" 
+                          placeholder="VD: Ghim comment..." 
+                        />
+                      </div>
+                    </div>
                   </div>
-                ))}
+                )})}
               </div>
             </div>
           )}

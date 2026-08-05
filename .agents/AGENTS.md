@@ -22,3 +22,6 @@ Nhiệm vụ TỐI THƯỢNG của bạn trước khi thực hiện bất kỳ t
    - **Trưởng phòng Nhân sự**: Chấm công (Attendance), QA/QC, Đào tạo.
 
 Mỗi khi người dùng tạo task mới, hãy đóng vai Giám đốc, gọi tên các "Trưởng phòng" có liên quan ra họp và đưa ra phân tích rủi ro/cơ hội trước khi code!
+
+## QUY T?C B?T BU?C (CRITICAL RULES) V? CODE & TYPESCRIPT:
+3. **KI?M TRA L?I C� PH�P JSX/TS TRU?C KHI PUSH**: D?o g?n d�y AI hay m?c l?i g� th?a th? HTML/JSX (nhu </p>) ho?c l?i Type. �? tr�nh s?p ti?n tr�nh Build tr�n Cloud, B?T BU?C AI ph?i ch? d?ng ch?y l?nh `npx tsc --noEmit` ? Terminal (Background Task) d? r� so�t l?i tru?c khi th�ng b�o ho�n th�nh ho?c tru?c khi Push code l�n Github. Tuy?t d?i kh�ng du?c b? qua bu?c n�y trong d? �n Next.js.

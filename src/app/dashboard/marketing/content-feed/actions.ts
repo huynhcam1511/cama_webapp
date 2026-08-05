@@ -19,7 +19,7 @@ export async function getMarketingContents() {
 }
 
 export async function createMarketingContent(payload: any) {
-  await requirePermission("CONTENT_MARKETING", "create");
+  await requirePermission("MARKETING_WORKSPACE", "create");
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -33,12 +33,12 @@ export async function createMarketingContent(payload: any) {
     return { success: false, error: error.message };
   }
 
-  revalidatePath("/dashboard/marketing/content");
+  revalidatePath("/dashboard/marketing/content-feed");
   return { success: true, message: "Tạo gói Content thành công!" };
 }
 
 export async function updateMarketingContent(id: string, payload: any) {
-  await requirePermission("CONTENT_MARKETING", "update");
+  await requirePermission("MARKETING_WORKSPACE", "update");
   const supabase = await createClient();
   const { error } = await supabase
     .from("marketing_contents")
@@ -49,12 +49,12 @@ export async function updateMarketingContent(id: string, payload: any) {
     return { success: false, error: error.message };
   }
 
-  revalidatePath("/dashboard/marketing/content");
+  revalidatePath("/dashboard/marketing/content-feed");
   return { success: true, message: "Cập nhật thành công!" };
 }
 
 export async function deleteMarketingContent(id: string) {
-  await requirePermission("CONTENT_MARKETING", "delete");
+  await requirePermission("MARKETING_WORKSPACE", "delete");
   const supabase = await createClient();
   const { error } = await supabase
     .from("marketing_contents")

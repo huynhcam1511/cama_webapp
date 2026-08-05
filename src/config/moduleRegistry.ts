@@ -23,7 +23,8 @@ export type ModuleCode =
   | "SUBSCRIPTIONS"
   | "TRAINING"
   | "RECRUITMENT"
-  | "CONTENT_MARKETING";
+  | "MARKETING_WORKSPACE"
+  | "MARKETING_MANAGER";
 
 export type ModuleGroup = "DASHBOARD" | "BUSINESS" | "OPERATIONS" | "HR" | "ADMIN" | "FINANCE" | "MARKETING";
 
@@ -322,14 +323,28 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
 
   // MARKETING
   {
-    moduleCode: "CONTENT_MARKETING",
-    label: "Quản trị nội dung (Content)",
-    shortLabel: "Content",
-    route: "/dashboard/marketing/content",
-    icon: "Megaphone",
+    moduleCode: "MARKETING_WORKSPACE",
+    label: "Workspace Content (Trúc)",
+    shortLabel: "Workspace",
+    route: "/dashboard/marketing/content-feed",
+    icon: "PenTool",
     group: "MARKETING",
     parentCode: null,
     sortOrder: 1,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
+    moduleCode: "MARKETING_MANAGER",
+    label: "Quản trị Marketing (Sếp)",
+    shortLabel: "Quản trị MKT",
+    route: "/dashboard/marketing/manager",
+    icon: "Megaphone",
+    group: "MARKETING",
+    parentCode: null,
+    sortOrder: 2,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",
