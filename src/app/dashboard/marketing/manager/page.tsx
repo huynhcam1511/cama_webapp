@@ -3,7 +3,7 @@ import { getMarketingContents } from "../content-feed/actions";
 
 export default async function ManagerDashboardPage() {
   const res = await getMarketingContents();
-  const tasks = res.success ? res.data : [];
+  const tasks = (res.success && res.data) ? res.data : [];
 
   const publishedTasks = tasks.filter((t: any) => t.status === "PUBLISHED");
   const draftTasks = tasks.filter((t: any) => t.status === "DRAFT" || t.status === "IDEA");
