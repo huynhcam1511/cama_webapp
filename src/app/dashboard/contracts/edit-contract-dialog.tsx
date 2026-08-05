@@ -43,7 +43,7 @@ export default function EditContractDialog({
   contract,
   onSaved,
 }: EditContractDialogProps) {
-  const [step, setStep] = useState(1);
+  const [activeTab, setActiveTab] = useState("info");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -215,50 +215,7 @@ export default function EditContractDialog({
     setItems(updated);
   };
 
-  const handleNext = async () => {
-    setErrorMsg("");
-
-    if (step === 1) {
-      if (isCreatingQuickCustomer) {
-        if (!newCustomerData.bride_name.trim() || !newCustomerData.phone.trim()) {
-          setErrorMsg("Vui lòng nhập Tên cô dâu và Số điện thoại!");
-          return;
-        }
-        setLoading(true);
-        const res = await createCustomer({
-          bride_name: newCustomerData.bride_name,
-          groom_name: newCustomerData.groom_name,
-          phone: newCustomerData.phone,
-          wedding_date: newCustomerData.wedding_date,
-          source: newCustomerData.source,
-        });
-        setLoading(false);
-        if (res.success && res.data) {
-          setSelectedCustomerId(res.data.id);
-          setIsCreatingQuickCustomer(false);
-        } else {
-          setErrorMsg(res.error || "Không thể tạo nhanh khách hàng");
-          return;
-        }
-      } else if (!selectedCustomerId) {
-        setErrorMsg("Vui lòng chọn hoặc tạo nhanh Khách hàng!");
-        return;
-      }
-    }
-
-    if (step === 2) {
-      if (items.some((i) => !i.item_name.trim() || i.unit_price < 0)) {
-        setErrorMsg("Vui lòng kiểm tra lại tên và giá trị của các hạng mục dịch vụ!");
-        return;
-      }
-    }
-
-    setStep((prev) => Math.min(6, prev + 1));
-  };
-
-  const handlePrev = () => {
-    setStep((prev) => Math.max(1, prev - 1));
-  };
+  // Removed handleNext and handlePrev
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -317,34 +274,35 @@ export default function EditContractDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6 animate-in fade-in duration-200">
       <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col text-slate-900">
-        {/* Header Wizard Steps */}
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-bold">
-              {step}/6
-            </div>
-            <div>
-              <p className="font-bold text-sm">Chỉnh sửa Hợp Đồng</p>
-            </div>
-          </div>
+        {/* Tabs Navigation */}
+        <div className="px-6 py-0 border-b border-slate-200 bg-slate-50 flex overflow-x-auto gap-6 hide-scrollbar">
+          {[
+            { id: "info", label: "Khách Hàng & Thông Tin" },
+            { id: "items", label: "Dịch Vụ" },
+            { id: "schedules", label: "Lịch Trình" },
+            { id: "finance", label: "Tài Chính & Ưu Đãi" },
+            { id: "payment", label: "Thanh Toán Đặt Cọc" },
+            { id: "summary", label: "Xác Nhận" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-4 text-xs font-bold uppercase tracking-wider border-b-2 whitespace-nowrap transition-colors ${
+                activeTab === tab.id
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+          
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition-colors self-end sm:self-auto"
+            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition-colors ml-auto my-auto"
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
-
-        {/* Progress Bar Indicator */}
-        <div className="w-full bg-slate-100 h-1.5 flex">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className={`h-full flex-1 transition-all duration-300 ${
-                i <= step ? "bg-blue-600" : "bg-slate-200"
-              }`}
-            />
-          ))}
         </div>
 
         {/* Body Wizard Content */}
@@ -355,8 +313,8 @@ export default function EditContractDialog({
             </div>
           )}
 
-          {/* STEP 1: KHÁCH HÀNG & NHẬN DIỆN */}
-          {step === 1 && (
+          {/* TAB 1: KHÁCH HÀNG & NHẬN DIỆN */}
+          {activeTab === "info" && (
             <div className="space-y-5">
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
                 <div className="flex items-center justify-between">
@@ -476,8 +434,8 @@ export default function EditContractDialog({
             </div>
           )}
 
-          {/* STEP 2: HẠNG MỤC DỊCH VỤ */}
-          {step === 2 && (
+          {/* TAB 2: HẠNG MỤC DỊCH VỤ */}
+          {activeTab === "items" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -608,8 +566,8 @@ export default function EditContractDialog({
             </div>
           )}
 
-          {/* STEP 3: LỊCH TRÌNH */}
-          {step === 3 && (
+          {/* TAB 3: LỊCH TRÌNH */}
+          {activeTab === "schedules" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -688,8 +646,8 @@ export default function EditContractDialog({
             </div>
           )}
 
-          {/* STEP 4: GIÁ TRỊ & ƯU ĐÃI */}
-          {step === 4 && (
+          {/* TAB 4: GIÁ TRỊ & ƯU ĐÃI */}
+          {activeTab === "finance" && (
             <div className="space-y-4">
               <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">
                 Giá Trị Hợp Đồng, Chiết Khấu & Đặt Cọc Yêu Cầu
@@ -772,8 +730,8 @@ export default function EditContractDialog({
             </div>
           )}
 
-          {/* STEP 5: THANH TOÁN BAN ĐẦU */}
-          {step === 5 && (
+          {/* TAB 5: THANH TOÁN BAN ĐẦU */}
+          {activeTab === "payment" && (
             <div className="space-y-4">
               <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">
                 Ghi Nhận Đợt Thanh Toán Đặt Cọc Ban Đầu
@@ -842,8 +800,8 @@ export default function EditContractDialog({
             </div>
           )}
 
-          {/* STEP 6: XÁC NHẬN & TÓM TẮT */}
-          {step === 6 && (
+          {/* TAB 6: XÁC NHẬN & TÓM TẮT */}
+          {activeTab === "summary" && (
             <div className="space-y-4">
               <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">
                 Xác Nhận Tóm Tắt Thông Tin Hợp Đồng
@@ -878,37 +836,25 @@ export default function EditContractDialog({
           )}
         </div>
 
-        {/* Footer Navigation Controls */}
+        {/* Footer Actions */}
         <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
           <button
             type="button"
-            disabled={step === 1 || loading}
-            onClick={handlePrev}
-            className="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-30 transition-colors flex items-center gap-1 shadow-sm"
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors"
           >
-            <ChevronLeft className="w-4 h-4" /> Quay Lại
+            Hủy
           </button>
 
-          {step < 6 ? (
-            <button
-              type="button"
-              disabled={loading}
-              onClick={handleNext}
-              className="px-5 py-2 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 transition-all shadow-md shadow-blue-500/20"
-            >
-              Tiếp Theo <ChevronRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={loading}
-              onClick={handleSubmit}
-              className="px-6 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCheck className="w-4 h-4" />}
-              Hoàn Tất & Khởi Tạo Hợp Đồng
-            </button>
-          )}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={handleSubmit}
+            className="px-6 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCheck className="w-4 h-4" />}
+            Hoàn Tất & Khởi Tạo Hợp Đồng
+          </button>
         </div>
       </div>
     </div>

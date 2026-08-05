@@ -256,12 +256,19 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
                       const top = Math.max(0, (startHour - 8) * 64 + (startMin / 60) * 64);
                       const height = Math.max(24, (endHour - startHour) * 64 + ((endMin - startMin) / 60) * 64);
                       
+                      const isVirtual = schedule.id.startsWith("virtual-");
+                      let customColor = eventInfo.color;
+                      if (schedule.schedule_category === 'VIRTUAL_DELIVERY') customColor = 'bg-emerald-50 text-emerald-800 border-emerald-400 border-2 border-dashed shadow-sm';
+                      if (schedule.schedule_category === 'VIRTUAL_RETURN') customColor = 'bg-orange-50 text-orange-800 border-orange-400 border-2 border-dashed shadow-sm';
+                      if (schedule.schedule_category === 'VIRTUAL_PAYMENT') customColor = 'bg-rose-50 text-rose-800 border-rose-400 border-2 border-dashed shadow-sm';
+                      if (schedule.schedule_category === 'VIRTUAL_DOC') customColor = 'bg-purple-50 text-purple-800 border-purple-400 border-2 border-dashed shadow-sm';
+
                       return (
                         <div 
                           key={schedule.id}
                           onClick={() => setSelectedSchedule(schedule)}
                           style={{ top: `${top}px`, height: `${height}px` }}
-                          className={`absolute inset-x-1 p-1.5 rounded-lg border text-xs cursor-pointer shadow-sm hover:shadow-md transition-all group overflow-hidden flex flex-col z-10 ${isSelected ? 'ring-2 ring-indigo-500 z-20' : ''} ${schedule.status === 'COMPLETED' ? 'opacity-60 bg-slate-50 border-slate-200' : eventInfo.color}`}
+                          className={`absolute inset-x-1 p-1.5 rounded-lg border text-xs cursor-pointer hover:shadow-md transition-all group overflow-hidden flex flex-col z-10 ${isSelected ? 'ring-2 ring-indigo-500 z-20' : ''} ${schedule.status === 'COMPLETED' ? 'opacity-60 bg-slate-50 border-slate-200' : customColor}`}
                         >
                           {schedule.status === 'COMPLETED' && <div className="absolute inset-0 bg-white/40 z-10 pointer-events-none"></div>}
                           
@@ -296,7 +303,9 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
           <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50/50">
             <div>
               <h2 className="text-sm font-bold text-slate-800 font-serif">Chi Tiết Lịch Hẹn</h2>
-              <p className="text-[10px] text-slate-500 font-bold uppercase mt-0.5">{EVENT_TYPE_MAP[selectedSchedule.event_type]?.label}</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase mt-0.5">
+                {selectedSchedule.id.startsWith("virtual-") ? "SỰ KIỆN TỰ ĐỘNG" : EVENT_TYPE_MAP[selectedSchedule.event_type]?.label}
+              </p>
             </div>
             <button onClick={() => setSelectedSchedule(null)} className="p-1.5 rounded-md hover:bg-slate-200 text-slate-500 lg:hidden">
               <icons.X className="w-5 h-5" />
@@ -315,8 +324,8 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
               
               <div>
                 <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">Khách Hàng</div>
-                <div className="font-bold text-slate-800">{selectedSchedule.customer?.bride_name || 'Không xác định'}</div>
-                <div className="text-sm text-slate-600 flex items-center gap-1 mt-0.5"><icons.Phone className="w-3.5 h-3.5" /> {selectedSchedule.customer?.phone || '--'}</div>
+                <div className="font-bold text-slate-800">{selectedSchedule.customer?.bride_name || selectedSchedule.customer_name || 'Không xác định'}</div>
+                <div className="text-sm text-slate-600 flex items-center gap-1 mt-0.5"><icons.Phone className="w-3.5 h-3.5" /> {selectedSchedule.customer?.phone || selectedSchedule.customer_phone || '--'}</div>
               </div>
 
               <div>
@@ -372,7 +381,46 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
                   </div>
                 </div>
               )}
-
+            </div>
+            
+            <div className="p-4 border-t border-slate-100 bg-slate-50 mt-auto">
+              {selectedSchedule.id.startsWith("virtual-") ? (
+                <Link href={`/dashboard/contracts`} className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm transition-colors text-sm">
+                  <icons.ExternalLink className="w-4 h-4" /> Đi Tới Hợp Đồng
+                </Link>
+              ) : selectedSchedule.event_type === "INTERNAL_TASK" && selectedSchedule.status !== "COMPLETED" ? (
+                <button 
+                  onClick={async () => {
+                    if(confirm('Bạn có chắc chắn đã hoàn thành công việc này?')) {
+                      // Using server action completeInternalTask
+                      try {
+                        const { completeInternalTask } = await import('./actions');
+                        await completeInternalTask(selectedSchedule.id);
+                        alert('Đã cập nhật trạng thái thành công!');
+                        window.location.reload();
+                      } catch (err: any) {
+                        alert(err.message);
+                      }
+                    }
+                  }}
+                  className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm transition-colors text-sm"
+                >
+                  <icons.CheckCircle className="w-4 h-4" /> Đánh dấu Hoàn thành
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  {permissions.can_update && (
+                    <button className="flex-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2 text-sm">
+                      <icons.Edit2 className="w-4 h-4" /> Sửa
+                    </button>
+                  )}
+                  {permissions.can_delete && (
+                    <button className="flex-1 bg-white hover:bg-rose-50 border border-slate-200 text-rose-600 px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2 text-sm">
+                      <icons.Trash2 className="w-4 h-4" /> Xóa
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
