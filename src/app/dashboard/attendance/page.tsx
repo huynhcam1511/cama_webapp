@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAttendanceHistory } from "./actions";
+import { getAttendanceHistory, checkIn, checkOut } from "./actions";
 import { MapPin, Clock, Search, Map, CheckCircle, LogOut } from "lucide-react";
 import { format } from "date-fns";
 
@@ -112,6 +112,8 @@ export default function AttendanceDashboardPage() {
         const { latitude, longitude } = position.coords;
         const distance = getDistanceFromLatLonInM(STORE_LAT, STORE_LNG, latitude, longitude);
         
+        const locationData = { lat: latitude, lng: longitude, accuracy: position.coords.accuracy };
+
         if (distance > MAX_DISTANCE_METERS) {
           const reason = window.prompt(`Bạn đang cách cửa hàng ${Math.round(distance)}m (Vượt quá 50m).\nVui lòng nhập lý do (VD: Đi chụp ngoại cảnh, Gặp khách hàng...):`);
           
@@ -121,15 +123,25 @@ export default function AttendanceDashboardPage() {
             return;
           }
           
-          // TODO: Call API to log attendance with reason
-          alert(`Check-${type} thành công (Ngoài khu vực)! Khoảng cách: ${Math.round(distance)}m.\nLý do: ${reason}`);
+          // Call API to log attendance with reason (reason not yet supported in DB schema but we log location)
+          const res = type === 'in' ? await checkIn(locationData) : await checkOut(locationData);
+          if (res.success) {
+            alert(`Check-${type} thành công (Ngoài khu vực)! Khoảng cách: ${Math.round(distance)}m.\nLý do: ${reason}`);
+          } else {
+            alert(`Lỗi: ${res.error}`);
+          }
           setCheckingIn(false);
           fetchData(); // Reload
           return;
         }
 
-        // TODO: Call API to log attendance normally
-        alert(`Check-${type} thành công! Khoảng cách: ${Math.round(distance)}m`);
+        // Call API to log attendance normally
+        const res = type === 'in' ? await checkIn(locationData) : await checkOut(locationData);
+        if (res.success) {
+          alert(res.message || `Check-${type} thành công! Khoảng cách: ${Math.round(distance)}m`);
+        } else {
+          alert(`Lỗi: ${res.error}`);
+        }
         setCheckingIn(false);
         fetchData(); // Reload
       },

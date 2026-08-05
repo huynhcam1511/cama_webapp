@@ -97,9 +97,12 @@ function normalizeContract(row: any): Contract {
     0
   );
 
+  const contractStatus: ContractStatus =
+    meta.contract_status || (row.status === "COMPLETED" ? "COMPLETED" : row.status === "CANCELLED" ? "CANCELLED" : "EFFECTIVE");
+
   const totalAmount = Number(row.total_amount || meta.total_amount || calculatedSubtotal);
   const paidAmount = Number(row.paid_amount || meta.paid_amount || 0);
-  const remainingAmount = Math.max(0, totalAmount - paidAmount);
+  const remainingAmount = contractStatus === "CANCELLED" ? 0 : Math.max(0, totalAmount - paidAmount);
 
   // Payments mapping
   const installments = row.payment_installments || [];
@@ -150,9 +153,6 @@ function normalizeContract(row: any): Contract {
   } else if (meta.is_overdue || (meta.payment_due_date && new Date(meta.payment_due_date).getTime() < Date.now())) {
     debtStatus = "OVERDUE";
   }
-
-  const contractStatus: ContractStatus =
-    meta.contract_status || (row.status === "COMPLETED" ? "COMPLETED" : row.status === "CANCELLED" ? "CANCELLED" : "EFFECTIVE");
 
   const executionStatus: ExecutionStatus = meta.execution_status || "PREPARING";
 

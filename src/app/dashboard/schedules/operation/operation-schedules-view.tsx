@@ -192,28 +192,32 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
 
         {/* Timeline Grid (Weekly) */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden">
-          <div className="flex border-b border-slate-200 bg-slate-50/50">
-            <div className="w-16 shrink-0 border-r border-slate-200"></div>
-            <div className="flex-1 grid grid-cols-7">
-              {daysInWeek.map(day => {
-                const isTodayDate = isToday(day);
-                return (
-                  <div key={day.toISOString()} className={`py-4 text-center border-r last:border-0 border-slate-200 ${isTodayDate ? 'bg-indigo-50/50' : ''}`}>
-                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      {format(day, "EEEE", { locale: vi })}
+          <div className="flex flex-col flex-1 overflow-y-auto relative">
+            
+            {/* Header (Sticky) */}
+            <div className="flex border-b border-slate-200 bg-slate-50/50 sticky top-0 z-40">
+              <div className="w-16 shrink-0 border-r border-slate-200 bg-slate-50/50"></div>
+              <div className="flex-1 grid grid-cols-7 bg-slate-50/50">
+                {daysInWeek.map(day => {
+                  const isTodayDate = isToday(day);
+                  return (
+                    <div key={day.toISOString()} className={`py-4 text-center border-r last:border-0 border-slate-200 ${isTodayDate ? 'bg-indigo-50/50' : ''}`}>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        {format(day, "EEEE", { locale: vi })}
+                      </div>
+                      <div className={`text-xl font-bold inline-flex items-center justify-center w-8 h-8 rounded-full ${isTodayDate ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-800'}`}>
+                        {format(day, "d")}
+                      </div>
                     </div>
-                    <div className={`text-xl font-bold inline-flex items-center justify-center w-8 h-8 rounded-full ${isTodayDate ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-800'}`}>
-                      {format(day, "d")}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-          
-          <div className="flex bg-slate-100 flex-1 overflow-y-auto">
-            {/* Time Axis 8h - 22h */}
-            <div className="w-16 shrink-0 bg-white border-r border-slate-200">
+            
+            {/* Body Grid */}
+            <div className="flex bg-slate-100 relative min-h-[960px]">
+              {/* Time Axis 8h - 22h */}
+              <div className="w-16 shrink-0 bg-white border-r border-slate-200 z-30">
               {Array.from({ length: 15 }).map((_, i) => (
                 <div key={i} className="h-16 flex items-start justify-end pr-2 pt-1 text-[10px] font-bold text-slate-400 border-b border-slate-100">
                   {i + 8}:00

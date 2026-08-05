@@ -19,7 +19,7 @@ export default async function StaffSchedulePage() {
   const supabase = createAdminClient();
   const { data: departments } = await supabase.from("departments").select("id, department_name");
   const { data: roles } = await supabase.from("roles").select("id, role_name");
-  const { data: users } = await supabase.from("users").select("id, full_name, employee_code, department_id, role_id, is_active, note, default_start_time, default_end_time, default_work_days, avatar_url").eq("is_active", true);
+  const { data: users } = await supabase.from("users").select("id, full_name, employee_code, department_id, role_id, is_active, note, default_start_time, default_end_time, default_work_days, avatar_url");
 
   const activeUserFull = users?.find(u => u.id === user.id) || null;
 
