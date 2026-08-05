@@ -1,0 +1,12 @@
+-- Marketing Module V3 Schema Update
+ALTER TABLE public.marketing_contents
+ADD COLUMN IF NOT EXISTS niche VARCHAR(50),
+ADD COLUMN IF NOT EXISTS best_time_to_post VARCHAR(255),
+ADD COLUMN IF NOT EXISTS context_setup TEXT,
+ADD COLUMN IF NOT EXISTS script_details JSONB DEFAULT '[]',
+ADD COLUMN IF NOT EXISTS social_post_caption TEXT,
+ADD COLUMN IF NOT EXISTS social_post_hashtags TEXT,
+ADD COLUMN IF NOT EXISTS generated_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+ADD COLUMN IF NOT EXISTS assignee UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS actual_publish_link TEXT;
+

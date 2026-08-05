@@ -48,6 +48,7 @@ export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> 
     *,
     contract:contracts (
       contract_code,
+      meta,
       customer:customers ( bride_name, groom_name, phone )
     ),
     pic:users ( full_name ),

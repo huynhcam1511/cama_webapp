@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserPermissions, requireActiveUser, requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 
-export type EventType = "DRESS_TRY_ON" | "FITTING" | "DRESS_PREPARATION" | "CUSTOMER_APPOINTMENT" | "DELIVERY" | "RETURN" | "PICKUP" | "ALTERATION" | "INTERNAL_TASK" | "OTHER";
+export type EventType = "DRESS_TRY_ON" | "SUIT_TRY_ON" | "PHOTO_SHOOT" | "FITTING" | "DRESS_PREPARATION" | "CUSTOMER_APPOINTMENT" | "DELIVERY" | "RETURN" | "PICKUP" | "ALTERATION" | "INTERNAL_TASK" | "OTHER";
 export type OperationStatus = "SCHEDULED" | "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 export type PriorityLevel = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
@@ -171,10 +171,10 @@ export async function getOperationSchedules() {
         }
       });
       
-      // Virtual: Return Document
+      // Virtual: Checklist items
       const checklist = meta.checklist || [];
       checklist.forEach((chk: any, idx: number) => {
-        if (chk.due_date && chk.title?.toLowerCase().includes("trả giấy tờ")) {
+        if (chk.due_date) {
           schedules.push({
             id: `virtual-doc-${c.id}-${idx}`,
             title: chk.title,
@@ -185,13 +185,13 @@ export async function getOperationSchedules() {
             department_id: null,
             primary_assignee_id: null,
             date: chk.due_date.split("T")[0],
-            start_time: "10:00:00",
-            end_time: "12:00:00",
+            start_time: "08:00:00",
+            end_time: "23:59:59",
             location: "Showroom",
             garment_id: null,
             status: chk.status === "COMPLETED" ? "COMPLETED" : "SCHEDULED",
             priority: "NORMAL",
-            notes: `Trả giấy tờ thế chấp cho khách.`,
+            notes: chk.title,
             created_by: "system",
             schedule_category: "VIRTUAL_DOC",
             customer_name: customerName,
@@ -202,6 +202,91 @@ export async function getOperationSchedules() {
           } as OperationSchedule);
         }
       });
+
+      // Virtual: Shooting Date & Dress Pickup/Return
+      if (meta.ngay_chup) {
+        schedules.push({
+          id: `virtual-shoot-${c.id}`,
+          title: `Ngày Chụp: ${c.contract_code}`,
+          event_type: "PHOTO_SHOOT",
+          customer_id: null,
+          contract_id: c.id,
+          order_id: null,
+          department_id: null,
+          primary_assignee_id: null,
+          date: meta.ngay_chup.split("T")[0],
+          start_time: "08:00:00",
+          end_time: "23:59:59",
+          location: meta.dia_diem || "Studio",
+          garment_id: null,
+          status: "SCHEDULED",
+          priority: "HIGH",
+          notes: "Lịch chụp ảnh theo hợp đồng",
+          created_by: "system",
+          schedule_category: "VIRTUAL_SHOOT",
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          contract: { contract_code: c.contract_code }
+        } as OperationSchedule);
+      }
+      
+      if (meta.ngay_giao_vay) {
+        schedules.push({
+          id: `virtual-dress-pickup-${c.id}`,
+          title: `Lấy Váy: ${c.contract_code}`,
+          event_type: "PICKUP",
+          customer_id: null,
+          contract_id: c.id,
+          order_id: null,
+          department_id: null,
+          primary_assignee_id: null,
+          date: meta.ngay_giao_vay.split("T")[0],
+          start_time: "08:00:00",
+          end_time: "23:59:59",
+          location: "Showroom",
+          garment_id: null,
+          status: "SCHEDULED",
+          priority: "NORMAL",
+          notes: "Khách lấy váy theo hợp đồng",
+          created_by: "system",
+          schedule_category: "VIRTUAL_PICKUP",
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          contract: { contract_code: c.contract_code }
+        } as OperationSchedule);
+      }
+      
+      if (meta.ngay_tra_vay) {
+        schedules.push({
+          id: `virtual-dress-return-${c.id}`,
+          title: `Trả Váy: ${c.contract_code}`,
+          event_type: "RETURN",
+          customer_id: null,
+          contract_id: c.id,
+          order_id: null,
+          department_id: null,
+          primary_assignee_id: null,
+          date: meta.ngay_tra_vay.split("T")[0],
+          start_time: "08:00:00",
+          end_time: "23:59:59",
+          location: "Showroom",
+          garment_id: null,
+          status: "SCHEDULED",
+          priority: "NORMAL",
+          notes: "Khách trả váy theo hợp đồng",
+          created_by: "system",
+          schedule_category: "VIRTUAL_RETURN",
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          contract: { contract_code: c.contract_code }
+        } as OperationSchedule);
+      }
     }
   }
 
@@ -300,4 +385,42 @@ export async function createOperationSchedule(payload: any) {
   
   revalidatePath("/dashboard/schedules/operation");
   return { success: true, schedule };
+}
+
+export async function updateOperationSchedule(scheduleId: string, payload: any) {
+  const user = await requireActiveUser();
+  await requirePermission("OPERATION_SCHEDULE", "update");
+
+  const supabase = createAdminClient();
+  const updateData = { ...payload, updated_at: new Date().toISOString() };
+  delete updateData.confirm_override;
+  delete updateData.secondary_assignees;
+
+  const { data: schedule, error } = await supabase
+    .from("operation_schedules")
+    .update(updateData)
+    .eq("id", scheduleId)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/dashboard/schedules/operation");
+  return { success: true, schedule };
+}
+
+export async function deleteOperationSchedule(scheduleId: string) {
+  const user = await requireActiveUser();
+  await requirePermission("OPERATION_SCHEDULE", "delete");
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("operation_schedules")
+    .delete()
+    .eq("id", scheduleId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/dashboard/schedules/operation");
+  return { success: true };
 }

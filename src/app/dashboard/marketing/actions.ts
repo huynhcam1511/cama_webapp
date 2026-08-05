@@ -1,19 +1,18 @@
 'use server';
 
-import { createClient } from "@/lib/supabase/server";
+import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
 export async function getMarketingContents() {
-  const supabase = createClient();
+  const supabase = createServerActionClient({ cookies });
   
   const { data, error } = await supabase
     .from('marketing_contents')
     .select(`
       id,
       title,
-      platform,
-      category,
-      format,
+      niche,
       status,
       best_time_to_post,
       context_setup,
@@ -36,7 +35,7 @@ export async function getMarketingContents() {
 }
 
 export async function updateMarketingContent(id: string, payload: any) {
-  const supabase = createClient();
+  const supabase = createServerActionClient({ cookies });
   
   const { error } = await supabase
     .from('marketing_contents')
@@ -52,7 +51,7 @@ export async function updateMarketingContent(id: string, payload: any) {
 }
 
 export async function deleteMarketingContent(id: string) {
-  const supabase = createClient();
+  const supabase = createServerActionClient({ cookies });
   
   const { error } = await supabase
     .from('marketing_contents')

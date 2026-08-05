@@ -4,14 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
-export async function checkIn(locationData?: { lat: number, lng: number, accuracy: number }) {
+export async function checkIn(locationData?: { lat: number, lng: number, accuracy: number }, reason?: string) {
   const adminClient = createAdminClient();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: "Unauthorized" };
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
 
   // Check if already checked in today
   const { data: existingLog } = await adminClient
@@ -38,7 +38,8 @@ export async function checkIn(locationData?: { lat: number, lng: number, accurac
     date: today,
     check_in_time: now.toISOString(),
     check_in_location: locationData ? JSON.stringify(locationData) : null,
-    status: status
+    status: status,
+    notes: reason || null
   }]);
 
   if (error) {
@@ -54,14 +55,14 @@ export async function checkIn(locationData?: { lat: number, lng: number, accurac
   };
 }
 
-export async function checkOut(locationData?: { lat: number, lng: number, accuracy: number }) {
+export async function checkOut(locationData?: { lat: number, lng: number, accuracy: number }, reason?: string) {
   const supabase = await createClient();
   const adminClient = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: "Unauthorized" };
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
 
   // Get today's log
   const { data: existingLog } = await adminClient
@@ -88,14 +89,20 @@ export async function checkOut(locationData?: { lat: number, lng: number, accura
     newStatus = "EARLY_LEAVE";
   }
 
+  const updateData: any = {
+    check_out_time: now.toISOString(),
+    check_out_location: locationData ? JSON.stringify(locationData) : null,
+    status: newStatus,
+    updated_at: now.toISOString()
+  };
+
+  if (reason) {
+    updateData.notes = existingLog.notes ? `${existingLog.notes} | Ra: ${reason}` : `Ra: ${reason}`;
+  }
+
   const { error } = await adminClient
     .from("attendance_logs")
-    .update({
-      check_out_time: now.toISOString(),
-      check_out_location: locationData ? JSON.stringify(locationData) : null,
-      status: newStatus,
-      updated_at: now.toISOString()
-    })
+    .update(updateData)
     .eq("id", existingLog.id);
 
   if (error) {
@@ -118,7 +125,7 @@ export async function getMyAttendanceToday() {
 
   if (!user) return { success: false, data: null };
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
   const { data } = await adminClient
     .from("attendance_logs")
     .select("*")
@@ -132,12 +139,38 @@ export async function getMyAttendanceToday() {
 export async function getAttendanceHistory(dateString: string) {
   const adminClient = createAdminClient();
   
-  const { data, error } = await adminClient
+  const { data: logs, error: logsError } = await adminClient
     .from("attendance_logs")
-    .select("*, users(full_name, employee_code, note)")
+    .select("*")
     .eq("date", dateString)
     .order("check_in_time", { ascending: false });
 
-  if (error) return { success: false, error: error.message };
-  return { success: true, data };
+  if (logsError) return { success: false, error: logsError.message };
+
+  if (!logs || logs.length === 0) {
+    return { success: true, data: [] };
+  }
+
+  const userIds = logs.map(log => log.user_id).filter(Boolean);
+  
+  const { data: usersData, error: usersError } = await adminClient
+    .from("users")
+    .select("id, full_name, employee_code, note")
+    .in("id", userIds);
+
+  if (usersError) return { success: false, error: usersError.message };
+
+  const usersMap = new Map();
+  if (usersData) {
+    usersData.forEach(user => {
+      usersMap.set(user.id, user);
+    });
+  }
+
+  const enrichedLogs = logs.map(log => ({
+    ...log,
+    users: usersMap.get(log.user_id) || null
+  }));
+
+  return { success: true, data: enrichedLogs };
 }

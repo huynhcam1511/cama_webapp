@@ -30,7 +30,7 @@ function deg2rad(deg: number) {
 export default function AttendanceDashboardPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }));
   const [checkingIn, setCheckingIn] = useState(false);
   const [gpsError, setGpsError] = useState("");
 
@@ -56,42 +56,6 @@ export default function AttendanceDashboardPage() {
     const res = await getAttendanceHistory(selectedDate);
     
     let fetchedLogs = res.success ? (res.data || []) : [];
-    
-    // Inject dummy data for demonstration if empty
-    if (fetchedLogs.length === 0) {
-      fetchedLogs = [
-        {
-          id: "dummy-1",
-          user_id: "user-1",
-          users: { full_name: "Nguyễn Văn Cao", employee_code: "GĐ-001" },
-          check_in_time: `${selectedDate}T08:25:00+07:00`,
-          check_out_time: `${selectedDate}T17:35:00+07:00`,
-          status: "ON_TIME",
-          check_in_location: { lat: 10.762622, lng: 106.660172 },
-          check_out_location: { lat: 10.762622, lng: 106.660172 }
-        },
-        {
-          id: "dummy-2",
-          user_id: "user-2",
-          users: { full_name: "Nguyễn Thị Anh Thi", employee_code: "NV-9147" },
-          check_in_time: `${selectedDate}T08:45:00+07:00`,
-          check_out_time: null,
-          status: "LATE",
-          check_in_location: { lat: 10.762622, lng: 106.660172 },
-          check_out_location: null
-        },
-        {
-          id: "dummy-3",
-          user_id: "user-3",
-          users: { full_name: "Huỳnh Kiến Cấm", employee_code: "ADMIN-01" },
-          check_in_time: `${selectedDate}T08:30:00+07:00`,
-          check_out_time: `${selectedDate}T16:00:00+07:00`,
-          status: "EARLY_LEAVE",
-          check_in_location: { lat: 10.762622, lng: 106.660172 },
-          check_out_location: { lat: 10.762622, lng: 106.660172 }
-        }
-      ];
-    }
     
     setLogs(fetchedLogs);
     setLoading(false);
@@ -135,8 +99,8 @@ export default function AttendanceDashboardPage() {
             return;
           }
           
-          // Call API to log attendance with reason (reason not yet supported in DB schema but we log location)
-          const res = type === 'in' ? await checkIn(locationData) : await checkOut(locationData);
+          // Call API to log attendance with reason
+          const res = type === 'in' ? await checkIn(locationData, reason) : await checkOut(locationData, reason);
           if (res.success) {
             alert(`Check-${type} thành công (Ngoài khu vực)! Khoảng cách: ${Math.round(distance)}m.\nLý do: ${reason}`);
           } else {
@@ -192,7 +156,7 @@ export default function AttendanceDashboardPage() {
           
           {(() => {
             // Check if selectedDate is today
-            const isToday = selectedDate === new Date().toISOString().split("T")[0];
+            const isToday = selectedDate === new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
             const canCheckIn = isToday && !myAttendance;
             const canCheckOut = isToday && myAttendance && !myAttendance.check_out_time;
 
@@ -237,16 +201,17 @@ export default function AttendanceDashboardPage() {
                 <th className="px-6 py-4">Giờ Ra (Check-out)</th>
                 <th className="px-6 py-4">Trạng thái</th>
                 <th className="px-6 py-4">Bản đồ (GPS)</th>
+                <th className="px-6 py-4">Lý do / Ghi chú</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td>
+                  <td colSpan={6} className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-400">Không có dữ liệu chấm công cho ngày này.</td>
+                  <td colSpan={6} className="p-8 text-center text-slate-400">Không có dữ liệu chấm công cho ngày này.</td>
                 </tr>
               ) : (
                 logs.map(log => (
@@ -295,6 +260,15 @@ export default function AttendanceDashboardPage() {
                           </button>
                         )}
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {log.notes ? (
+                        <p className="text-xs text-slate-600 max-w-[150px] truncate" title={log.notes}>
+                          {log.notes}
+                        </p>
+                      ) : (
+                        <span className="text-slate-300">---</span>
+                      )}
                     </td>
                   </tr>
                 ))

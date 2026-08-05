@@ -112,6 +112,7 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
     }
   };
 
+
   const submitOvertime = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -119,9 +120,9 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
     const payload = {
       date: overtimeForm.date,
       schedule_type: "WORKING" as ScheduleType,
-      start_time: overtimeForm.start,
-      end_time: overtimeForm.end,
       leave_reason: overtimeForm.reason,
+      start_time: overtimeForm.start,
+      end_time: overtimeForm.end
     };
 
     try {
@@ -129,22 +130,23 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
         updateOptimisticSchedules({
           action: "CREATE",
           payload: {
-            id: Math.random().toString(), // Temp ID
+            id: Math.random().toString(),
             user_id: activeUser?.id,
             date: payload.date,
             schedule_type: payload.schedule_type,
+            leave_reason: payload.leave_reason,
             start_time: payload.start_time,
             end_time: payload.end_time,
-            leave_reason: payload.leave_reason,
-            approval_status: "APPROVED",
+            approval_status: "PENDING",
             is_urgent: false,
+            created_at: new Date().toISOString()
           }
         });
       });
 
       await createWeeklySchedules([payload]);
       setShowOvertimeModal(false);
-      setOvertimeForm({ ...overtimeForm, reason: "" });
+      setOvertimeForm({ date: format(new Date(), "yyyy-MM-dd"), start: "08:30", end: "17:30", reason: "" });
     } catch (error: any) {
       alert("Lỗi: " + error.message);
     } finally {

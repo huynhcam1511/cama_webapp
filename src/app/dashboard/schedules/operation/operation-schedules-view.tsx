@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { OperationSchedule, createOperationSchedule, EventType, OperationStatus } from "./actions";
+import { OperationSchedule, createOperationSchedule, updateOperationSchedule, deleteOperationSchedule, EventType, OperationStatus } from "./actions";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isToday, differenceInDays } from "date-fns";
 import { vi } from "date-fns/locale";
 import * as icons from "lucide-react";
@@ -15,16 +15,18 @@ interface Props {
 }
 
 const EVENT_TYPE_MAP: Record<EventType, { label: string, color: string }> = {
-  DRESS_TRY_ON: { label: "Thử Váy", color: "bg-pink-100 text-pink-800 border-pink-200" },
-  FITTING: { label: "Fitting", color: "bg-purple-100 text-purple-800 border-purple-200" },
-  DRESS_PREPARATION: { label: "Chuẩn bị Đồ", color: "bg-indigo-100 text-indigo-800 border-indigo-200" },
-  CUSTOMER_APPOINTMENT: { label: "Hẹn Khách", color: "bg-blue-100 text-blue-800 border-blue-200" },
-  DELIVERY: { label: "Giao Đồ", color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-  RETURN: { label: "Trả Đồ", color: "bg-amber-100 text-amber-800 border-amber-200" },
-  PICKUP: { label: "Lấy Đồ", color: "bg-orange-100 text-orange-800 border-orange-200" },
-  ALTERATION: { label: "Chỉnh sửa", color: "bg-rose-100 text-rose-800 border-rose-200" },
-  INTERNAL_TASK: { label: "Nội bộ", color: "bg-slate-200 text-slate-800 border-slate-300" },
-  OTHER: { label: "Khác", color: "bg-slate-100 text-slate-800 border-slate-200" }
+  DRESS_TRY_ON: { label: "Thử Váy", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  SUIT_TRY_ON: { label: "Thử Suit", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  PHOTO_SHOOT: { label: "Chụp Ảnh", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  FITTING: { label: "Fitting", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  DRESS_PREPARATION: { label: "Chuẩn bị Đồ", color: "bg-amber-50 text-amber-700 border-amber-200" },
+  CUSTOMER_APPOINTMENT: { label: "Hẹn Khách", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  DELIVERY: { label: "Giao Đồ", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  RETURN: { label: "Trả Đồ", color: "bg-orange-50 text-orange-700 border-orange-200" },
+  PICKUP: { label: "Lấy Đồ", color: "bg-orange-50 text-orange-700 border-orange-200" },
+  ALTERATION: { label: "Chỉnh sửa", color: "bg-amber-50 text-amber-700 border-amber-200" },
+  INTERNAL_TASK: { label: "Nội bộ", color: "bg-slate-50 text-slate-700 border-slate-200" },
+  OTHER: { label: "Khác", color: "bg-slate-50 text-slate-700 border-slate-200" }
 };
 
 export default function OperationSchedulesView({ initialSchedules, permissions, users }: Props) {
@@ -41,6 +43,7 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
   const [filterPIC, setFilterPIC] = useState<string>("ALL");
 
   // Form state
+  const [editId, setEditId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("08:00");
@@ -69,18 +72,68 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
     });
   }, [schedules, filterType, filterStatus, filterPIC]);
 
+  const isAllDayEvent = (s: OperationSchedule) => {
+    if (s.id.startsWith("virtual-")) return true;
+    if (s.start_time && s.end_time) {
+      const sh = parseInt(s.start_time.split(":")[0], 10);
+      const eh = parseInt(s.end_time.split(":")[0], 10);
+      if (eh - sh >= 12) return true;
+    }
+    return false;
+  };
+
+  const getSchedulesForHour = (date: Date, hour: number) => {
+    return filteredSchedules.filter(s => {
+      if (isAllDayEvent(s)) return false; // All-Day events go to All Day section
+      
+      const sDate = new Date(s.date);
+      if (sDate.getDate() !== date.getDate() || sDate.getMonth() !== date.getMonth() || sDate.getFullYear() !== date.getFullYear()) {
+        return false;
+      }
+      if (!s.start_time) return false;
+      
+      const sHour = parseInt(s.start_time.split(":")[0], 10);
+      return sHour === hour;
+    });
+  };
+
+  const getAllDaySchedules = (date: Date) => {
+    return filteredSchedules.filter(s => {
+      const sDate = new Date(s.date);
+      if (sDate.getDate() !== date.getDate() || sDate.getMonth() !== date.getMonth() || sDate.getFullYear() !== date.getFullYear()) {
+        return false;
+      }
+      return isAllDayEvent(s);
+    });
+  };
+
+  const getDaySchedules = (dateStr: string) => {
+    return filteredSchedules
+      .filter(s => (s.date ? s.date.split('T')[0] : '') === dateStr)
+      .filter(s => !isAllDayEvent(s))
+      .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""));
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !date || !startTime || !endTime) return;
     
     setIsSubmitting(true);
     try {
-      await createOperationSchedule({
-        title, date, start_time: startTime, end_time: endTime, event_type: eventType,
-        location, primary_assignee_id: primaryAssignee || null, confirm_override: confirmOverride,
-        status: "SCHEDULED", priority: "NORMAL"
-      });
-      alert("Tạo lịch vận hành thành công!");
+      if (editId) {
+        await updateOperationSchedule(editId, {
+          title, date, start_time: startTime, end_time: endTime, event_type: eventType,
+          location, primary_assignee_id: primaryAssignee || null, status: "SCHEDULED", priority: "NORMAL"
+        });
+        alert("Cập nhật lịch thành công!");
+      } else {
+        await createOperationSchedule({
+          title, date, start_time: startTime, end_time: endTime, event_type: eventType,
+          location, primary_assignee_id: primaryAssignee || null, confirm_override: confirmOverride,
+          status: "SCHEDULED", priority: "NORMAL"
+        });
+        alert("Tạo lịch vận hành thành công!");
+      }
       setShowModal(false);
       setConfirmOverride(false);
       window.location.reload(); 
@@ -111,7 +164,6 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
     if (s.status === 'COMPLETED' || s.status === 'CANCELLED') return null;
     const diff = differenceInDays(new Date(s.date), new Date());
     if (diff < 0) return <span className="bg-slate-500 text-white text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5 shrink-0 whitespace-nowrap"><icons.Clock className="w-2.5 h-2.5"/> ĐÃ QUA {Math.abs(diff)} NGÀY</span>;
-    if (s.status === 'SCHEDULED' && diff <= 1) return <span className="bg-orange-500 text-white text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5 shrink-0 whitespace-nowrap"><icons.AlertTriangle className="w-2.5 h-2.5"/> CHƯA XÁC NHẬN</span>;
     return null;
   };
 
@@ -142,13 +194,18 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
 
           <div className="flex gap-2">
             {permissions.can_create && (
-              <button 
-                onClick={() => setShowModal(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2 text-sm"
-              >
-                <icons.Plus className="w-4 h-4" />
-                Tạo Lịch Nhanh
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => { 
+                    setEditId(null); setTitle(""); setDate(""); setLocation(""); setPrimaryAssignee("");
+                    setEventType("DRESS_TRY_ON"); setShowModal(true); 
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2 text-sm"
+                >
+                  <icons.Plus className="w-4 h-4" />
+                  Tạo Lịch Mới
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -161,9 +218,24 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
             className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="ALL">Tất cả loại lịch</option>
-            {Object.entries(EVENT_TYPE_MAP).map(([k, v]) => (
-              <option key={k} value={k}>{v.label}</option>
-            ))}
+            <optgroup label="Lịch Khách Hẹn">
+              <option value="DRESS_TRY_ON">Thử Váy</option>
+              <option value="SUIT_TRY_ON">Thử Suit</option>
+              <option value="PHOTO_SHOOT">Chụp Ảnh</option>
+              <option value="FITTING">Fitting</option>
+              <option value="CUSTOMER_APPOINTMENT">Hẹn Khách</option>
+            </optgroup>
+            <optgroup label="Vận Hành Trang Phục">
+              <option value="DRESS_PREPARATION">Chuẩn bị Đồ</option>
+              <option value="DELIVERY">Giao Đồ</option>
+              <option value="RETURN">Trả Đồ</option>
+              <option value="PICKUP">Lấy Đồ</option>
+              <option value="ALTERATION">Chỉnh sửa</option>
+            </optgroup>
+            <optgroup label="Khác">
+              <option value="INTERNAL_TASK">Nội bộ</option>
+              <option value="OTHER">Khác</option>
+            </optgroup>
           </select>
           
           <select 
@@ -214,6 +286,35 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
               </div>
             </div>
             
+            {/* CẢ NGÀY (All Day) */}
+            <div className="flex border-b border-slate-200 bg-white shadow-sm z-30 relative">
+              <div className="w-16 shrink-0 bg-slate-50 border-r border-slate-200 flex items-center justify-center text-[9px] font-bold text-slate-400">
+                CẢ NGÀY
+              </div>
+              <div className="flex-1 grid grid-cols-7">
+                {daysInWeek.map((day, i) => {
+                  const allDayEvents = getAllDaySchedules(day);
+                  return (
+                    <div key={day.toISOString()} className={`border-r border-slate-200 p-1 flex flex-col gap-1 min-h-[32px] ${isToday(day) ? 'bg-indigo-50/30' : ''}`}>
+                      {allDayEvents.map(schedule => {
+                        const eventInfo = EVENT_TYPE_MAP[schedule.event_type] || EVENT_TYPE_MAP.OTHER;
+                        return (
+                          <div 
+                            key={schedule.id}
+                            onClick={() => setSelectedSchedule(schedule)}
+                            className={`px-1.5 py-1 rounded text-[9.5px] font-bold cursor-pointer border truncate ${eventInfo.color} hover:brightness-95 transition-all`}
+                            title={schedule.title}
+                          >
+                            [{eventInfo.label}] {schedule.customer?.bride_name || schedule.customer_name || schedule.title}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Body Grid */}
             <div className="flex bg-slate-100 relative min-h-[960px]">
               {/* Time Axis 8h - 22h */}
@@ -236,9 +337,7 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
 
               {daysInWeek.map(day => {
                 const dateStr = format(day, "yyyy-MM-dd");
-                const daySchedules = filteredSchedules
-                  .filter(s => (s.date ? s.date.split('T')[0] : '') === dateStr)
-                  .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""));
+                const daySchedules = getDaySchedules(dateStr);
 
                 return (
                   <div key={dateStr} className={`relative min-h-[960px] border-r border-slate-200 ${isToday(day) ? 'bg-indigo-50/30' : ''}`}>
@@ -253,35 +352,35 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
                       const endHour = parseInt(schedule.end_time.split(':')[0] || '9');
                       const endMin = parseInt(schedule.end_time.split(':')[1] || '0');
                       
-                      const top = Math.max(0, (startHour - 8) * 64 + (startMin / 60) * 64);
-                      const height = Math.max(24, (endHour - startHour) * 64 + ((endMin - startMin) / 60) * 64);
+                      const top = Math.max(0, (startHour - 8) * 64 + (startMin / 60) * 64) + 2;
+                      const height = Math.max(24, (endHour - startHour) * 64 + ((endMin - startMin) / 60) * 64) - 4;
                       
                       const isVirtual = schedule.id.startsWith("virtual-");
                       let customColor = eventInfo.color;
-                      if (schedule.schedule_category === 'VIRTUAL_DELIVERY') customColor = 'bg-emerald-50 text-emerald-800 border-emerald-400 border-2 border-dashed shadow-sm';
-                      if (schedule.schedule_category === 'VIRTUAL_RETURN') customColor = 'bg-orange-50 text-orange-800 border-orange-400 border-2 border-dashed shadow-sm';
-                      if (schedule.schedule_category === 'VIRTUAL_PAYMENT') customColor = 'bg-rose-50 text-rose-800 border-rose-400 border-2 border-dashed shadow-sm';
-                      if (schedule.schedule_category === 'VIRTUAL_DOC') customColor = 'bg-purple-50 text-purple-800 border-purple-400 border-2 border-dashed shadow-sm';
+                      if (schedule.schedule_category === 'VIRTUAL_DELIVERY') customColor = 'bg-emerald-50 text-emerald-800 border-emerald-300 border-2 shadow-sm';
+                      if (schedule.schedule_category === 'VIRTUAL_RETURN') customColor = 'bg-orange-50 text-orange-800 border-orange-300 border-2 shadow-sm';
+                      if (schedule.schedule_category === 'VIRTUAL_PAYMENT') customColor = 'bg-rose-50 text-rose-800 border-rose-300 border-2 shadow-sm';
+                      if (schedule.schedule_category === 'VIRTUAL_DOC') customColor = 'bg-purple-50 text-purple-800 border-purple-300 border-2 shadow-sm';
 
                       return (
                         <div 
                           key={schedule.id}
                           onClick={() => setSelectedSchedule(schedule)}
                           style={{ top: `${top}px`, height: `${height}px` }}
-                          className={`absolute inset-x-1 p-1.5 rounded-lg border text-xs cursor-pointer hover:shadow-md transition-all group overflow-hidden flex flex-col z-10 ${isSelected ? 'ring-2 ring-indigo-500 z-20' : ''} ${schedule.status === 'COMPLETED' ? 'opacity-60 bg-slate-50 border-slate-200' : customColor}`}
+                          className={`absolute inset-x-1.5 p-1.5 rounded-md border text-xs cursor-pointer hover:shadow-md transition-all group overflow-hidden flex flex-col z-10 ${isSelected ? 'ring-2 ring-indigo-500 z-20' : ''} ${schedule.status === 'COMPLETED' ? 'opacity-60 bg-slate-50 border-slate-200' : customColor}`}
                         >
                           {schedule.status === 'COMPLETED' && <div className="absolute inset-0 bg-white/40 z-10 pointer-events-none"></div>}
                           
-                          <div className="flex items-start justify-between gap-1 w-full shrink-0">
+                          <div className="flex items-start justify-between gap-1 w-full shrink-0 leading-none mb-0.5">
                             <span className="font-mono font-bold text-[9px] shrink-0">{schedule.start_time.slice(0, 5)}</span>
                             {overdueBadge && <div className="ml-auto hidden xl:block">{overdueBadge}</div>}
                           </div>
                           
-                          <div className="font-bold mb-1 text-[10px] line-clamp-1 leading-tight flex-1">
-                            {schedule.customer?.bride_name ? schedule.customer.bride_name : (schedule.customer_name || schedule.title)}
+                          <div className="font-bold text-[9.5px] line-clamp-1 leading-tight flex-1 overflow-hidden">
+                            <span className="opacity-80">[{schedule.id.startsWith("virtual-") ? "Tự động" : eventInfo.label}]</span> {schedule.customer?.bride_name ? schedule.customer.bride_name : (schedule.customer_name || schedule.title)}
                           </div>
                           
-                          <div className="flex items-center gap-1 text-[9px] mt-auto font-medium truncate shrink-0">
+                          <div className="flex items-center gap-1 text-[8.5px] mt-auto font-medium truncate shrink-0 pt-0.5">
                             <icons.User className="w-2.5 h-2.5 shrink-0" />
                             <span className="truncate">{schedule.primary_assignee?.full_name || 'Chưa gán'}</span>
                           </div>
@@ -300,15 +399,18 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
       {/* Right: Drawer View */}
       {selectedSchedule && (
         <div className={`fixed inset-y-0 right-0 z-50 w-full md:w-[450px] lg:static lg:w-1/4 bg-white border-l border-slate-200 shadow-2xl lg:shadow-none flex flex-col transform transition-transform ${selectedSchedule ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50/50">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50/50 relative">
             <div>
-              <h2 className="text-sm font-bold text-slate-800 font-serif">Chi Tiết Lịch Hẹn</h2>
+              <h2 className="text-sm font-bold text-slate-800">Chi Tiết Lịch Hẹn</h2>
               <p className="text-[10px] text-slate-500 font-bold uppercase mt-0.5">
                 {selectedSchedule.id.startsWith("virtual-") ? "SỰ KIỆN TỰ ĐỘNG" : EVENT_TYPE_MAP[selectedSchedule.event_type]?.label}
               </p>
             </div>
-            <button onClick={() => setSelectedSchedule(null)} className="p-1.5 rounded-md hover:bg-slate-200 text-slate-500 lg:hidden">
-              <icons.X className="w-5 h-5" />
+            <button 
+              onClick={() => setSelectedSchedule(null)}
+              className="p-1.5 hover:bg-slate-200 rounded-full transition-colors"
+            >
+              <icons.X className="w-4 h-4 text-slate-500" />
             </button>
           </div>
 
@@ -354,7 +456,7 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
                     <div className="text-[10px] font-bold text-slate-500 uppercase">Hợp Đồng Liên Kết</div>
                     <div className="text-sm font-bold font-mono text-slate-800 mt-0.5">{selectedSchedule.contract.contract_code}</div>
                   </div>
-                  <Link href="/dashboard/contracts" className="text-indigo-600 hover:text-indigo-800 text-xs font-bold flex items-center gap-1">
+                  <Link href={`/dashboard/contracts/${selectedSchedule.contract_id}`} className="text-indigo-600 hover:text-indigo-800 text-xs font-bold flex items-center gap-1">
                     Mở <icons.ExternalLink className="w-3 h-3" />
                   </Link>
                 </div>
@@ -385,7 +487,7 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
             
             <div className="p-4 border-t border-slate-100 bg-slate-50 mt-auto">
               {selectedSchedule.id.startsWith("virtual-") ? (
-                <Link href={`/dashboard/contracts`} className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm transition-colors text-sm">
+                <Link href={`/dashboard/contracts/${selectedSchedule.contract_id}`} className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm transition-colors text-sm">
                   <icons.ExternalLink className="w-4 h-4" /> Đi Tới Hợp Đồng
                 </Link>
               ) : selectedSchedule.event_type === "INTERNAL_TASK" && selectedSchedule.status !== "COMPLETED" ? (
@@ -410,12 +512,38 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
               ) : (
                 <div className="flex gap-2">
                   {permissions.can_update && (
-                    <button className="flex-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2 text-sm">
+                    <button 
+                      onClick={() => {
+                        setEditId(selectedSchedule.id);
+                        setTitle(selectedSchedule.title || "");
+                        setDate(selectedSchedule.date ? selectedSchedule.date.split("T")[0] : "");
+                        setStartTime(selectedSchedule.start_time || "08:00");
+                        setEndTime(selectedSchedule.end_time || "09:00");
+                        setEventType(selectedSchedule.event_type);
+                        setLocation(selectedSchedule.location || "");
+                        setPrimaryAssignee(selectedSchedule.primary_assignee_id || "");
+                        setShowModal(true);
+                      }}
+                      className="flex-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2 text-sm"
+                    >
                       <icons.Edit2 className="w-4 h-4" /> Sửa
                     </button>
                   )}
                   {permissions.can_delete && (
-                    <button className="flex-1 bg-white hover:bg-rose-50 border border-slate-200 text-rose-600 px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2 text-sm">
+                    <button 
+                      onClick={async () => {
+                        if(confirm('Bạn có chắc chắn muốn xóa lịch này không? Hành động này không thể hoàn tác.')) {
+                          try {
+                            await deleteOperationSchedule(selectedSchedule.id);
+                            alert('Đã xóa thành công!');
+                            window.location.reload();
+                          } catch (err: any) {
+                            alert(err.message);
+                          }
+                        }
+                      }}
+                      className="flex-1 bg-white hover:bg-rose-50 border border-slate-200 text-rose-600 px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2 text-sm"
+                    >
                       <icons.Trash2 className="w-4 h-4" /> Xóa
                     </button>
                   )}
@@ -432,7 +560,7 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50/50">
               <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <icons.CalendarPlus className="w-5 h-5 text-indigo-600" /> Tạo Lịch Nhanh
+                <icons.CalendarPlus className="w-5 h-5 text-indigo-600" /> {editId ? "Cập Nhật Lịch" : "Tạo Lịch Mới"}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 bg-white p-1 rounded border border-slate-200">
                 <icons.X className="w-4 h-4" />
@@ -457,9 +585,24 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
                     value={eventType} onChange={e => setEventType(e.target.value as EventType)}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-slate-50"
                   >
-                    {Object.entries(EVENT_TYPE_MAP).map(([k, v]) => (
-                      <option key={k} value={k}>{v.label}</option>
-                    ))}
+                    <optgroup label="Lịch Khách Hẹn">
+                      <option value="DRESS_TRY_ON">Thử Váy</option>
+                      <option value="SUIT_TRY_ON">Thử Suit</option>
+                      <option value="PHOTO_SHOOT">Chụp Ảnh</option>
+                      <option value="FITTING">Fitting</option>
+                      <option value="CUSTOMER_APPOINTMENT">Hẹn Khách</option>
+                    </optgroup>
+                    <optgroup label="Vận Hành Trang Phục">
+                      <option value="DRESS_PREPARATION">Chuẩn bị Đồ</option>
+                      <option value="DELIVERY">Giao Đồ</option>
+                      <option value="RETURN">Trả Đồ</option>
+                      <option value="PICKUP">Lấy Đồ</option>
+                      <option value="ALTERATION">Chỉnh sửa</option>
+                    </optgroup>
+                    <optgroup label="Khác">
+                      <option value="INTERNAL_TASK">Nội bộ</option>
+                      <option value="OTHER">Khác</option>
+                    </optgroup>
                   </select>
                 </div>
                 <div>

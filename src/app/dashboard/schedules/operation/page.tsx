@@ -21,12 +21,6 @@ export default async function OperationSchedulePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-serif">Lịch Khách Hàng & Đơn Hàng</h1>
-          <p className="text-slate-500 mt-1">Điều phối lịch thử váy, fitting, và giao nhận trang phục.</p>
-        </div>
-      </div>
       
       <OperationSchedulesView 
         initialSchedules={schedules} 

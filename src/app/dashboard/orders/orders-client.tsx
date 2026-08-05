@@ -412,6 +412,34 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
               )}
             </div>
 
+            {/* Sản Phẩm Yêu Cầu (Garments) */}
+            {(selectedOrder.contract as any)?.meta?.garments?.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+                <label className="text-xs font-bold text-slate-600 uppercase block border-b border-slate-100 pb-2 flex items-center gap-2">
+                  <icons.Shirt className="w-4 h-4 text-purple-600" /> Sản Phẩm Yêu Cầu
+                </label>
+                <div className="space-y-3">
+                  {(selectedOrder.contract as any).meta.garments.map((g: any, i: number) => (
+                    <div key={i} className="flex flex-col p-3 border border-slate-100 rounded-lg bg-slate-50 hover:border-purple-200 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-bold text-sm text-slate-800">{g.product_name}</div>
+                          <div className="text-xs text-slate-500 mt-1">Mã: <span className="font-mono font-bold text-purple-600">{g.garment_code}</span> | Size: {g.size || "M"}</div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-1 bg-white border border-slate-200 rounded text-slate-600">
+                          {g.reservation_status === 'RESERVED' ? 'Đã giữ' : g.reservation_status}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
+                        <icons.Calendar className="w-3 h-3 text-slate-400" /> 
+                        Giữ từ <strong>{g.deliver_date}</strong> đến <strong>{g.return_date}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Lịch Trình Vận Hành */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
