@@ -123,7 +123,7 @@ export default function ContentDashboardPage() {
             <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
               <div className="p-6 space-y-4">
                 <div className="bg-amber-50 text-amber-700 p-3 rounded-xl text-sm font-semibold mb-4">
-                  * Chế độ Danh Sách hiện tại đang dùng dữ liệu mô phỏng. Vui lòng chuyển sang tab "BẢNG" để xem dữ liệu thật.
+                  * Chế độ Danh Sách hiện tại đang dùng dữ liệu mô phỏng. Vui lòng chuyển sang tab &quot;BẢNG&quot; để xem dữ liệu thật.
                 </div>
                 {posts.map(post => (
                   <div key={post.id} className="flex flex-col sm:flex-row gap-6 p-4 rounded-2xl border border-slate-100 hover:border-pink-200 hover:bg-pink-50/30 hover:shadow-md transition-all group">

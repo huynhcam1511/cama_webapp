@@ -288,6 +288,7 @@ export default function OperationSchedulesView({ initialSchedules, permissions, 
           </div>
         </div>
       </div>
+    </div>
 
       {/* Right: Drawer View */}
       {selectedSchedule && (
