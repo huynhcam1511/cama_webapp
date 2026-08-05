@@ -134,7 +134,7 @@ export async function getAttendanceHistory(dateString: string) {
   
   const { data, error } = await adminClient
     .from("attendance_logs")
-    .select("*, users(full_name, employee_code, avatar_url)")
+    .select("*, users(full_name, employee_code, note)")
     .eq("date", dateString)
     .order("check_in_time", { ascending: false });
 
