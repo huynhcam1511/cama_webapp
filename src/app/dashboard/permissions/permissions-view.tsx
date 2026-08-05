@@ -145,8 +145,7 @@ export default function PermissionsView({ roles, modules }: PermissionsViewProps
       case "OPERATIONS": return "Vận Hành";
       case "HR": return "Nhân Sự";
       case "ADMIN": return "Quản Trị";
-      case "MARKETING_WORKSPACE": return "Marketing Workspace";
-      case "MARKETING_MANAGER": return "Quản trị Marketing";
+      case "MARKETING": return "Marketing";
       default: return group;
     }
   }
