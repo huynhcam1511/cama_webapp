@@ -86,10 +86,10 @@ export default function IdeasPage() {
           if (deliv.raw_markdown) {
             markdownDoc = deliv.raw_markdown;
           } else {
-            // RENDER LẠI THEO CHUẨN JSON CŨ NẾU KHÔNG CÓ RAW MARKDOWN
-            markdownDoc = `# Bản thảo Bài đăng: ${deliv.platform}\n\n`;
+            // RENDER DYNAMIC THEO FORMAT ĐỂ KHÔNG BỊ NHÀM CHÁN
+            const isVideo = (deliv.format || '').toLowerCase().includes('video') || (deliv.format || '').toLowerCase().includes('reels') || (deliv.platform || '').toLowerCase().includes('tiktok');
+            const isLongForm = (deliv.format || '').toLowerCase().includes('long') || (deliv.format || '').toLowerCase().includes('bài viết');
             
-            // Lấy từ item metadata hoặc từ chính deliverable (để lách luật varchar 100 của DB)
             const insight = deliv.customer_insight || item.customer_insight;
             const msg = deliv.main_message || item.main_message;
             const tone = deliv.tone_voice || item.tone_voice;
@@ -97,43 +97,97 @@ export default function IdeasPage() {
             const cta = deliv.cta_target || item.cta_target;
             const assets = deliv.assets_needed || item.assets_needed;
 
-            if (insight || msg || tone || hook || cta || assets) {
-              markdownDoc += `### 🎯 Định hướng Chiến lược (Creative Brief)\n`;
-              if (insight) markdownDoc += `**💡 Insight:** ${insight}\n\n`;
-              if (msg) markdownDoc += `**📣 Thông điệp:** ${msg}\n\n`;
-              if (tone) markdownDoc += `**🎭 Tone & Voice:** ${tone}\n\n`;
-              if (hook) markdownDoc += `**🎣 Hook:** ${hook}\n\n`;
-              if (cta) markdownDoc += `**🎯 CTA:** ${cta}\n\n`;
-              if (assets) markdownDoc += `**🎬 Chuẩn bị (Assets):** ${assets}\n\n`;
-              markdownDoc += `---\n\n`;
-            }
-            
-            if (deliv.caption) {
-              markdownDoc += `### 📝 Nội dung Text\n${deliv.caption}\n\n`;
-            }
-            if (deliv.hashtags) {
-              markdownDoc += `**Hashtags:** ${deliv.hashtags}\n\n`;
-            }
-            if (deliv.script_details && deliv.script_details.length > 0) {
-              markdownDoc += `### 🎬 Kịch bản Video\n`;
-              markdownDoc += `| Cảnh | Thời gian | Góc máy / Hành động | Lời thoại |\n`;
-              markdownDoc += `|---|---|---|---|\n`;
-              deliv.script_details.forEach((row: any, i: number) => {
-                // SỬA LỖI UI: Replace newline characters with <br/> to prevent breaking markdown tables!
-                const safeTime = (row.time || '').replace(/\n/g, '<br/>');
-                const safeCamera = (row.camera || '').replace(/\n/g, '<br/>');
-                const safeActing = (row.acting_cue || '').replace(/\n/g, '<br/>');
-                const safeDialogue = (row.dialogue || '').replace(/\n/g, '<br/>');
-                
-                markdownDoc += `| ${i+1} | ${safeTime} | **${safeCamera}**<br/>_${safeActing}_ | ${safeDialogue} |\n`;
-              });
-              markdownDoc += `\n`;
-            }
-            if (deliv.seeding_comments) {
-              markdownDoc += `### 💬 Seeding Comments\n`;
-              deliv.seeding_comments.forEach((c: string) => {
-                markdownDoc += `- ${c}\n`;
-              });
+            if (isVideo) {
+              markdownDoc = `# 🎬 KỊCH BẢN SHOOTING: ${deliv.platform || 'VIDEO'}\n\n`;
+              markdownDoc += `> **Format:** ${deliv.format || 'Video Ngắn'} | **Mục tiêu:** Viral & Chuyển đổi\n\n`;
+              
+              if (insight || msg || tone) {
+                markdownDoc += `## 1. PHÂN TÍCH CHIẾN LƯỢC TÂM LÝ\n`;
+                if (insight) markdownDoc += `- **Insight Khách Hàng:** ${insight}\n`;
+                if (msg) markdownDoc += `- **Thông Điệp Cốt Lõi:** ${msg}\n`;
+                if (tone) markdownDoc += `- **Vibe/Tone Mạch Truyện:** ${tone}\n\n`;
+              }
+
+              if (hook || assets) {
+                markdownDoc += `## 2. CHỈ ĐẠO SẢN XUẤT (PRODUCTION NOTES)\n`;
+                if (hook) markdownDoc += `- **Cú Hook (3s Đầu):** 🔥 ${hook}\n`;
+                if (assets) markdownDoc += `- **Đạo cụ/Bối cảnh (Assets):** 🎬 ${assets}\n\n`;
+              }
+
+              if (deliv.script_details && deliv.script_details.length > 0) {
+                markdownDoc += `## 3. MA TRẬN KỊCH BẢN CHI TIẾT\n`;
+                markdownDoc += `| Cảnh | Thời lượng | Chỉ đạo Diễn xuất & Góc Máy (Acting & Camera) | Thoại / Âm thanh (Audio) |\n`;
+                markdownDoc += `|:---:|:---:|---|---|\n`;
+                deliv.script_details.forEach((row: any, i: number) => {
+                  const safeTime = (row.time || '').replace(/\n/g, '<br/>');
+                  const safeCamera = (row.camera || '').replace(/\n/g, '<br/>');
+                  const safeActing = (row.acting_cue || '').replace(/\n/g, '<br/>');
+                  const safeDialogue = (row.dialogue || '').replace(/\n/g, '<br/>');
+                  markdownDoc += `| **Scene ${i+1}** | *${safeTime}* | 🎥 **${safeCamera}**<br/>🎭 _${safeActing}_ | 💬 ${safeDialogue} |\n`;
+                });
+                markdownDoc += `\n`;
+              }
+
+              if (deliv.caption || deliv.hashtags) {
+                markdownDoc += `## 4. TÀI NGUYÊN ĐĂNG BÀI\n`;
+                if (deliv.caption) markdownDoc += `**Caption bài post:**\n> ${deliv.caption.replace(/\n/g, '\n> ')}\n\n`;
+                if (deliv.hashtags) markdownDoc += `**Hashtags:** \`${deliv.hashtags}\`\n\n`;
+              }
+
+              if (deliv.seeding_comments && deliv.seeding_comments.length > 0) {
+                markdownDoc += `## 5. KẾ HOẠCH ĐIỀU HƯỚNG DƯ LUẬN (SEEDING)\n`;
+                deliv.seeding_comments.forEach((c: string, idx: number) => {
+                  markdownDoc += `${idx + 1}. 💬 *"${c}"*\n`;
+                });
+              }
+
+            } else if (isLongForm) {
+              markdownDoc = `# 🖋️ BÀI VIẾT CHUYÊN SÂU: ${deliv.platform || 'FACEBOOK'}\n\n`;
+              markdownDoc += `> **Format:** ${deliv.format || 'Long-form Post'} | **Mục tiêu:** Xây dựng niềm tin & Chuyên gia\n\n`;
+              
+              if (insight || msg || hook) {
+                markdownDoc += `## 💡 MẠCH TƯ DUY BÀI VIẾT\n`;
+                if (insight) markdownDoc += `- **Nỗi đau khách hàng:** ${insight}\n`;
+                if (msg) markdownDoc += `- **Điểm chốt Sale (Main Message):** ${msg}\n`;
+                if (hook) markdownDoc += `- **Tiêu đề giật tít:** ⚡ ${hook}\n\n`;
+              }
+
+              if (deliv.caption) {
+                markdownDoc += `## 📜 BẢN THẢO COPYWRITING CHÍNH THỨC\n`;
+                markdownDoc += `...\n${deliv.caption}\n...\n\n`;
+              }
+
+              if (deliv.hashtags) {
+                markdownDoc += `**Bộ Hashtags:** \`${deliv.hashtags}\`\n\n`;
+              }
+
+              if (deliv.seeding_comments && deliv.seeding_comments.length > 0) {
+                markdownDoc += `## 🗣️ MA TRẬN SEEDING CHIM MỒI\n`;
+                deliv.seeding_comments.forEach((c: string) => {
+                  markdownDoc += `- 🙋‍♀️ *"${c}"*\n`;
+                });
+              }
+            } else {
+              // BẢN THẢO CHUNG (CÁC FORMAT KHÁC)
+              markdownDoc = `# 🏷️ BẢN THẢO CONTENT: ${deliv.platform}\n\n`;
+              markdownDoc += `> **Format:** ${deliv.format || 'General Post'}\n\n`;
+              
+              if (insight || msg || tone || hook || cta || assets) {
+                markdownDoc += `### 🎯 Khung Sườn Chiến Lược\n`;
+                if (insight) markdownDoc += `- **Insight:** ${insight}\n`;
+                if (msg) markdownDoc += `- **Message:** ${msg}\n`;
+                if (tone) markdownDoc += `- **Tone:** ${tone}\n`;
+                if (hook) markdownDoc += `- **Hook:** ${hook}\n`;
+                if (cta) markdownDoc += `- **CTA:** ${cta}\n`;
+                if (assets) markdownDoc += `- **Assets:** ${assets}\n\n`;
+              }
+              
+              if (deliv.caption) markdownDoc += `### 📝 Nội Dung Truyền Thông\n${deliv.caption}\n\n`;
+              if (deliv.hashtags) markdownDoc += `**Tag:** ${deliv.hashtags}\n\n`;
+              if (deliv.seeding_comments) {
+                markdownDoc += `### 💬 Kịch Bản Bình Luận\n`;
+                deliv.seeding_comments.forEach((c: string) => markdownDoc += `- ${c}\n`);
+              }
             }
           }
 
