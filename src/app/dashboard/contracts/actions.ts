@@ -24,6 +24,21 @@ export type ContractFormData = any;
 export type ServiceItem = any;
 export type InstallmentItem = any;
 
+export async function getStaffs() {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, full_name, email, roles(role_name)")
+    .eq("is_active", true)
+    .order("full_name");
+  
+  if (error) {
+    console.error("Error fetching staffs:", error);
+    return [];
+  }
+  return data || [];
+}
+
 export async function recordPayment(
   installmentId: string,
   contractId: string,
