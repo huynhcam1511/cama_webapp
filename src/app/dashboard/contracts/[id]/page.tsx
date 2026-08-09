@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getContractById } from "../actions";
-import ContractDetailView from "./contract-detail-view";
+import PdfViewWrapper from "./pdf-view-wrapper";
 
 export const dynamic = "force-dynamic";
 
@@ -17,5 +17,5 @@ export default async function ContractDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  return <ContractDetailView contract={contract} />;
+  return <PdfViewWrapper contract={contract} />;
 }

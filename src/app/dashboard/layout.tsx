@@ -83,12 +83,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen print:h-auto bg-slate-50 text-slate-900">
       {/* Sidebar Desktop (Clean Light Blue / White SaaS Sidebar) */}
       <aside
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`hidden md:flex flex-col bg-white border-r border-slate-200 sticky top-0 h-screen z-40 transition-all duration-300 ${
+        className={`hidden md:flex flex-col bg-white border-r border-slate-200 sticky top-0 h-screen z-40 transition-all duration-300 print:hidden ${
           isCollapsed ? "w-20" : "w-64"
         }`}
       >
@@ -178,9 +178,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main Right Container */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden print:overflow-visible">
         {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 print:hidden">
           <div className="flex items-center gap-2">
             <button 
               onClick={() => router.back()}
@@ -236,7 +236,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 p-4 md:p-8 overflow-auto">
+        <main className="flex-1 p-4 md:p-8 overflow-auto print:overflow-visible print:p-0">
           {children}
         </main>
       </div>

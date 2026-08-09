@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import RecordPaymentDialog from "../record-payment-dialog";
 import CancelContractDialog from "../cancel-contract-dialog";
-import PrintableContract from "../printable-contract";
+import { PrintableContract } from "../printable-contract";
 import EditContractDialog from "../edit-contract-dialog";
 import {
   addContractDocument, addContractSchedule, toggleScheduleCompleted, addGarmentToContractByQR,

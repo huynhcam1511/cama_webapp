@@ -23,8 +23,13 @@ export type ModuleCode =
   | "SUBSCRIPTIONS"
   | "TRAINING"
   | "RECRUITMENT"
-  | "MARKETING_WORKSPACE"
-  | "MARKETING_MANAGER";
+  | "MARKETING_IDEA"
+  | "MARKETING_CONTENT"
+  | "MARKETING_MANAGER"
+  | "SALES_DASHBOARD"
+  | "OPERATION_DASHBOARD"
+  | "HR_DASHBOARD"
+  | "MARKETING_DASHBOARD";
 
 export type ModuleGroup = "DASHBOARD" | "BUSINESS" | "OPERATIONS" | "HR" | "ADMIN" | "FINANCE" | "MARKETING";
 
@@ -61,6 +66,20 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   },
 
   // KINH DOANH
+  {
+    moduleCode: "SALES_DASHBOARD",
+    label: "Báo cáo Doanh thu & Chốt Sale",
+    shortLabel: "Sales Dashboard",
+    route: "/dashboard/sales",
+    icon: "BarChart4",
+    group: "BUSINESS",
+    parentCode: null,
+    sortOrder: 0,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
   {
     moduleCode: "CUSTOMERS",
     label: "Khách hàng CRM",
@@ -164,6 +183,20 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   },
 
   {
+    moduleCode: "OPERATION_DASHBOARD",
+    label: "Báo cáo Vận hành & QC",
+    shortLabel: "Operation Dashboard",
+    route: "/dashboard/operations",
+    icon: "Activity",
+    group: "OPERATIONS",
+    parentCode: null,
+    sortOrder: 0,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
     moduleCode: "OPERATION_SCHEDULE",
     label: "Lịch khách & Lịch giao hàng",
     shortLabel: "Lịch Khách",
@@ -222,6 +255,20 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   },
 
   // NHÂN SỰ
+  {
+    moduleCode: "HR_DASHBOARD",
+    label: "Báo cáo Năng lực & Đào tạo",
+    shortLabel: "HR Dashboard",
+    route: "/dashboard/hr",
+    icon: "PieChart",
+    group: "HR",
+    parentCode: null,
+    sortOrder: 0,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
   {
     moduleCode: "STAFF_SCHEDULE",
     label: "Lịch làm việc",
@@ -323,14 +370,42 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
 
   // MARKETING
   {
-    moduleCode: "MARKETING_WORKSPACE",
-    label: "Workspace Content (Trúc)",
-    shortLabel: "Workspace",
-    route: "/dashboard/marketing/content-feed",
-    icon: "PenTool",
+    moduleCode: "MARKETING_DASHBOARD",
+    label: "Báo cáo Tương tác & Reach",
+    shortLabel: "Marketing Dashboard",
+    route: "/dashboard/marketing",
+    icon: "LineChart",
+    group: "MARKETING",
+    parentCode: null,
+    sortOrder: 0,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
+    moduleCode: "MARKETING_IDEA",
+    label: "Ý Tưởng Content",
+    shortLabel: "Ý Tưởng",
+    route: "/dashboard/marketing/ideas",
+    icon: "Lightbulb",
     group: "MARKETING",
     parentCode: null,
     sortOrder: 1,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
+    moduleCode: "MARKETING_CONTENT",
+    label: "Sản Xuất Content",
+    shortLabel: "Sản Xuất",
+    route: "/dashboard/marketing/contents",
+    icon: "PenTool",
+    group: "MARKETING",
+    parentCode: null,
+    sortOrder: 2,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",

@@ -1,325 +1,167 @@
 "use client";
 
-import { X, Printer } from "lucide-react";
-import { Contract } from "./types";
+import React, { forwardRef } from "react";
+import { ContractFormData } from "./actions";
 
 interface PrintableContractProps {
-  contract: Contract;
-  onClose: () => void;
+  data?: any;
+  services?: any[];
+  installments?: any[];
+  customerInfo?: any;
+  contract?: any; // For backward compatibility with contracts-view.tsx
+  onClose?: () => void;
+  forceShow?: boolean;
 }
 
-export default function PrintableContract({ contract, onClose }: PrintableContractProps) {
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const customer: any = contract.customers || {};
-  const items = contract.items || [];
-  const payments = contract.payments || [];
-
-  // Parse notes safely
-  let parsedNotes = contract.notes;
-  let parsedJson: any = null;
-  try {
-    if (contract.notes && typeof contract.notes === 'string' && contract.notes.trim().startsWith('{')) {
-      parsedJson = JSON.parse(contract.notes);
-      parsedNotes = parsedJson.userNotes || "";
+export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractProps>(
+  ({ data, services = [], installments = [], customerInfo, contract, onClose, forceShow = false }, ref) => {
+    
+    // Auto-extract from contract if provided (for contracts-view.tsx)
+    let parsedNotes = {};
+    if (contract?.notes) {
+      if (typeof contract.notes === 'object') {
+        parsedNotes = contract.notes;
+      } else {
+        try { parsedNotes = JSON.parse(contract.notes); } catch (e) { parsedNotes = {}; }
+      }
     }
-  } catch (e) {
-    // leave as is if not valid JSON
-  }
+    const activeData = data || parsedNotes;
+    const activeServices = services.length > 0 ? services : (activeData.items || []);
+    const activeInstallments = installments.length > 0 ? installments : (activeData.payments || []);
+    const activeCustomerInfo = customerInfo || { name: contract?.customers?.full_name || contract?.customers?.bride_name, phone: contract?.customers?.phone };
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-200/90 backdrop-blur-md animate-in fade-in duration-200 print:bg-white">
-      <style>{`
-        @media print {
-          @page { size: A4 portrait; margin: 0; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-      `}</style>
-      
-      {/* Header Modal Bar (hidden on print) */}
-      <div className="px-6 py-4 border-b border-slate-300 bg-white flex items-center justify-between shadow-sm z-10 shrink-0 print:hidden">
-        <div className="text-slate-800 font-bold font-serif text-sm flex items-center gap-2">
-          <span>Xem Trước Bản In Hợp Đồng - {contract.contract_code}</span>
+    // Helper to format currency
+    const formatCurrency = (val: number) => new Intl.NumberFormat("vi-VN").format(val) + " ₫";
+
+    const totalAmount = activeServices.reduce((sum: number, item: any) => sum + (Number(item.price || item.unit_price) || 0) * (Number(item.quantity) || 1), 0);
+    const depositAmount = activeInstallments.length > 0 && activeInstallments[0].status === "PAID" ? activeInstallments[0].amount : 0;
+    const remainingAmount = Math.max(0, totalAmount - depositAmount);
+
+    return (
+      <div ref={ref} className={`${forceShow ? 'block shadow-2xl' : 'hidden print:block'} bg-white text-black p-8 w-full max-w-[210mm] mx-auto min-h-[297mm] font-sans`}>
+        {/* Header - Brand Identity */}
+        <div className="flex justify-between items-end border-b-2 border-amber-500 pb-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-widest uppercase text-slate-900">CAMA</h1>
+            <p className="text-sm tracking-widest text-slate-500 uppercase mt-1">Haute Couture</p>
+          </div>
+          <div className="text-right text-xs text-slate-600 space-y-1">
+            <p>Số HĐ: {activeData?.paper_contract_number || activeData?.contract_code || contract?.contract_code}</p>
+            <p>Ngày lập: {new Date().toLocaleDateString("vi-VN")}</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handlePrint}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-md"
-          >
-            <Printer className="w-4 h-4" /> In Ngay / Tải PDF (A4)
-          </button>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold uppercase text-slate-900">Hợp Đồng Dịch Vụ Cưới</h2>
         </div>
-      </div>
 
-      {/* Outer Preview Workspace */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-8 print:p-0 flex justify-center">
-        {/* A4 Sheet */}
-        <div 
-          className="bg-white text-black shadow-2xl print:shadow-none mx-auto shrink-0 flex flex-col overflow-hidden relative origin-top lg:scale-[1.02]"
-          style={{ width: '210mm', height: '297mm', padding: '15mm 20mm' }}
-        >
-          {/* Header Studio */}
-          <div className="flex justify-between items-start border-b-2 border-black pb-5 mb-8">
-            <div>
-              <h1 className="text-3xl font-bold font-serif uppercase tracking-widest text-black">
-                CAMA HAUTE COUTURE
-              </h1>
-              <p className="text-[11px] font-bold uppercase text-slate-500 tracking-wider mt-1">
-                STUDIO ÁO CƯỚI & NGHỆ THUẬT PHÓNG SỰ CƯỚI CAO CẤP
-              </p>
-              <p className="text-[10px] text-slate-500 mt-2">
-                Địa chỉ: 33 Đ. Hoàng Văn Thụ, Cầu Kiệu, Hồ Chí Minh | Hotline: 0983 144 444
-              </p>
-            </div>
-            <div className="text-right">
-              <h2 className="text-2xl font-bold font-serif text-black">{contract.contract_code}</h2>
-              <div className="text-[11px] text-slate-500 mt-1">
-                Số HĐ Giấy: <strong className="text-black">{contract.paper_contract_number || "0012492"}</strong>
-              </div>
-              <div className="text-[11px] text-slate-500 mt-0.5">
-                Ngày lập: <strong className="text-black">{new Date(contract.created_at).toLocaleDateString("vi-VN")}</strong>
-              </div>
-            </div>
+        {/* Section 1: Customer Info */}
+        <div className="mb-8">
+          <h2 className="text-sm font-bold uppercase text-amber-600 mb-3 border-b border-amber-200 pb-1">1. Thông Tin Khách Hàng</h2>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Tên khách hàng:</span> <span className="font-bold">{activeCustomerInfo?.name || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Số điện thoại:</span> <span className="font-bold">{activeCustomerInfo?.phone || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày hỏi:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_hoi || activeData?.ngay_hoi || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày cưới:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_cuoi || activeData?.ngay_cuoi || "..."}</span></div>
           </div>
+        </div>
 
-          <div className="text-center mb-10">
-            <h2 className="text-xl font-bold font-serif uppercase tracking-widest text-black">
-              HỢP ĐỒNG DỊCH VỤ CƯỚI NGHỆ THUẬT
-            </h2>
+        {/* Section 2: Schedule & Details */}
+        <div className="mb-8">
+          <h2 className="text-sm font-bold uppercase text-amber-600 mb-3 border-b border-amber-200 pb-1">2. Lịch Trình & Chi Tiết</h2>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Địa điểm chụp:</span> <span className="font-semibold">{activeData?.notesObj?.dia_diem || activeData?.dia_diem || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày chụp:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_chup || activeData?.ngay_chup || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày giao (Album/Ảnh):</span> <span className="font-semibold">{activeData?.notesObj?.ngay_giao || activeData?.ngay_giao || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Quy cách Album:</span> <span className="font-semibold">{activeData?.notesObj?.kho_album ? `${activeData.notesObj.kho_album} - ${activeData.notesObj.so_trang} trang (${activeData.notesObj.chat_lieu})` : (activeData?.kho_album ? `${activeData.kho_album} - ${activeData.so_trang} trang (${activeData.chat_lieu})` : "...")}</span></div>
+            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày lấy váy:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_giao_vay || activeData?.ngay_giao_vay || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày trả váy:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_tra_vay || activeData?.ngay_tra_vay || "..."}</span></div>
           </div>
+        </div>
 
-          {/* Customer Info Box */}
-          <div className="mb-10 text-[13px] grid grid-cols-2 gap-x-12 gap-y-4">
-            <div className="flex justify-between border-b border-dashed border-slate-300 pb-1">
-              <span className="text-slate-500 italic">Đại diện bên A (Cô Dâu):</span> 
-              <strong className="text-black uppercase">{customer.bride_name || "---"}</strong>
-            </div>
-            <div className="flex justify-between border-b border-dashed border-slate-300 pb-1">
-              <span className="text-slate-500 italic">Đại diện bên B (Chú Rể):</span> 
-              <strong className="text-black uppercase">{customer.groom_name || "---"}</strong>
-            </div>
-            <div className="flex justify-between border-b border-dashed border-slate-300 pb-1">
-              <span className="text-slate-500 italic">Số Điện Thoại Chính:</span> 
-              <strong className="text-black font-mono">{customer.phone || "---"}</strong>
-            </div>
-            <div className="flex justify-between border-b border-dashed border-slate-300 pb-1">
-              <span className="text-slate-500 italic">Số Điện Thoại Phụ:</span> 
-              <strong className="text-black font-mono">{customer.secondary_phone || "---"}</strong>
-            </div>
-            <div className="flex justify-between border-b border-dashed border-slate-300 pb-1">
-              <span className="text-slate-500 italic">Email:</span> 
-              <strong className="text-black">{customer.email || "---"}</strong>
-            </div>
-            <div className="flex justify-between border-b border-dashed border-slate-300 pb-1">
-              <span className="text-slate-500 italic">Ngày Cưới / Hỏi:</span> 
-              <strong className="text-black">
-                {customer.wedding_date ? new Date(customer.wedding_date).toLocaleDateString('vi-VN') : "---"}
-                {customer.engagement_date ? ` (Hỏi: ${new Date(customer.engagement_date).toLocaleDateString('vi-VN')})` : ""}
-              </strong>
-            </div>
-            {customer.wedding_location && (
-              <div className="col-span-2 flex justify-between border-b border-dashed border-slate-300 pb-1">
-                <span className="text-slate-500 italic">Địa điểm tổ chức:</span> 
-                <strong className="text-black text-right">{customer.wedding_location}</strong>
-              </div>
-            )}
-            {customer.address && (
-              <div className="col-span-2 flex justify-between border-b border-dashed border-slate-300 pb-1">
-                <span className="text-slate-500 italic">Địa chỉ thường trú:</span> 
-                <strong className="text-black text-right">{customer.address}</strong>
-              </div>
-            )}
-            {parsedNotes && (
-              <div className="col-span-2 flex flex-col border-b border-dashed border-slate-300 pb-1 mt-2">
-                <span className="text-slate-500 italic mb-1">Ghi chú hợp đồng:</span> 
-                <strong className="text-black">{parsedNotes}</strong>
-              </div>
-            )}
-          </div>
-
-          {/* Services Table */}
-          <div className="mb-10">
-            <h3 className="text-sm font-bold uppercase text-black mb-4 tracking-wider font-serif">I. DANH SÁCH HẠNG MỤC DỊCH VỤ</h3>
-            <table className="w-full text-[13px] text-left border-collapse">
-              <thead>
-                <tr className="border-b-2 border-black">
-                  <th className="py-2 text-center w-10 font-bold uppercase tracking-wider text-slate-800">STT</th>
-                  <th className="py-2 font-bold uppercase tracking-wider text-slate-800">Tên Dịch Vụ / Sản Phẩm</th>
-                  <th className="py-2 text-center w-24 font-bold uppercase tracking-wider text-slate-800">Hình thức</th>
-                  <th className="py-2 text-center w-16 font-bold uppercase tracking-wider text-slate-800">SL</th>
-                  <th className="py-2 text-right font-bold uppercase tracking-wider w-28 text-slate-800">Đơn Giá</th>
-                  <th className="py-2 text-right font-bold uppercase tracking-wider w-32 text-slate-800">Thành Tiền</th>
+        {/* Section 3: Services */}
+        <div className="mb-8">
+          <h2 className="text-sm font-bold uppercase text-amber-600 mb-3 border-b border-amber-200 pb-1">3. Chi Tiết Dịch Vụ & Sản Phẩm</h2>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-slate-600 uppercase text-xs">
+                <th className="py-2 px-2 text-left font-semibold border-b border-slate-200 w-1/3">Dịch vụ</th>
+                <th className="py-2 px-2 text-left font-semibold border-b border-slate-200">Ghi chú</th>
+                <th className="py-2 px-2 text-center font-semibold border-b border-slate-200 w-12">SL</th>
+                <th className="py-2 px-2 text-right font-semibold border-b border-slate-200 w-28">Đơn giá</th>
+                <th className="py-2 px-2 text-right font-semibold border-b border-slate-200 w-32">Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeServices.filter((s: any) => (s.category || s.item_name || "").trim()).map((item: any, idx: number) => (
+                <tr key={idx} className="border-b border-slate-100">
+                  <td className="py-2 px-2 text-slate-900 font-medium">{item.category || item.item_name} {item.detail ? `- ${item.detail}` : ""}</td>
+                  <td className="py-2 px-2 text-slate-500 text-xs italic">{item.notes}</td>
+                  <td className="py-2 px-2 text-center text-slate-700">{item.quantity}</td>
+                  <td className="py-2 px-2 text-right text-slate-700 font-mono text-xs">{(item.price || item.unit_price) > 0 ? formatCurrency(item.price || item.unit_price) : "-"}</td>
+                  <td className="py-2 px-2 text-right font-bold text-slate-900 font-mono">{formatCurrency((item.price || item.unit_price) * item.quantity)}</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {items.map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="py-3 text-center text-slate-500">{idx + 1}</td>
-                    <td className="py-3">
-                      <div className="font-bold text-black">{item.item_name}</div>
-                      {item.notes && <div className="text-[11px] text-slate-500 italic mt-0.5">{item.notes}</div>}
-                      {(item.surcharge > 0 || item.line_discount > 0) && (
-                        <div className="text-[10px] text-slate-600 mt-0.5">
-                          {item.surcharge > 0 && <span className="mr-2">+ Phụ thu: {new Intl.NumberFormat("vi-VN").format(item.surcharge)} ₫</span>}
-                          {item.line_discount > 0 && <span>- Giảm: {new Intl.NumberFormat("vi-VN").format(item.line_discount)} ₫</span>}
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3 text-center text-slate-600">
-                      {item.item_type === "RENTAL" ? "Thuê" : item.item_type === "BUY" ? "Mua" : item.item_type === "GIFT" ? "Tặng kèm" : "Dịch vụ"}
-                    </td>
-                    <td className="py-3 text-center font-bold text-black">{item.quantity} <span className="text-[10px] text-slate-400 font-normal">{item.unit}</span></td>
-                    <td className="py-3 text-right font-mono text-slate-600">
-                      {new Intl.NumberFormat("vi-VN").format(item.unit_price)}
-                    </td>
-                    <td className="py-3 text-right font-mono font-bold text-black">
-                      {new Intl.NumberFormat("vi-VN").format(item.amount)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Payment Summary Box */}
-          <div className="flex justify-between items-start border-t-2 border-black pt-6 mb-12">
-            <div className="text-[13px] text-slate-600 w-[45%]">
-              <h3 className="font-bold text-black uppercase mb-3 tracking-wider font-serif">II. LỊCH SỬ THU TIỀN</h3>
-              <div className="space-y-2">
-                {payments.map((p, idx) => (
-                  <div key={idx} className="flex justify-between border-b border-dashed border-slate-200 pb-1.5">
-                    <span>Phiếu thu {p.receipt_code} <span className="text-[10px] italic text-slate-400">({p.payment_method === 'CASH' ? 'Tiền mặt' : p.payment_method === 'TRANSFER' ? 'Chuyển khoản' : p.payment_method === 'CARD' ? 'Thẻ' : 'Khác'})</span>:</span>
-                    <span className="font-mono font-bold text-black">
-                      +{new Intl.NumberFormat("vi-VN").format(p.amount)} ₫
-                    </span>
-                  </div>
-                ))}
-                {payments.length === 0 && (
-                  <div className="text-slate-400 italic">Chưa có giao dịch thu tiền.</div>
-                )}
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-4 flex justify-end">
+            <div className="w-1/2 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500 uppercase font-semibold">Tổng Cộng:</span>
+                <span className="font-bold text-lg font-mono text-slate-900">{formatCurrency(totalAmount)}</span>
               </div>
-            </div>
-
-            <div className="text-right text-[13px] w-[45%]">
-              <div className="flex justify-between text-slate-500 mb-2">
-                <span>Tạm tính dịch vụ:</span>
-                <span className="font-mono">{new Intl.NumberFormat("vi-VN").format(contract.subtotal_amount || contract.total_amount)} ₫</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500 uppercase font-semibold">Đã Thanh Toán (Cọc):</span>
+                <span className="font-bold font-mono text-emerald-600">{formatCurrency(depositAmount)}</span>
               </div>
-              {contract.surcharge_amount > 0 && (
-                <div className="flex justify-between text-slate-500 mb-2">
-                  <span>Phụ thu tổng HĐ:</span>
-                  <span className="font-mono">+{new Intl.NumberFormat("vi-VN").format(contract.surcharge_amount)} ₫</span>
-                </div>
-              )}
-              {contract.discount_amount > 0 && (
-                <div className="flex justify-between text-slate-500 mb-2">
-                  <span>Giảm giá HĐ ({contract.discount_type === 'PERCENT' ? '%' : 'VNĐ'}):</span>
-                  <span className="font-mono">-{new Intl.NumberFormat("vi-VN").format(contract.discount_amount)} ₫</span>
-                </div>
-              )}
-              <div className="flex justify-between text-black font-bold text-sm border-t border-slate-300 pt-2 mb-2">
-                <span>TỔNG HỢP ĐỒNG:</span>
-                <span className="font-mono">{new Intl.NumberFormat("vi-VN").format(contract.total_amount)} ₫</span>
+              <div className="flex justify-between text-sm border-t border-slate-800 pt-2">
+                <span className="text-slate-900 uppercase font-bold">Còn Nợ:</span>
+                <span className="font-bold text-xl font-mono text-red-600">{formatCurrency(remainingAmount)}</span>
               </div>
-              {contract.required_deposit > 0 && (
-                <div className="flex justify-between text-slate-600 mb-2 mt-2">
-                  <span>Cần đặt cọc:</span>
-                  <span className="font-mono">{new Intl.NumberFormat("vi-VN").format(contract.required_deposit)} ₫</span>
-                </div>
-              )}
-              <div className="flex justify-between text-black font-bold mb-2">
-                <span>ĐÃ THANH TOÁN:</span>
-                <span className="font-mono">{new Intl.NumberFormat("vi-VN").format(contract.paid_amount)} ₫</span>
-              </div>
-              <div className="flex justify-between text-black font-bold text-lg border-t-2 border-black pt-2 mt-1">
-                <span>CÒN LẠI:</span>
-                <span className="font-mono">{new Intl.NumberFormat("vi-VN").format(contract.remaining_amount)} ₫</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Execution Details Section */}
-          <div className="mb-10 text-[13px]">
-            <h3 className="text-sm font-bold uppercase text-black mb-4 tracking-wider font-serif">III. CHI TIẾT THỰC HIỆN DỊCH VỤ</h3>
-            <div className="grid grid-cols-2 gap-x-12 gap-y-3">
-              <div className="flex justify-between border-b border-dashed border-slate-200 pb-1">
-                <span className="text-slate-500 italic">Ngày chụp ảnh:</span>
-                <strong className="text-black">{parsedJson?.shootDate ? new Date(parsedJson.shootDate).toLocaleDateString('vi-VN') : "---"}</strong>
-              </div>
-              <div className="flex justify-between border-b border-dashed border-slate-200 pb-1">
-                <span className="text-slate-500 italic">Địa điểm chụp:</span>
-                <strong className="text-black text-right">{parsedJson?.shootLocation || "---"}</strong>
-              </div>
-              <div className="flex justify-between border-b border-dashed border-slate-200 pb-1">
-                <span className="text-slate-500 italic">Ngày giao sản phẩm:</span>
-                <strong className="text-black">{parsedJson?.deliverDate ? new Date(parsedJson.deliverDate).toLocaleDateString('vi-VN') : "---"}</strong>
-              </div>
-              <div className="flex justify-between border-b border-dashed border-slate-200 pb-1">
-                <span className="text-slate-500 italic">Album:</span>
-                <strong className="text-black text-right">
-                  {parsedJson?.albumSize || "---"} {parsedJson?.albumPages ? `(${parsedJson.albumPages} trang)` : ""}
-                </strong>
-              </div>
-              <div className="flex justify-between border-b border-dashed border-slate-200 pb-1">
-                <span className="text-slate-500 italic">Chất liệu Album:</span>
-                <strong className="text-black text-right">{parsedJson?.albumMaterial || "---"}</strong>
-              </div>
-              <div className="flex justify-between border-b border-dashed border-slate-200 pb-1">
-                <span className="text-slate-500 italic">Quà tặng kèm:</span>
-                <strong className="text-black text-right">{parsedJson?.gifts || "---"}</strong>
-              </div>
-              <div className="flex justify-between border-b border-dashed border-slate-200 pb-1">
-                <span className="text-slate-500 italic">Ngày lấy váy:</span>
-                <strong className="text-black">{parsedJson?.dressDeliverDate ? new Date(parsedJson.dressDeliverDate).toLocaleDateString('vi-VN') : "---"}</strong>
-              </div>
-              <div className="flex justify-between border-b border-dashed border-slate-200 pb-1">
-                <span className="text-slate-500 italic">Ngày trả váy:</span>
-                <strong className="text-black">{parsedJson?.dressReturnDate ? new Date(parsedJson.dressReturnDate).toLocaleDateString('vi-VN') : "---"}</strong>
-              </div>
-            </div>
-            {parsedJson?.deposit_type && parsedJson?.deposit_type !== "NONE" && (
-              <div className="mt-4 bg-slate-50 p-2.5 rounded border border-slate-200 text-xs">
-                <span className="font-bold mr-2 text-black">THÔNG TIN TÀI SẢN ĐẶT CỌC:</span>
-                <span className="text-slate-700">
-                  {parsedJson.deposit_type === "ASSET" ? `Vật phẩm: ${parsedJson.deposit_notes} (Số lượng: ${parsedJson.deposit_quantity})` : `Tiền mặt: ${new Intl.NumberFormat('vi-VN').format(parsedJson.deposit_amount || 0)} ₫`}
-                </span>
-                <span className="ml-4 italic text-slate-500">Ngày nhận: {parsedJson.depositReceiveDate ? new Date(parsedJson.depositReceiveDate).toLocaleDateString('vi-VN') : "---"}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Spacer to push signatures to bottom */}
-          <div className="flex-1"></div>
-
-          {/* Legal Terms Section */}
-          <div className="mb-8 text-[9px] leading-relaxed text-justify text-slate-700 space-y-1.5 border-t border-black pt-4">
-            <h3 className="font-bold text-black uppercase tracking-wider font-serif text-[11px] mb-2 text-center">ĐIỀU KHOẢN VÀ TRÁCH NHIỆM HAI BÊN</h3>
-            <p><strong className="text-black uppercase">ĐIỀU 1: Trách nhiệm của khách hàng (Bên A)</strong> - Thanh toán đầy đủ và đúng hạn số tiền đã thỏa thuận. Hợp tác và cung cấp thông tin, thời gian chính xác để Bên B thực hiện dịch vụ. Bảo quản cẩn thận các trang phục, đạo cụ thuê mượn. Nếu xảy ra hư hỏng, rách, cháy hoặc thất lạc, Bên A có trách nhiệm bồi thường theo giá trị hiện hành.</p>
-            <p><strong className="text-black uppercase">ĐIỀU 2: Trách nhiệm của Cama (Bên B)</strong> - Cung cấp đầy đủ, đúng chất lượng và thời gian các hạng mục dịch vụ/sản phẩm đã cam kết. Có trách nhiệm bảo quản file ảnh gốc và chỉnh sửa theo đúng yêu cầu đã thống nhất. Cam kết không phát sinh thêm chi phí ngoài hợp đồng nếu Bên A không yêu cầu thêm dịch vụ.</p>
-            <p><strong className="text-black uppercase">ĐIỀU 3: Điều khoản chung</strong> - Tiền đặt cọc sẽ không được hoàn lại trong mọi trường hợp Bên A đơn phương hủy hợp đồng. Trường hợp Bên A muốn dời ngày cưới/chụp ảnh, phải thông báo cho Bên B trước ít nhất 15 ngày và phụ thuộc vào lịch trống của Bên B. Hai bên cam kết thực hiện đúng các điều khoản trong hợp đồng.</p>
-          </div>
-
-          {/* Signatures Block */}
-          <div className="grid grid-cols-2 text-center text-xs text-gray-800 mt-auto">
-            <div>
-              <div className="font-bold uppercase">ĐẠI DIỆN KHÁCH HÀNG</div>
-              <div className="text-[10px] text-gray-500 italic mb-14">(Ký và ghi rõ họ tên)</div>
-              <div className="font-semibold">{customer.bride_name}</div>
-            </div>
-
-            <div>
-              <div className="font-bold uppercase">ĐẠI DIỆN CAMA HAUTE COUTURE</div>
-              <div className="text-[10px] text-gray-500 italic mb-14">(Ký và đóng dấu)</div>
-              <div className="font-semibold">{contract.assigned_staff_name || "Lễ Tân Studio"}</div>
             </div>
           </div>
         </div>
+
+        {/* Section 4: Terms & Signatures */}
+        <div className="mb-12 break-inside-avoid">
+          <h2 className="text-sm font-bold uppercase text-amber-600 mb-3 border-b border-amber-200 pb-1">4. Điều Khoản & Ghi Chú</h2>
+          <div className="text-xs text-slate-600 space-y-2 leading-relaxed bg-slate-50 p-4 rounded-lg">
+            {data?.notesObj?.userNotes ? (
+              <p className="whitespace-pre-wrap">{data.notesObj.userNotes}</p>
+            ) : (
+              <>
+                <p>- Khách hàng vui lòng kiểm tra kỹ thông tin dịch vụ và lịch trình trước khi ký.</p>
+                <p>- Thời gian trả ảnh/album có thể xê dịch 1-2 ngày tùy vào tình hình thực tế, CAMA sẽ thông báo trước.</p>
+                <p>- Khách hàng bảo quản váy cưới cẩn thận, trường hợp rách hỏng sẽ đền bù theo quy định của CAMA.</p>
+                <p>- Các khoản thanh toán còn lại vui lòng hoàn tất theo đúng tiến độ đã thỏa thuận.</p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Signatures */}
+        <div className="flex justify-between items-start mt-12 pt-8 break-inside-avoid">
+          <div className="text-center w-1/3">
+            <p className="font-bold text-slate-900 uppercase text-sm mb-16">Đại diện CAMA</p>
+            <p className="text-slate-400 italic text-xs">(Ký & Ghi rõ họ tên)</p>
+          </div>
+          <div className="text-center w-1/3">
+            <p className="font-bold text-slate-900 uppercase text-sm mb-16">Khách hàng</p>
+            <p className="text-slate-400 italic text-xs">(Ký & Ghi rõ họ tên)</p>
+          </div>
+        </div>
+
+        {/* Print Styles */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          @media print {
+            @page { margin: 15mm; size: A4; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
+          }
+        `}} />
       </div>
-    </div>
-  );
-}
+    );
+  }
+);
+
+PrintableContract.displayName = "PrintableContract";

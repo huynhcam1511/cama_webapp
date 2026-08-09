@@ -30,7 +30,7 @@ import {
 
 import RecordPaymentDialog from "./record-payment-dialog";
 import CancelContractDialog from "./cancel-contract-dialog";
-import PrintableContract from "./printable-contract";
+import { PrintableContract } from "./printable-contract";
 import { Contract } from "./types";
 import { usePermissions } from "@/hooks/use-permissions";
 

@@ -432,6 +432,13 @@ export async function createContract(payload: {
       paymentStatus = initialPaid >= payload.required_deposit ? "DEPOSITED" : "PARTIALLY_PAID";
     }
 
+    // Parse payload notes to extract deposit info
+    let parsedNotes: any = {};
+    try {
+      parsedNotes = JSON.parse(payload.notes || "{}");
+    } catch(e) {}
+
+
     const initialActivities: ContractActivity[] = [
       {
         id: `act-${Date.now()}`,
@@ -552,6 +559,26 @@ export async function createContract(payload: {
             receipt_code: metaData.payments[0].receipt_code,
             collector_name: "Kế Toán Studio",
             account_fund: payload.initial_payment.account_fund,
+          }),
+        },
+      ]);
+    }
+
+    // Track Asset Deposit
+    if (parsedNotes.deposit_type === "ASSET" && parsedNotes.deposit_notes) {
+      await supabase.from("payment_installments").insert([
+        {
+          contract_id: contract.id,
+          installment_type: "DEPOSIT_ASSET",
+          amount: 0,
+          payment_date: parsedNotes.deposit_receive_date || new Date().toISOString(),
+          payment_method: "OTHER",
+          status: "COMPLETED",
+          notes: stringifyMetadata({
+            asset_name: parsedNotes.deposit_notes,
+            quantity: parsedNotes.deposit_quantity,
+            image_url: parsedNotes.deposit_image,
+            returned: parsedNotes.deposit_returned
           }),
         },
       ]);
@@ -994,28 +1021,33 @@ export async function updateContract(contractId: string, payload: any) {
     const { data: current, error: fetchErr } = await supabase.from("contracts").select("*").eq("id", contractId).single();
     if (fetchErr || !current) return { error: "Không tìm thấy hợp đồng" };
     
-    const meta = parseMetadata(current.notes);
+    // Parse the incoming notes from payload
+    let incomingNotes: any = {};
+    try {
+      incomingNotes = typeof payload.notes === "string" ? JSON.parse(payload.notes) : (payload.notes || {});
+    } catch (e) {
+      incomingNotes = { userNotes: payload.notes };
+    }
     
-    // Update basic fields in meta
-    meta.paper_contract_number = payload.paper_contract_number || meta.paper_contract_number;
-    meta.contract_date = payload.contract_date || meta.contract_date;
-    meta.branch = payload.branch || meta.branch;
-    meta.assigned_staff_name = payload.assigned_staff_name || meta.assigned_staff_name;
-    meta.assigned_staff_names = payload.assigned_staff_names || meta.assigned_staff_names;
-    meta.subtotal_amount = payload.subtotal_amount ?? meta.subtotal_amount;
-    meta.discount_amount = payload.discount_amount ?? meta.discount_amount;
-    meta.discount_type = payload.discount_type || meta.discount_type;
-    meta.surcharge_amount = payload.surcharge_amount ?? meta.surcharge_amount;
-    meta.required_deposit = payload.required_deposit ?? meta.required_deposit;
-    meta.items = payload.items || meta.items;
+    // Calculate total
+    let total = payload.total_amount || 0;
     
-    // recalculate total
-    let total = meta.subtotal_amount + meta.surcharge_amount;
-    if (meta.discount_type === "AMOUNT") total -= meta.discount_amount;
-    else if (meta.discount_type === "PERCENT") total -= (meta.subtotal_amount * meta.discount_amount) / 100;
+    // Keep activities and merge payload fields
+    let currentNotesObj: any = {};
+    try {
+      currentNotesObj = typeof current.notes === 'string' ? JSON.parse(current.notes || '{}') : (current.notes || {});
+    } catch (e) {
+      currentNotesObj = { userNotes: current.notes };
+    }
     
-    meta.total_amount = total;
-    meta.updated_at = new Date().toISOString();
+    const meta = {
+      ...incomingNotes,
+      items: payload.items || currentNotesObj.items || [],
+      payments: payload.installments || incomingNotes.legacy_installments || currentNotesObj.payments || [],
+      activities: currentNotesObj.activities || [],
+      updated_at: new Date().toISOString()
+    };
+    
     
     const newActivity: ContractActivity = {
       id: `act-${Date.now()}`,
@@ -1026,12 +1058,15 @@ export async function updateContract(contractId: string, payload: any) {
     };
     meta.activities = [newActivity, ...(meta.activities || [])];
 
+    const updateData: any = {
+      total_amount: total,
+      notes: JSON.stringify(meta),
+    };
+    if (payload.customer_id) updateData.customer_id = payload.customer_id;
+
     const { data, error } = await supabase
       .from("contracts")
-      .update({
-        total_amount: total,
-        notes: stringifyMetadata(meta),
-      })
+      .update(updateData)
       .eq("id", contractId)
       .select()
       .single();

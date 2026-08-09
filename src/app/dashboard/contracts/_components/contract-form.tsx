@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { X, FileText, Plus, Trash2, Save, Loader2, DollarSign, User, Calendar, Briefcase, Settings2, Phone, Printer, Image as ImageIcon, UploadCloud } from "lucide-react";
-import { createContract, ContractFormData, ServiceItem, InstallmentItem } from "../actions";
+import { createContract, updateContract, ContractFormData, ServiceItem, InstallmentItem } from "../actions";
 import { createCustomer } from "../../customers/actions";
-import { CustomDatePicker } from "@/components/ui/date-picker";
 import { createClient } from "@/lib/supabase/client";
+import { PrintableContract } from "../printable-contract";
 
 interface ContractFormProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   customers: any[];
   defaultCustomerId?: string;
   onSaved?: () => void;
@@ -77,23 +77,23 @@ export default function ContractForm({
   const [paymentDueDate, setPaymentDueDate] = useState("");
   const [assignedStaffInput, setAssignedStaffInput] = useState("");
 
-  // 3. Bảng Dịch Vụ (Hợp nhất) - 8 dòng cố định
+  // 3. Bảng Dịch Vụ (Hợp nhất) - 10 dòng cố định
   const [services, setServices] = useState<{category: string, detail: string, quantity: number, price: number, notes: string}[]>(
-    Array(8).fill(null).map((_, i) => i === 0 
+    Array(10).fill(null).map((_, i) => i === 0 
       ? { category: "Váy cưới", detail: "", quantity: 1, price: 0, notes: "" }
       : { category: "", detail: "", quantity: 1, price: 0, notes: "" }
     )
   );
 
   // 4. Bảng Tiến Độ Thanh Toán - 3 dòng cố định
-  const [installments, setInstallments] = useState<{title: string, amount: number, method: string, billLink: string, date: string, filePreviewUrl?: string}[]>([
-    { title: "Lần 1", amount: 0, method: "TRANSFER", billLink: "", date: new Date().toISOString().split("T")[0] },
-    { title: "Lần 2", amount: 0, method: "TRANSFER", billLink: "", date: "" },
-    { title: "Lần 3", amount: 0, method: "TRANSFER", billLink: "", date: "" }
+  const [installments, setInstallments] = useState<{title: string, amount: number, method: string, billLink: string, date: string, filePreviewUrl?: string, status?: string}[]>([
+    { title: "Lần 1", amount: 0, method: "TRANSFER", billLink: "", date: new Date().toISOString().split("T")[0], status: "PENDING" },
+    { title: "Lần 2", amount: 0, method: "TRANSFER", billLink: "", date: "", status: "PENDING" },
+    { title: "Lần 3", amount: 0, method: "TRANSFER", billLink: "", date: "", status: "PENDING" }
   ]);
   
   // ===== QUẢN LÝ CỌC (ASSET/MONEY) =====
-  const [depositType, setDepositType] = useState<"NONE" | "ASSET" | "MONEY">("NONE");
+  const [depositType, setDepositType] = useState<"ASSET" | "MONEY">("ASSET");
   const [depositNotes, setDepositNotes] = useState(""); // Asset name
   const [depositQuantity, setDepositQuantity] = useState(1);
   const [depositAmount, setDepositAmount] = useState<number | "">(""); 
@@ -144,11 +144,81 @@ export default function ContractForm({
     }
   }, [defaultCustomerId, customers]);
 
+  // Load initialData when in Edit mode
+  useEffect(() => {
+    if (isEditMode && initialData) {
+      // General Info
+      setPhoneInput(initialData.customers?.phone || "");
+      setNameInput(initialData.customers?.full_name || initialData.customers?.bride_name || "");
+      
+      let parsedNotes: any = {};
+      try {
+        parsedNotes = typeof initialData.notes === 'string' ? JSON.parse(initialData.notes || '{}') : (initialData.notes || {});
+      } catch (e) {
+        console.error("Error parsing initialData.notes:", e);
+        parsedNotes = { userNotes: initialData.notes };
+      }
+      
+      setInquiryDate(parsedNotes.ngay_hoi || "");
+      setWeddingDate(parsedNotes.ngay_cuoi || "");
+      setPaperContractCode(parsedNotes.paper_contract_number || "");
+      if (initialData.contract_code) setContractCode(initialData.contract_code);
+      
+      // Schedule & Details
+      setShootLocation(parsedNotes.dia_diem || "");
+      setShootDate(parsedNotes.ngay_chup || "");
+      setDeliverDate(parsedNotes.ngay_giao || "");
+      setAlbumSize(parsedNotes.kho_album || "");
+      setAlbumPages(parsedNotes.so_trang?.toString() || "");
+      setAlbumMaterial(parsedNotes.chat_lieu || "");
+      setGifts(parsedNotes.tang_kem || parsedNotes.qua_tang || "");
+      setDressDeliverDate(parsedNotes.ngay_giao_vay || "");
+      setDressReturnDate(parsedNotes.ngay_tra_vay || "");
+      setPaymentDueDate(parsedNotes.han_thanh_toan || "");
+      setAssignedStaffInput(parsedNotes.nguoi_phu_trach || "");
+      setGeneralNotes(parsedNotes.userNotes || "");
+
+      // Deposit
+      setDepositType(parsedNotes.deposit_type || "ASSET");
+      setDepositNotes(parsedNotes.deposit_notes || "");
+      setDepositQuantity(parsedNotes.deposit_quantity || 1);
+      setDepositAmount(parsedNotes.deposit_amount || "");
+      setDepositReceiveDate(parsedNotes.deposit_receive_date || new Date().toISOString().split("T")[0]);
+      setDepositImageLink(parsedNotes.deposit_image || "");
+      setDepositReturned(parsedNotes.deposit_returned || false);
+      setDepositReturnDate(parsedNotes.deposit_return_date || "");
+      setDepositReturnImageLink(parsedNotes.deposit_return_image || "");
+      
+      // Services
+      if (parsedNotes.items && Array.isArray(parsedNotes.items) && parsedNotes.items.length > 0) {
+        setServices(parsedNotes.items.map((item: any) => ({
+          category: item.category || "",
+          detail: item.item_name?.replace(`${item.category} - `, "") || item.item_name || "",
+          quantity: item.quantity || 1,
+          price: item.unit_price || item.price || 0,
+          notes: item.notes || ""
+        })));
+      }
+      
+      // Installments
+      if (parsedNotes.payments && Array.isArray(parsedNotes.payments) && parsedNotes.payments.length > 0) {
+        setInstallments(parsedNotes.payments.map((p: any) => ({
+          title: p.title || "Thanh toán",
+          amount: p.amount || 0,
+          method: p.method || "TRANSFER",
+          billLink: p.billLink || "",
+          date: p.date || "",
+          status: p.status || "PENDING"
+        })));
+      }
+    }
+  }, [isEditMode, initialData]);
+
   
 
   // Calculate total amount
   const totalAmount = services.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
-  const totalPaid = installments.filter(i => i.status === "PAID").reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const totalPaid = installments.filter(i => !!i.billLink).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const totalPaidOrPending = installments.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const remainingAmount = Math.max(0, totalAmount - totalPaidOrPending);
   const actualDebt = Math.max(0, totalAmount - totalPaid); // Real debt based on what's actually PAID
@@ -237,8 +307,8 @@ export default function ContractForm({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, shouldPrint = false) => {
+    if (e) e.preventDefault();
     if (!phoneInput.trim() || !nameInput.trim()) {
       setErrorMsg("Vui lòng nhập Tên và Số điện thoại khách hàng!");
       return;
@@ -293,14 +363,17 @@ export default function ContractForm({
     setErrorMsg("");
 
     // Format installments
-    const finalInstallments: InstallmentItem[] = installments.map(inst => ({
-      installment_type: "DEPOSIT", // Can map this better if needed, but DEPOSIT is fine for partials
-      amount: inst.amount,
-      status: inst.status as any,
-      payment_method: inst.status === "PAID" ? inst.method : undefined,
-      payment_date: inst.date,
-      notes: JSON.stringify({ title: inst.title, billLink: inst.billLink }) // Storing specific notes
-    }));
+    const finalInstallments: InstallmentItem[] = installments.map(inst => {
+      const isPaid = !!inst.billLink;
+      return {
+        installment_type: "DEPOSIT", // Can map this better if needed, but DEPOSIT is fine for partials
+        amount: inst.amount,
+        status: isPaid ? "PAID" : "PENDING",
+        payment_method: isPaid ? inst.method : undefined,
+        payment_date: inst.date,
+        notes: JSON.stringify({ title: inst.title, billLink: inst.billLink }) // Storing specific notes
+      };
+    });
 
     // Add remaining if not zero
     if (remainingAmount > 0) {
@@ -325,7 +398,7 @@ export default function ContractForm({
       required_deposit: totalAmount * 0.5,
       payment_due_date: paymentDueDate || undefined,
       assigned_staff_names: assignedStaffInput.split(",").map(s => s.trim()).filter(s => s.length > 0),
-      initial_payment: installments[0]?.status === "PAID" ? {
+      initial_payment: !!installments[0]?.billLink ? {
         amount: Number(installments[0].amount),
         payment_method: installments[0].method,
         notes: JSON.stringify({ title: installments[0].title, billLink: installments[0].billLink })
@@ -357,12 +430,24 @@ export default function ContractForm({
     };
 
     try {
-      const res = await createContract(payload);
+      let res;
+      if (isEditMode && initialData?.id) {
+        res = await updateContract(initialData.id, payload);
+      } else {
+        res = await createContract(payload);
+      }
       setLoading(false);
   
       if (res.success) {
-        onSaved();
-        router.push("/dashboard/contracts");
+        onSaved?.();
+        if (shouldPrint) {
+          setTimeout(() => {
+            window.print();
+            router.push("/dashboard/contracts");
+          }, 300);
+        } else {
+          router.push("/dashboard/contracts");
+        }
       } else {
         setErrorMsg(res.error || "Không thể khởi tạo hợp đồng.");
       }
@@ -373,15 +458,15 @@ export default function ContractForm({
   };
 
   return (
-    <div className="flex flex-col px-2 md:px-3 pt-2 md:pt-3 pb-2 md:pb-3 bg-slate-50 h-[calc(100vh-64px)] -m-4 md:-m-8 overflow-hidden items-center justify-start">
-      <div className="w-full max-w-[1800px] 2xl:max-w-full flex flex-col gap-1.5 h-full min-h-0">
+    <div className="flex flex-col px-2 md:px-3 pt-2 md:pt-3 pb-2 md:pb-3 bg-[#FDFBF7] h-[calc(100vh-64px)] print:h-auto -m-4 md:-m-8 overflow-hidden print:overflow-visible items-center justify-start">
+      <div className="w-full max-w-[1800px] 2xl:max-w-full flex flex-col gap-1.5 h-full min-h-0 print:overflow-visible">
         {/* Form Body - LANDSCAPE GRID LAYOUT */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-10 gap-2 md:gap-3 flex-1 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-10 gap-2 md:gap-3 flex-1 min-h-0 overflow-hidden print:overflow-visible print:hidden">
             
             {/* CỘT TRÁI (Khách hàng & Lịch trình) - 3 Cột (xl) */}
-            <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-2 md:gap-3 h-full overflow-y-auto pr-1">
-              <section className="space-y-1.5 flex flex-col bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm shrink-0">
-                <h3 className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+            <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-2 md:gap-3 h-full overflow-y-auto pr-1 print:overflow-visible">
+              <section className="space-y-1.5 flex flex-col bg-white p-4 md:p-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none shrink-0">
+                <h3 className="text-[11px] font-bold tracking-widest text-slate-900 uppercase flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
                   <User className="w-3.5 h-3.5 text-amber-500" /> 1. Thông Tin Khách Hàng
                 </h3>
                 
@@ -392,31 +477,31 @@ export default function ContractForm({
                         SĐT <span className="text-red-500">*</span>
                         {matchedCustomerId && <span className="text-emerald-600 bg-emerald-50 px-1 rounded font-bold flex items-center gap-0.5"><Phone className="w-2.5 h-2.5"/> Cũ</span>}
                       </label>
-                      <input type="text" required placeholder="Nhập SĐT..." value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none font-bold text-emerald-700 font-mono" />
+                      <input type="text" required placeholder="Nhập SĐT..." value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none font-bold text-emerald-700 font-mono" />
                     </div>
                     <div>
                       <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                         Tên Khách <span className="text-red-500">*</span>
                       </label>
-                      <input type="text" required placeholder="Nguyễn Thị Hoa..." value={nameInput} onChange={(e) => setNameInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none font-bold text-slate-800" />
+                      <input type="text" required placeholder="Nguyễn Thị Hoa..." value={nameInput} onChange={(e) => setNameInput(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none font-bold text-slate-800" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     <div>
                       <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">Ngày hỏi</label>
-                      <CustomDatePicker value={inquiryDate} onChange={setInquiryDate} />
+                      <input type="date" value={inquiryDate} onChange={(e) => setInquiryDate(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs outline-none text-slate-700" />
                     </div>
                     <div>
                       <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">Ngày cưới</label>
-                      <CustomDatePicker value={weddingDate} onChange={setWeddingDate} />
+                      <input type="date" value={weddingDate} onChange={(e) => setWeddingDate(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs outline-none text-slate-700" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     <div>
                       <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">Số HĐ giấy <span className="lowercase font-normal text-slate-400">(Trống tự sinh)</span></label>
-                      <input type="text" placeholder="Số: 0012492" value={paperContractCode} onChange={(e) => setPaperContractCode(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 text-xs font-mono text-slate-700 outline-none" />
+                      <input type="text" placeholder="Số: 0012492" value={paperContractCode} onChange={(e) => setPaperContractCode(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs font-mono text-slate-700 outline-none" />
                     </div>
                     <div>
                       <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5" title="Chọn nhân viên Sale">
@@ -425,7 +510,7 @@ export default function ContractForm({
                       <select 
                         value={assignedStaffInput} 
                         onChange={(e) => setAssignedStaffInput(e.target.value)} 
-                        className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 text-xs text-slate-700 outline-none"
+                        className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs text-slate-700 outline-none"
                       >
                         <option value="">-- Chọn Sale phụ trách --</option>
                         {staffs.map((staff: any) => (
@@ -439,52 +524,52 @@ export default function ContractForm({
                 </div>
               </section>
 
-              <section className="space-y-1.5 flex flex-col flex-1 min-h-0 bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm">
-                <h3 className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5 border-b border-slate-200 pb-2 mb-1 shrink-0">
+              <section className="space-y-1.5 flex flex-col flex-1 min-h-0 bg-white p-4 md:p-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
+                <h3 className="text-[11px] font-bold tracking-widest text-slate-900 uppercase flex items-center gap-1.5 border-b border-slate-200 pb-2 mb-1 shrink-0">
                   <Settings2 className="w-3.5 h-3.5 text-amber-500" /> 2. Lịch trình & In Ấn
                 </h3>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   <div className="sm:col-span-1">
                     <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Địa điểm chụp</label>
-                    <input type="text" placeholder="VD: Studio / Đà Lạt" value={shootLocation} onChange={(e) => setShootLocation(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 text-xs outline-none" />
+                    <input type="text" placeholder="VD: Studio / Đà Lạt" value={shootLocation} onChange={(e) => setShootLocation(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs outline-none" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Ngày chụp</label>
-                    <CustomDatePicker value={shootDate} onChange={setShootDate} />
+                    <input type="date" value={shootDate} onChange={(e) => setShootDate(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs outline-none text-slate-700" />
                   </div>
 
                   <div className="sm:col-span-1">
                     <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Khổ album</label>
-                    <input type="text" placeholder="25x35" value={albumSize} onChange={(e) => setAlbumSize(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 text-xs outline-none" />
+                    <input type="text" placeholder="25x35" value={albumSize} onChange={(e) => setAlbumSize(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs outline-none" />
                   </div>
                   <div className="sm:col-span-1 grid grid-cols-2 gap-1.5">
                     <div>
                       <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Số trang</label>
-                      <input type="text" placeholder="20" value={albumPages} onChange={(e) => setAlbumPages(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 text-xs outline-none" />
+                      <input type="text" placeholder="20" value={albumPages} onChange={(e) => setAlbumPages(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs outline-none" />
                     </div>
                     <div>
                       <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Chất liệu</label>
-                      <input type="text" placeholder="Mika" value={albumMaterial} onChange={(e) => setAlbumMaterial(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 text-xs outline-none" />
+                      <input type="text" placeholder="Mika" value={albumMaterial} onChange={(e) => setAlbumMaterial(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs outline-none" />
                     </div>
                   </div>
 
                   <div className="sm:col-span-1">
                     <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Ngày giao (Album/Ảnh)</label>
-                    <CustomDatePicker value={deliverDate} onChange={setDeliverDate} />
+                    <input type="date" value={deliverDate} onChange={(e) => setDeliverDate(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs outline-none text-slate-700" />
                   </div>
                   <div className="sm:col-span-1">
                     <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Tặng kèm / Phụ kiện</label>
-                    <input type="text" placeholder="Ảnh lớn, ảnh bàn..." value={gifts} onChange={(e) => setGifts(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 text-xs outline-none" />
+                    <input type="text" placeholder="Ảnh lớn, ảnh bàn..." value={gifts} onChange={(e) => setGifts(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs outline-none" />
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Ngày lấy váy</label>
-                    <CustomDatePicker value={dressDeliverDate} onChange={setDressDeliverDate} />
+                    <input type="date" value={dressDeliverDate} onChange={(e) => setDressDeliverDate(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs outline-none text-slate-700" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Ngày trả váy</label>
-                    <CustomDatePicker value={dressReturnDate} onChange={setDressReturnDate} />
+                    <input type="date" value={dressReturnDate} onChange={(e) => setDressReturnDate(e.target.value)} className="w-full bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-2 py-0.5 text-xs outline-none text-slate-700" />
                   </div>
                 </div>
 
@@ -497,7 +582,7 @@ export default function ContractForm({
                     placeholder="Ghi chú thêm về hợp đồng, yêu cầu đặc biệt của khách hàng..."
                     value={generalNotes}
                     onChange={(e) => setGeneralNotes(e.target.value)}
-                    className="w-full flex-1 bg-slate-50 border border-slate-200 rounded-md p-2 text-[11px] text-slate-700 outline-none focus:border-amber-500 focus:bg-white transition-colors resize-none"
+                    className="w-full flex-1 bg-[#FDFBF7] border border-slate-100 rounded-lg focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 p-2 text-[11px] text-slate-700 outline-none focus:border-amber-500 focus:bg-white transition-colors resize-none"
                   />
                 </div>
               </section>
@@ -505,11 +590,11 @@ export default function ContractForm({
 
             {/* CỘT PHẢI (Dịch vụ & Thanh toán) - 7 Cột (xl) */}
             <div className="lg:col-span-8 xl:col-span-7 flex flex-col gap-2 md:gap-3 h-full overflow-y-auto pr-1">
-              <section className="flex flex-col bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm shrink-0">
+              <section className="flex flex-col bg-white p-4 md:p-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none shrink-0">
                 <div className="pb-2 border-b border-slate-200 flex items-center justify-between mb-1">
                   <div>
-                    <h3 className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                      <Briefcase className="w-3.5 h-3.5 text-amber-500" /> 3. Dịch Vụ & Sản Phẩm (Tối đa 8)
+                    <h3 className="text-[11px] font-bold tracking-widest text-slate-900 uppercase flex items-center gap-1.5">
+                      <Briefcase className="w-3.5 h-3.5 text-amber-500" /> 3. Dịch Vụ & Sản Phẩm (Tối đa 10)
                     </h3>
                   </div>
                 </div>
@@ -520,17 +605,17 @@ export default function ContractForm({
                       <tr>
                         <th className="px-1 py-0.5 font-bold w-[12%]">Nhóm Dịch Vụ <span className="text-red-500">*</span></th>
                         <th className="px-1 py-0.5 font-bold w-[18%]">Tên chi tiết</th>
+                        <th className="px-1 py-0.5 font-bold w-[31%]">Ghi chú</th>
                         <th className="px-0.5 py-0.5 font-bold w-[5%] text-center">SL</th>
                         <th className="px-1 py-0.5 font-bold w-[14%] text-right">Đơn Giá</th>
                         <th className="px-1 py-0.5 font-bold w-[16%] text-right">Thành Tiền</th>
-                        <th className="px-1 py-0.5 font-bold w-[31%]">Ghi chú</th>
                         <th className="px-0.5 py-0.5 w-[4%] text-center"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {services.map((item, idx) => (
                         <tr key={idx} className="border-b border-slate-100/50 hover:bg-slate-50/70 transition-colors group">
-                          <td className="px-1 py-0.5 align-top">
+                          <td className="px-1 py-1 align-top">
                             <select 
                               value={item.category}
                               onChange={(e) => {
@@ -538,13 +623,13 @@ export default function ContractForm({
                                 updated[idx].category = e.target.value;
                                 setServices(updated);
                               }}
-                              className="w-full bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-[11px] font-medium outline-none focus:border-amber-500 text-slate-700"
+                              className="w-full bg-slate-50 border border-slate-200 rounded px-1 py-1 text-[11px] font-medium outline-none focus:border-amber-500 text-slate-700"
                             >
                               <option value="">-- Chọn --</option>
                               {SERVICE_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                             </select>
                           </td>
-                          <td className="px-1 py-0.5 align-top">
+                          <td className="px-1 py-1 align-top">
                             <input 
                               type="text" 
                               placeholder="VD: Soiree đuôi cá..."
@@ -554,10 +639,23 @@ export default function ContractForm({
                                 updated[idx].detail = e.target.value;
                                 setServices(updated);
                               }} 
-                              className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-1 py-0.5 text-[11px] outline-none text-slate-800" 
+                              className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-1 py-1 text-[11px] outline-none text-slate-800" 
                             />
                           </td>
-                          <td className="px-0.5 py-0.5 align-top">
+                          <td className="px-1 py-1 align-top">
+                            <input 
+                              type="text" 
+                              placeholder="Lúp, mấn..."
+                              value={item.notes} 
+                              onChange={(e) => {
+                                const updated = [...services];
+                                updated[idx].notes = e.target.value;
+                                setServices(updated);
+                              }} 
+                              className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-1 py-1 text-[11px] outline-none text-slate-500 italic" 
+                            />
+                          </td>
+                          <td className="px-0.5 py-1 align-top">
                             <input 
                               type="number" 
                               min="1"
@@ -567,10 +665,10 @@ export default function ContractForm({
                                 updated[idx].quantity = Math.max(1, parseInt(e.target.value) || 1);
                                 setServices(updated);
                               }} 
-                              className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-0.5 py-0.5 text-[11px] text-center outline-none" 
+                              className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-0.5 py-1 text-[11px] text-center outline-none" 
                             />
                           </td>
-                          <td className="px-1 py-0.5 align-top">
+                          <td className="px-1 py-1 align-top">
                             <input 
                               type="text" 
                               placeholder="0"
@@ -581,35 +679,22 @@ export default function ContractForm({
                                 updated[idx].price = Number(raw) || 0;
                                 setServices(updated);
                               }} 
-                              className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-1 py-0.5 text-[12px] text-right outline-none font-mono text-emerald-700 font-semibold" 
+                              className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-1 py-1 text-[12px] text-right outline-none font-mono text-emerald-700 font-semibold" 
                             />
                           </td>
-                          <td className="px-1 py-0.5 align-top text-right">
-                            <div className="px-1 py-0.5 font-bold font-mono text-slate-800 text-[12px] bg-slate-100 rounded border border-slate-200">
+                          <td className="px-1 py-1 align-top text-right">
+                            <div className="px-1 py-1 font-bold font-mono text-slate-800 text-[12px] bg-slate-100 rounded border border-slate-200">
                               {new Intl.NumberFormat("vi-VN").format(item.price * item.quantity)}
                             </div>
                           </td>
-                          <td className="px-1 py-0.5 align-top">
-                            <input 
-                              type="text" 
-                              placeholder="Lúp, mấn..."
-                              value={item.notes} 
-                              onChange={(e) => {
-                                const updated = [...services];
-                                updated[idx].notes = e.target.value;
-                                setServices(updated);
-                              }} 
-                              className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-1 py-0.5 text-[11px] outline-none text-slate-500 italic" 
-                            />
-                          </td>
-                          <td className="px-0.5 py-0.5 align-top text-center">
+                          <td className="px-0.5 py-1 align-top text-center">
                             <button type="button" onClick={() => handleRemoveService(idx)} className="p-1 mt-0.5 text-slate-400 hover:text-red-500 transition-colors bg-white hover:bg-red-50 rounded shadow-sm border border-slate-200 hover:border-red-200">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </td>
                         </tr>
                       ))}
-                      {services.length < 8 && (
+                      {services.length < 10 && (
                         <tr>
                           <td colSpan={7} className="p-2 border-b border-slate-200">
                             <button type="button" onClick={handleAddService} className="text-[11px] text-slate-500 hover:text-amber-600 font-semibold flex items-center gap-1 justify-center w-full py-2 hover:bg-amber-50/50 rounded transition-colors border border-dashed border-slate-300 hover:border-amber-300">
@@ -619,43 +704,44 @@ export default function ContractForm({
                         </tr>
                       )}
                     </tbody>
+                    <tfoot className="bg-slate-50/80">
+                      <tr>
+                        <td colSpan={3} className="px-2 py-3 align-top text-[11px] text-slate-400 italic font-medium border-t border-slate-200">
+                          💡 <b>Lưu ý cho Sale:</b> Hãy kiểm tra kỹ tất cả các dịch vụ, chiết khấu và tổng tiền trước khi Lưu Hợp Đồng. Phần cọc tiền/giấy tờ có thể cập nhật sau ở mục quản lý đợt thanh toán.
+                        </td>
+                        <td colSpan={2} className="px-2 py-3 text-right font-bold text-xs text-slate-600 border-t border-slate-200 whitespace-nowrap">
+                          <div className="space-y-2 flex flex-col justify-end">
+                            <div>TỔNG HỢP ĐỒNG:</div>
+                            <div className="text-emerald-600">ĐÃ THANH TOÁN:</div>
+                            <div className="text-rose-600 border-t border-slate-200 pt-2">CÒN NỢ:</div>
+                          </div>
+                        </td>
+                        <td className="px-1 py-3 text-right border-t border-slate-200 whitespace-nowrap">
+                          <div className="space-y-2 flex flex-col justify-end font-mono">
+                            <div className="text-slate-800 text-[14px] font-bold">{new Intl.NumberFormat("vi-VN").format(totalAmount)} ₫</div>
+                            <div className="text-emerald-600 font-bold">{new Intl.NumberFormat("vi-VN").format(totalPaid)} ₫</div>
+                            <div className="text-rose-600 text-[14px] font-bold border-t border-slate-200 pt-2">{new Intl.NumberFormat("vi-VN").format(actualDebt)} ₫</div>
+                          </div>
+                        </td>
+                        <td className="border-t border-slate-200"></td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
-
-                {/* TỔNG KẾT HỢP ĐỒNG */}
-                <div className="bg-slate-50/80 p-3 flex justify-between items-center shrink-0 border-t border-slate-200">
-                  <div className="hidden sm:block text-[11px] text-slate-400 italic font-medium w-1/2 pr-4">
-                    💡 <b>Lưu ý cho Sale:</b> Hãy kiểm tra kỹ tất cả các dịch vụ, chiết khấu và tổng tiền trước khi Lưu Hợp Đồng. Phần cọc tiền/giấy tờ có thể cập nhật sau ở mục quản lý đợt thanh toán.
-                  </div>
-                  <div className="w-full sm:w-[280px] space-y-2">
-                    <div className="flex justify-between items-center text-xs font-bold text-slate-600">
-                      <span>TỔNG HỢP ĐỒNG:</span>
-                      <span className="text-slate-800 text-[14px] font-mono">{new Intl.NumberFormat("vi-VN").format(totalAmount)} ₫</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-bold text-emerald-600">
-                      <span>ĐÃ THANH TOÁN:</span>
-                      <span className="font-mono">{new Intl.NumberFormat("vi-VN").format(totalPaid)} ₫</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-bold text-rose-600 border-t border-slate-200 pt-2">
-                      <span>CÒN NỢ:</span>
-                      <span className="text-[14px] font-mono">{new Intl.NumberFormat("vi-VN").format(actualDebt)} ₫</span>
-                    </div>
-                  </div>
-                </div>
               </section>
-              <section className="flex flex-col flex-1 min-h-0 bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm mt-0.5">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-1 shrink-0">
-                  <div className="flex items-center gap-4">
-                    <h3 className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                      <DollarSign className="w-3.5 h-3.5 text-amber-500" /> 4. Tiến Độ Thanh Toán (Tối đa 3)
+              <section className="bg-white p-4 md:p-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none mt-0.5 grid grid-cols-1 xl:grid-cols-2 gap-6 items-start overflow-hidden">
+                {/* COLUMN 1: TIẾN ĐỘ THANH TOÁN */}
+                <div className="flex flex-col min-h-0">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-2 shrink-0">
+                    <h3 className="text-[11px] font-bold tracking-widest text-slate-900 uppercase flex items-center gap-1.5">
+                      <DollarSign className="w-3.5 h-3.5 text-amber-500" /> 4.1. Tiến Độ Thanh Toán
                     </h3>
                   </div>
-                </div>
 
-                <div className="space-y-2 overflow-x-auto pr-1 pb-1">
+                  <div className="space-y-2 overflow-x-auto pr-1 pb-1">
                   {installments.map((inst, idx) => (
                     <div key={idx} className="flex items-center gap-1.5 bg-slate-50/50 p-2 rounded-lg border border-slate-100 group min-w-max">
-                      <div className="w-[80px] shrink-0">
+                      <div className="w-[60px] shrink-0">
                         <input 
                           type="text" 
                           value={inst.title} 
@@ -667,7 +753,7 @@ export default function ContractForm({
                           className="w-full bg-transparent text-[11px] font-bold text-slate-700 outline-none border-b border-transparent focus:border-amber-500" 
                         />
                       </div>
-                      <div className="w-[110px] shrink-0">
+                      <div className="w-[95px] shrink-0">
                         <input 
                           type="date" 
                           value={inst.date || ""}
@@ -679,7 +765,7 @@ export default function ContractForm({
                           className="w-full bg-white border border-slate-200 rounded px-1.5 py-1 text-[10px] outline-none text-slate-600 font-semibold"
                         />
                       </div>
-                      <div className="w-[110px] shrink-0">
+                      <div className="w-[100px] shrink-0">
                         <input 
                           type="text" 
                           placeholder="Số tiền..."
@@ -693,7 +779,7 @@ export default function ContractForm({
                           className="w-full bg-white border border-slate-200 focus:border-amber-500 rounded px-2 py-1 text-[11px] text-right font-mono font-bold text-slate-800 outline-none" 
                         />
                       </div>
-                      <div className="w-[130px] shrink-0">
+                      <div className="flex-1 min-w-[125px]">
                         <select 
                           value={inst.method}
                           onChange={(e) => {
@@ -710,7 +796,7 @@ export default function ContractForm({
                       </div>
                       
                       {/* Image Upload for Receipt/Bill */}
-                      <div className="w-[100px] flex shrink-0 items-center justify-start border-l border-slate-200 pl-2 ml-1">
+                      <div className="w-[80px] flex shrink-0 items-center justify-start border-l border-slate-200 pl-2 ml-1">
                         {inst.billLink ? (
                           <div className="flex items-center gap-1.5 max-w-[150px] bg-white border border-slate-200 rounded px-2 py-0.5 shadow-sm">
                             <a href={inst.billLink} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:underline truncate" title="Xem ảnh bill">
@@ -764,25 +850,32 @@ export default function ContractForm({
                   )}
                 </div>
 
-                {depositType === "NONE" ? (
-                  <div className="mt-3 flex items-center justify-start gap-2 shrink-0 border border-dashed border-slate-300 p-2.5 rounded-lg bg-slate-50/50">
-                    <span className="text-[10px] text-slate-500 font-bold mr-2 hidden sm:inline">Khách có cọc giữ chân?</span>
-                    <button type="button" onClick={() => setDepositType("ASSET")} className="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded hover:bg-slate-100 transition-colors flex items-center gap-1 shadow-sm">
-                      <Plus className="w-3 h-3"/> Cọc Giấy Tờ
-                    </button>
-                    <button type="button" onClick={() => setDepositType("MONEY")} className="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded hover:bg-slate-100 transition-colors flex items-center gap-1 shadow-sm">
-                      <Plus className="w-3 h-3"/> Cọc Tiền
-                    </button>
+                </div>
+
+                {/* COLUMN 2: CỌC GIỮ CHÂN */}
+                <div className="flex flex-col min-h-0">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-2 shrink-0">
+                    <h3 className="text-[11px] font-bold tracking-widest text-slate-900 uppercase flex items-center gap-1.5">
+                      <DollarSign className="w-3.5 h-3.5 text-amber-500" /> 4.2. Cọc Giữ Chân
+                    </h3>
                   </div>
-                ) : (
-                  <div className="mt-3 flex flex-col gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg shrink-0">
-                    
-                    {/* HÀNG NHẬN CỌC */}
-                    <div className="flex items-center gap-1.5 pr-6 group min-w-max">
-                      <div className="w-[80px] shrink-0 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 px-2 py-1 rounded text-center whitespace-nowrap">
-                        Cọc {depositType === "ASSET" ? "Giấy Tờ" : "Tiền"}
-                      </div>
-                      <div className="w-[110px] shrink-0">
+
+                  {/* KHU VỰC CỌC (Luôn hiển thị) */}
+                  <div className="space-y-2 overflow-x-auto pr-1 pb-1">
+                  
+                  {/* HÀNG NHẬN CỌC */}
+                  <div className="flex items-center gap-1.5 bg-slate-50/50 p-2 rounded-lg border border-slate-100 group min-w-max">
+                    <div className="w-[95px] shrink-0">
+                      <select 
+                        value={depositType}
+                        onChange={(e) => setDepositType(e.target.value as "ASSET" | "MONEY")}
+                        className="w-full bg-white border border-slate-200 focus:border-amber-500 rounded px-1 py-1 text-[10px] font-bold text-slate-700 outline-none"
+                      >
+                        <option value="ASSET">Cọc Giấy Tờ</option>
+                        <option value="MONEY">Cọc Tiền</option>
+                      </select>
+                    </div>
+                      <div className="w-[95px] shrink-0">
                         <input 
                           type="date" 
                           value={depositReceiveDate}
@@ -793,7 +886,7 @@ export default function ContractForm({
                       
                       {depositType === "ASSET" ? (
                         <>
-                          <div className="w-[110px] shrink-0">
+                          <div className="flex-1 min-w-[130px]">
                             <input 
                               type="text" 
                               placeholder="Chi tiết giấy tờ..."
@@ -802,19 +895,19 @@ export default function ContractForm({
                               className="w-full bg-white border border-slate-300 focus:border-amber-500 rounded px-2 py-1 text-[11px] outline-none"
                             />
                           </div>
-                          <div className="w-[130px] flex items-center gap-1.5 shrink-0 pl-1">
-                            <span className="text-[10px] font-bold text-slate-500 whitespace-nowrap">SỐ LƯỢNG</span>
+                          <div className="w-[60px] flex items-center gap-1 shrink-0 pl-1">
+                            <span className="text-[10px] font-bold text-slate-500 whitespace-nowrap">S.L</span>
                             <input 
                               type="number"
                               min="1"
                               value={depositQuantity || ""}
                               onChange={(e) => setDepositQuantity(parseInt(e.target.value) || 1)}
-                              className="w-12 bg-white border border-slate-300 focus:border-amber-500 rounded px-1.5 py-1 text-[11px] outline-none text-center font-bold text-slate-700"
+                              className="flex-1 min-w-0 bg-white border border-slate-300 focus:border-amber-500 rounded px-1 py-1 text-[11px] outline-none text-center font-bold text-slate-700"
                             />
                           </div>
                         </>
                       ) : (
-                        <div className="w-[246px] relative shrink-0">
+                        <div className="flex-1 min-w-[196px] relative">
                           <input 
                             type="text" 
                             placeholder="Số tiền cọc..."
@@ -829,7 +922,7 @@ export default function ContractForm({
                         </div>
                       )}
 
-                      <div className="w-[100px] flex shrink-0 items-center justify-start border-l border-slate-200 pl-2 ml-1">
+                      <div className="w-[80px] flex shrink-0 items-center justify-start border-l border-slate-200 pl-2 ml-1">
                         {depositImageLink ? (
                           <div className="flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-1 rounded">
                             <a href={depositImageLink} target="_blank" rel="noreferrer" className="text-[10px] font-bold text-blue-600 flex items-center gap-1 hover:underline truncate max-w-[80px]">
@@ -845,17 +938,16 @@ export default function ContractForm({
                           </label>
                         )}
                       </div>
-                      
                       <div className="w-[30px] flex shrink-0 justify-end">
-                        <button type="button" onClick={() => { setDepositType("NONE"); setDepositNotes(""); setDepositAmount(""); }} className="p-1 text-slate-400 hover:text-red-500 transition-colors bg-white hover:bg-red-50 rounded shadow-sm border border-slate-200">
+                        <button type="button" onClick={() => { setDepositNotes(""); setDepositAmount(""); setDepositQuantity(1); setDepositImageLink(""); }} className="p-1 text-slate-400 hover:text-red-500 transition-colors bg-white hover:bg-red-50 rounded shadow-sm border border-slate-200" title="Xóa dữ liệu cọc">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
 
                     {/* HÀNG TRẢ CỌC */}
-                    <div className="flex items-center gap-1.5 pt-2 mt-1 border-t border-slate-200 pr-6 min-w-max">
-                      <div className="w-[80px] shrink-0">
+                    <div className="flex items-center gap-1.5 bg-slate-50/50 p-2 rounded-lg border border-slate-100 group min-w-max">
+                      <div className="w-[95px] shrink-0">
                         <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 px-2 py-1 rounded cursor-pointer hover:bg-slate-100 transition-colors w-full justify-center">
                           <input 
                             type="checkbox" 
@@ -866,13 +958,13 @@ export default function ContractForm({
                             }}
                             className="w-3 h-3 text-emerald-500 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
                           />
-                          <span className={depositReturned ? "text-emerald-600" : ""}>Đã Trả Cọc</span>
+                          <span className={`whitespace-nowrap ${depositReturned ? "text-emerald-600" : ""}`}>Đã Trả Cọc</span>
                         </label>
                       </div>
 
                       {depositReturned && (
                         <>
-                          <div className="w-[110px] shrink-0">
+                          <div className="w-[95px] shrink-0">
                             <input 
                               type="date" 
                               value={depositReturnDate}
@@ -880,9 +972,9 @@ export default function ContractForm({
                               className="w-full bg-white border border-slate-300 focus:border-amber-500 rounded px-1.5 py-1 text-[10px] font-semibold outline-none text-slate-600"
                             />
                           </div>
-                          <div className="w-[246px] shrink-0"></div> {/* Spacer to align with Amount + Method */}
+                          <div className="flex-1 min-w-[196px]"></div> {/* Spacer to align with Amount + Method */}
                           
-                          <div className="w-[100px] flex shrink-0 items-center justify-start border-l border-slate-200 pl-2 ml-1">
+                          <div className="w-[80px] flex shrink-0 items-center justify-start border-l border-slate-200 pl-2 ml-1">
                             {depositReturnImageLink ? (
                               <div className="flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-1 rounded">
                                 <a href={depositReturnImageLink} target="_blank" rel="noreferrer" className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 hover:underline truncate max-w-[80px]">
@@ -902,7 +994,7 @@ export default function ContractForm({
                       )}
                     </div>
                   </div>
-                )}
+                </div>
               </section>
             </div>
         </div>
@@ -921,7 +1013,7 @@ export default function ContractForm({
             </button>
             <button 
               type="button" 
-              onClick={(e) => handleSubmit(e)} 
+              onClick={(e) => handleSubmit(e, true)} 
               className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-slate-900 text-white flex items-center gap-1.5 transition-all shadow-md shadow-slate-800/20"
             >
               <Printer className="w-4 h-4" />
@@ -930,7 +1022,7 @@ export default function ContractForm({
             <button 
               type="button" 
               disabled={loading} 
-              onClick={handleSubmit} 
+              onClick={(e) => handleSubmit(e)} 
               className="px-5 py-2 text-sm font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-black flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20 disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -939,6 +1031,29 @@ export default function ContractForm({
           </div>
         </div>
       </div>
+      
+      <PrintableContract
+        data={{
+          contract_code: contractCode,
+          paper_contract_number: paperContractCode,
+          notesObj: {
+            ngay_hoi: inquiryDate,
+            ngay_cuoi: weddingDate,
+            ngay_chup: shootDate,
+            dia_diem: shootLocation,
+            ngay_giao: deliverDate,
+            kho_album: albumSize,
+            so_trang: albumPages,
+            chat_lieu: albumMaterial,
+            ngay_giao_vay: dressDeliverDate,
+            ngay_tra_vay: dressReturnDate,
+            userNotes: generalNotes
+          }
+        }}
+        services={services}
+        installments={installments}
+        customerInfo={{ name: nameInput, phone: phoneInput }}
+      />
     </div>
   );
 }
