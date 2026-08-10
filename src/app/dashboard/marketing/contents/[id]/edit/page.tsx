@@ -430,11 +430,11 @@ export default function ContentEditorPage({ params }: { params: { id: string } }
                 <div>
                   <h3 className="text-lg font-bold text-blue-900 mb-2">Mục đích của Lịch sử Phiên bản?</h3>
                   <p className="text-sm text-blue-800 mb-3">
-                    Đây là <b>Bản thảo nguyên gốc</b> do Trí tuệ Nhân tạo (AI) tạo ra từ lúc bắt đầu chiến dịch, mang đậm tính "Insight" và "Sáng tạo" ban đầu. Nó bị khóa (Chỉ Đọc) để làm bằng chứng đối chiếu.
+                    Đây là <b>Bản thảo nguyên gốc</b> do Trí tuệ Nhân tạo (AI) tạo ra từ lúc bắt đầu chiến dịch, mang đậm tính &quot;Insight&quot; và &quot;Sáng tạo&quot; ban đầu. Nó bị khóa (Chỉ Đọc) để làm bằng chứng đối chiếu.
                   </p>
                   <p className="text-sm text-blue-800 bg-white bg-opacity-60 p-3 rounded-lg font-medium border border-blue-100">
                     <span className="mr-2">💡</span>
-                    <b>Mẹo dành cho Quản lý:</b> Nếu video ra mắt bị "nhạt" hoặc sai định hướng, sếp hãy vào đây đọc lại Bản gốc này, sau đó quay lại Tab 1 (Soạn thảo) xem Nhân viên đã cắt xén, thay đổi hay "xào nấu" câu nào dẫn đến việc kịch bản bị giảm chất lượng!
+                    <b>Mẹo dành cho Quản lý:</b> Nếu video ra mắt bị &quot;nhạt&quot; hoặc sai định hướng, sếp hãy vào đây đọc lại Bản gốc này, sau đó quay lại Tab 1 (Soạn thảo) xem Nhân viên đã cắt xén, thay đổi hay &quot;xào nấu&quot; câu nào dẫn đến việc kịch bản bị giảm chất lượng!
                   </p>
                 </div>
              </div>

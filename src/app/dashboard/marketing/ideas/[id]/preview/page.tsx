@@ -191,7 +191,7 @@ export default function IdeaPreviewPage({ params }: { params: { id: string } }) 
       <div className="bg-blue-50 border-b border-blue-100 px-6 py-3 flex items-start gap-3 shrink-0 justify-center">
         <svg className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
         <p className="text-sm text-blue-800 leading-relaxed max-w-4xl w-full">
-          <strong className="font-semibold">Chế độ Chỉ Xem (Read-only):</strong> Bản thảo này được tự động gen ra bởi AI. Bạn không thể chỉnh sửa trực tiếp ở đây để đảm bảo tính toàn vẹn dữ liệu gốc. Hãy nhấn <strong className="font-semibold">"Đẩy sang SX Content"</strong> để chuyển giao qua bộ phận Sản Xuất tiến hành review và xóa/sửa chi tiết.
+          <strong className="font-semibold">Chế độ Chỉ Xem (Read-only):</strong> Bản thảo này được tự động gen ra bởi AI. Bạn không thể chỉnh sửa trực tiếp ở đây để đảm bảo tính toàn vẹn dữ liệu gốc. Hãy nhấn <strong className="font-semibold">&quot;Đẩy sang SX Content&quot;</strong> để chuyển giao qua bộ phận Sản Xuất tiến hành review và xóa/sửa chi tiết.
         </p>
       </div>
 

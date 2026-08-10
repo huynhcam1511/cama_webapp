@@ -229,7 +229,7 @@ export default function IdeaSetupPage({ params }: { params: { id: string } }) {
                 <div className="space-y-4 animate-in fade-in">
                   <div className="p-3 bg-gray-900/50 rounded-lg border border-gray-700">
                     <p className="text-xs text-pink-300 font-bold mb-1">Kịch bản (Video ngắn)</p>
-                    <p className="text-sm text-gray-300">00:00 - Góc toàn cảnh váy. "Bạn có biết 90% cô dâu..."</p>
+                    <p className="text-sm text-gray-300">00:00 - Góc toàn cảnh váy. &quot;Bạn có biết 90% cô dâu...&quot;</p>
                     <button className="text-xs text-pink-400 mt-2 hover:underline">Xem kịch bản chi tiết</button>
                   </div>
                 </div>
