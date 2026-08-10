@@ -123,7 +123,7 @@ export default function PoliciesView({ initialPolicies, permissions, departments
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800">
               {filteredPolicies.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => setViewingPolicy(p)}>
+                <tr key={p.id} className="hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => router.push(`/dashboard/policies/${p.id}`)}>
                   <td className="px-6 py-4 font-bold text-blue-700">{p.title}</td>
                   <td className="px-6 py-4">{getScopeBadge(p.policy_scope)}</td>
                   <td className="px-6 py-4 font-medium">{getTargetName(p.policy_scope, p.target_id)}</td>
@@ -172,57 +172,6 @@ export default function PoliciesView({ initialPolicies, permissions, departments
         onSaved={() => { router.refresh(); setIsDialogOpen(false); }}
       />
 
-      {/* View Policy Modal */}
-      {viewingPolicy && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 className="text-xl font-bold font-serif text-slate-900">{viewingPolicy.title}</h2>
-              <button onClick={() => setViewingPolicy(null)} className="text-slate-400 hover:text-slate-700">
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto text-sm text-slate-700 leading-relaxed">
-              <ReactMarkdown 
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: ({node, ...props}) => <h1 className="text-xl font-bold mt-4 mb-2 text-slate-900" {...props}/>,
-                  h2: ({node, ...props}) => <h2 className="text-lg font-bold mt-3 mb-2 text-slate-900" {...props}/>,
-                  h3: ({node, ...props}) => <h3 className="text-base font-bold mt-2 mb-1 text-slate-900" {...props}/>,
-                  p: ({node, ...props}) => <p className="mb-3" {...props}/>,
-                  ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-3 space-y-1" {...props}/>,
-                  ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-3 space-y-1" {...props}/>,
-                  li: ({node, ...props}) => <li className="" {...props}/>,
-                  a: ({node, ...props}) => <a className="text-blue-600 hover:underline font-medium" target="_blank" {...props}/>,
-                  strong: ({node, ...props}) => <strong className="font-bold text-slate-900" {...props}/>,
-                  blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-slate-300 pl-4 py-1 italic text-slate-600 my-3" {...props}/>
-                }}
-              >
-                {viewingPolicy.content}
-              </ReactMarkdown>
-
-              {viewingPolicy.attachment_url && (
-                <div className="mt-6 pt-4 border-t border-slate-100">
-                  <h4 className="text-sm font-semibold text-slate-800 mb-2">Tài liệu đính kèm</h4>
-                  <a 
-                    href={viewingPolicy.attachment_url} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium rounded-lg transition-colors border border-blue-200"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>Xem / Tải xuống File đính kèm</span>
-                  </a>
-                </div>
-              )}
-            </div>
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
-              <span>Áp dụng cho: <b>{getTargetName(viewingPolicy.policy_scope, viewingPolicy.target_id)}</b></span>
-              <span>Ban hành: {new Date(viewingPolicy.created_at).toLocaleDateString("vi-VN")}</span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

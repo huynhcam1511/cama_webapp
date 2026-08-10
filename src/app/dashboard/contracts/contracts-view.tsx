@@ -25,7 +25,8 @@ import {
   PhoneCall,
   MessageCircle,
   ArrowDown,
-  ArrowUp
+  ArrowUp,
+  Trash2
 } from "lucide-react";
 
 import RecordPaymentDialog from "./record-payment-dialog";
@@ -236,12 +237,16 @@ export default function ContractsView({ initialContracts, initialStats, customer
           <div className="flex shrink-0 lg:w-[180px]">
             <Link
               href={defaultCustomerId ? `/dashboard/contracts/create?newFor=${defaultCustomerId}` : "/dashboard/contracts/create"}
-              className="group bg-white hover:bg-blue-50 border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-xl transition-all flex flex-col items-center justify-center gap-2.5 p-4 w-full h-full shadow-sm hover:shadow-md"
+              className="group relative overflow-hidden bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 rounded-xl transition-all duration-300 flex flex-col items-center justify-center gap-2.5 p-4 w-full h-full shadow-[0_8px_20px_rgb(245,158,11,0.25)] hover:shadow-[0_8px_25px_rgb(245,158,11,0.4)] hover:-translate-y-1 border border-amber-400/50"
             >
-              <div className="w-10 h-10 rounded-full bg-blue-50 group-hover:bg-blue-600 flex items-center justify-center transition-colors">
-                <Plus className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors" />
+              {/* Decorative background elements */}
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl group-hover:opacity-20 transition-opacity duration-500"></div>
+              <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-16 h-16 bg-black opacity-10 rounded-full blur-lg"></div>
+              
+              <div className="relative z-10 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] border border-white/30 group-hover:scale-110 group-hover:rotate-90">
+                <Plus className="w-5 h-5 text-white drop-shadow-sm" />
               </div>
-              <span className="text-[13px] font-bold text-slate-500 group-hover:text-blue-700 transition-colors text-center">
+              <span className="relative z-10 text-[13px] font-extrabold text-white tracking-wider drop-shadow-md uppercase">
                 Tạo Hợp Đồng
               </span>
             </Link>
@@ -362,7 +367,28 @@ export default function ContractsView({ initialContracts, initialStats, customer
             <tbody className="divide-y divide-slate-100 text-slate-800">
               {filteredContracts.map((contract) => {
                 const total = contract.total_amount || 0;
-                const paid = contract.paid_amount || 0;
+                let paid = contract.paid_amount || 0;
+                let displayDueDate = contract.payment_due_date;
+
+                // Fallback for existing contracts that were saved before the new logic
+                if (paid === 0 && contract.notes) {
+                  try {
+                    const parsedNotes = typeof contract.notes === 'string' ? JSON.parse(contract.notes) : contract.notes;
+                    if (parsedNotes.legacy_installments && Array.isArray(parsedNotes.legacy_installments)) {
+                      paid = parsedNotes.legacy_installments
+                        .filter((i: any) => i.status === "PAID")
+                        .reduce((sum: number, item: any) => sum + (Number(item.amount) || 0), 0);
+                      
+                      const nextUnpaid = parsedNotes.legacy_installments.find((i: any) => i.status !== "PAID" && i.payment_date);
+                      if (nextUnpaid && !displayDueDate) {
+                        displayDueDate = nextUnpaid.payment_date;
+                      }
+                    }
+                  } catch (e) {
+                    // ignore parse errors
+                  }
+                }
+
                 const remaining = Math.max(0, total - paid);
                 const isDropdownOpen = activeDropdownId === contract.id;
 
@@ -375,7 +401,9 @@ export default function ContractsView({ initialContracts, initialStats, customer
       <span>{contract.contract_code}</span>
     </div>
     <div className="text-[10px] text-slate-500 mt-0.5">
-      {new Date(contract.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(', ', ' · ')}
+      {contract.contract_date 
+        ? new Date(contract.contract_date).toLocaleDateString('vi-VN') 
+        : new Date(contract.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(', ', ' · ')}
     </div>
   </td>
 
@@ -412,9 +440,9 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
   {/* Hạn Thanh Toán */}
   <td className="px-4 py-3 font-mono text-[11px]">
-    {contract.payment_due_date ? (
+    {displayDueDate ? (
        <span className={`${contract.debt_status === 'OVERDUE' ? 'text-red-600 font-bold bg-red-50 px-1 py-0.5 rounded' : 'text-slate-600'}`}>
-         {new Date(contract.payment_due_date).toLocaleDateString('vi-VN')}
+         {new Date(displayDueDate).toLocaleDateString('vi-VN')}
        </span>
     ) : <span className="text-slate-400">---</span>}
   </td>
@@ -441,44 +469,33 @@ export default function ContractsView({ initialContracts, initialStats, customer
   {/* Thao Tác */}
   <td className="px-4 py-3 text-right">
     <div className="flex items-center justify-end gap-1">
-      {(() => {
-        let primaryBtn = null;
-        if (contract.remaining_amount > 0 && contract.debt_status === 'OVERDUE') {
-          primaryBtn = <button onClick={() => setSelectedForPayment(contract)} className="px-2 py-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded text-[10px] font-bold flex items-center gap-1 transition-colors"><DollarSign className="w-3 h-3"/> Thu tiền</button>;
-        } else if (getNextAction(contract)) {
-           primaryBtn = <Link href={`/dashboard/contracts/${contract.id}?tab=checklist`} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 rounded text-[10px] font-bold flex items-center gap-1 transition-colors"><CheckCircle2 className="w-3 h-3"/> Checklist</Link>;
-        } else if (contract.remaining_amount > 0) {
-           primaryBtn = <button onClick={() => setSelectedForPayment(contract)} className="px-2 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 rounded text-[10px] font-bold flex items-center gap-1 transition-colors"><DollarSign className="w-3 h-3"/> Thu tiền</button>;
-        } else {
-           primaryBtn = <Link href={`/dashboard/contracts/${contract.id}`} className="px-2 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded text-[10px] font-bold flex items-center gap-1 transition-colors"><Eye className="w-3 h-3"/> Xem</Link>;
-        }
+      <Link 
+        href={`/dashboard/contracts/${contract.id}`} 
+        className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-md transition-colors"
+        title="Xem chi tiết"
+      >
+        <Eye className="w-3.5 h-3.5"/>
+      </Link>
+      
+      {canUpdate && (
+        <Link 
+          href={`/dashboard/contracts/${contract.id}/edit`} 
+          className="p-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 rounded-md transition-colors"
+          title="Chỉnh sửa"
+        >
+          <Edit3 className="w-3.5 h-3.5"/>
+        </Link>
+      )}
 
-        // Tách riêng nút Sửa
-        const editBtn = canUpdate && (
-          <Link href={`/dashboard/contracts/${contract.id}/edit`} className="px-2 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 rounded text-[10px] font-bold flex items-center gap-1 transition-colors">
-            <Edit3 className="w-3 h-3"/> Sửa
-          </Link>
-        );
-
-        return (
-          <>
-            {editBtn}
-            {primaryBtn}
-            {/* 3-Dots Menu */}
-            <div className="relative">
-              <button onClick={() => setActiveDropdownId(isDropdownOpen ? null : contract.id)} className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors border border-transparent hover:border-slate-200">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              {isDropdownOpen && (
-                <div className="absolute right-0 top-8 z-30 w-40 bg-white border border-slate-200 rounded-lg shadow-xl py-1 text-left animate-in fade-in">
-                  <button onClick={() => { setActiveDropdownId(null); setSelectedForPrint(contract); }} className="w-full px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2"><Printer className="w-3.5 h-3.5" /> In hợp đồng</button>
-                  {canDelete && <button onClick={() => { setActiveDropdownId(null); setSelectedForCancel(contract); }} className="w-full px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100 mt-1 pt-1.5"><Ban className="w-3.5 h-3.5" /> Hủy bỏ</button>}
-                </div>
-              )}
-            </div>
-          </>
-        );
-      })()}
+      {canDelete && (
+        <button 
+          onClick={() => setSelectedForCancel(contract)} 
+          className="p-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-md transition-colors"
+          title="Xóa / Hủy"
+        >
+          <Trash2 className="w-3.5 h-3.5"/>
+        </button>
+      )}
     </div>
   </td>
 </tr>

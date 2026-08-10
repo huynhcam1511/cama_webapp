@@ -36,7 +36,7 @@ export function SalesCharts({
               <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(val) => `${val/1000000}M`} />
               <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
               <RechartsTooltip 
-                formatter={(value: any, name: string) => name === 'Dòng tiền (VND)' ? [formatVND(value), name] : [value, name]}
+                formatter={((value: any, name: string) => name === 'Dòng tiền (VND)' ? [formatVND(value), name] : [value, name]) as any}
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
               />
               <Legend wrapperStyle={{ paddingTop: '20px' }} />
@@ -68,7 +68,7 @@ export function SalesCharts({
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip formatter={(val: number) => formatVND(val)} />
+                  <RechartsTooltip formatter={((val: number) => formatVND(val)) as any} />
                   <Legend verticalAlign="bottom" height={36} iconType="circle" />
                 </PieChart>
               </ResponsiveContainer>
@@ -88,7 +88,7 @@ export function SalesCharts({
                 <XAxis type="number" hide />
                 <YAxis dataKey="stage" type="category" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 13, fontWeight: 600}} width={120} />
                 <RechartsTooltip 
-                  formatter={(val: number) => [val, 'Số lượng']}
+                  formatter={((val: number) => [val, 'Số lượng']) as any}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
                 <Area type="monotone" dataKey="value" stroke="#6366f1" fill="#818cf8" fillOpacity={0.3} />

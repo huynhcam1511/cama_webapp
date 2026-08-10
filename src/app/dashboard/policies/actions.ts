@@ -78,3 +78,13 @@ export async function deletePolicy(id: string) {
   
   return { success: true };
 }
+
+export async function getPolicyById(id: string) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.from("policies").select("*").eq("id", id).single();
+  if (error) {
+    console.error("Error fetching policy:", error);
+    return null;
+  }
+  return data;
+}

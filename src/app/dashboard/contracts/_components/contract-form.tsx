@@ -6,6 +6,8 @@ import { createContract, updateContract, ContractFormData, ServiceItem, Installm
 import { createCustomer } from "../../customers/actions";
 import { createClient } from "@/lib/supabase/client";
 import { PrintableContract } from "../printable-contract";
+import { ContractStatus, ExecutionStatus, DebtStatus } from "../types";
+import { useLayoutScale } from "@/hooks/use-layout-scale";
 
 interface ContractFormProps {
   isOpen?: boolean;
@@ -52,6 +54,9 @@ export default function ContractForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  
+  // Initializing state directly from props (either edit data or new defaults)
+  const scale = useLayoutScale(1536); // Base width for scaling
 
   // 1. Thông Tin Chung
   const [phoneInput, setPhoneInput] = useState("");
@@ -60,7 +65,7 @@ export default function ContractForm({
   const [inquiryDate, setInquiryDate] = useState<string>("");
   const [weddingDate, setWeddingDate] = useState<string>("");
   const [paperContractCode, setPaperContractCode] = useState("");
-  const [contractCode, setContractCode] = useState("");
+  const [contractCode, setContractCode] = useState(initialData?.contract_code || "");
   const [contractDate, setContractDate] = useState<string>(new Date().toISOString().split("T")[0]);
 
   // 2. Chi Tiết Thực Hiện
@@ -411,6 +416,10 @@ export default function ContractForm({
       });
     }
 
+    const totalPaidCalculated = installments.filter(i => i.status === "PAID").reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const nextUnpaidInstallment = installments.find(i => i.status !== "PAID" && i.date);
+    const calculatedPaymentDueDate = nextUnpaidInstallment ? nextUnpaidInstallment.date : undefined;
+
     const payload: any = {
       customer_id: finalCustomerId,
       contract_code: contractCode,
@@ -421,9 +430,10 @@ export default function ContractForm({
       discount_type: "AMOUNT",
       surcharge_amount: 0,
       total_amount: totalAmount,
+      paid_amount: totalPaidCalculated,
       required_deposit: totalAmount * 0.5,
       contract_date: contractDate,
-      payment_due_date: paymentDueDate || undefined,
+      payment_due_date: calculatedPaymentDueDate,
       assigned_staff_names: assignedStaffInput.split(",").map(s => s.trim()).filter(s => s.length > 0),
       initial_payment: (installments[0]?.amount > 0 && installments[0]?.status === "PAID") ? {
         amount: Number(installments[0].amount),
@@ -485,8 +495,11 @@ export default function ContractForm({
   };
 
   return (
-    <div className="flex flex-col px-2 md:px-3 pt-2 md:pt-3 pb-2 md:pb-3 bg-[#FDFBF7] h-[calc(100vh-64px)] print:h-auto -m-4 md:-m-8 overflow-hidden print:overflow-visible items-center justify-start">
-      <div className="w-full max-w-[1800px] 2xl:max-w-full flex flex-col gap-1.5 h-full print:overflow-visible">
+    <div 
+      className="flex flex-col px-2 md:px-3 pt-2 md:pt-3 pb-2 md:pb-3 bg-[#FDFBF7] h-[calc(100vh-64px)] print:h-auto -m-4 md:-m-8 overflow-hidden print:overflow-visible items-center justify-start origin-top-left"
+      style={{ zoom: scale }}
+    >
+      <div className="w-full max-w-[1536px] min-w-[1536px] 2xl:max-w-full flex flex-col gap-1.5 h-full print:overflow-visible mx-auto">
         {/* Form Body - LANDSCAPE GRID LAYOUT */}
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-2 md:gap-3 flex-1 min-h-0 overflow-hidden print:overflow-visible print:hidden">
             
@@ -694,12 +707,13 @@ export default function ContractForm({
                           </td>
                           <td className="px-0.5 py-1 align-top">
                             <input 
-                              type="number" 
-                              min="1"
-                              value={item.quantity || ""} 
+                              type="text" 
+                              placeholder="0"
+                              value={item.quantity === 0 ? "" : item.quantity} 
                               onChange={(e) => {
                                 const updated = [...services];
-                                updated[idx].quantity = Math.max(1, parseInt(e.target.value) || 1);
+                                const val = e.target.value;
+                                updated[idx].quantity = val === "" ? 0 : Math.max(0, parseInt(val) || 0);
                                 setServices(updated);
                               }} 
                               className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-0.5 py-1 text-[11px] text-center outline-none" 
@@ -709,11 +723,11 @@ export default function ContractForm({
                             <input 
                               type="text" 
                               placeholder="0"
-                              value={item.price ? new Intl.NumberFormat("vi-VN").format(item.price) : ""} 
+                              value={item.price === 0 ? "0" : new Intl.NumberFormat("vi-VN").format(item.price)} 
                               onChange={(e) => {
                                 const raw = e.target.value.replace(/\D/g, "");
                                 const updated = [...services];
-                                updated[idx].price = Number(raw) || 0;
+                                updated[idx].price = raw === "" ? 0 : Number(raw);
                                 setServices(updated);
                               }} 
                               className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-1 py-1 text-[12px] text-right outline-none font-mono text-emerald-700 font-semibold" 
@@ -788,9 +802,9 @@ export default function ContractForm({
                       
                       <div className="min-w-0">
                         <input 
-                          type="text" 
+                          type="text"
                           placeholder="Số tiền..."
-                          value={inst.amount ? new Intl.NumberFormat("vi-VN").format(inst.amount) : ""} 
+                          value={inst.amount === 0 ? "0" : new Intl.NumberFormat("vi-VN").format(inst.amount)}
                           onChange={(e) => {
                             const raw = e.target.value.replace(/\D/g, "");
                             const updated = [...installments];
@@ -947,13 +961,13 @@ export default function ContractForm({
                         <div className="flex-1 min-w-[100px] relative">
                           <input 
                             type="text" 
-                            placeholder="Số tiền cọc..."
-                            value={depositAmount ? new Intl.NumberFormat("vi-VN").format(Number(depositAmount)) : ""}
+                            placeholder="Nhập số tiền cọc..."
+                            value={depositAmount === "" ? "" : (depositAmount === 0 ? "0" : new Intl.NumberFormat("vi-VN").format(Number(depositAmount)))}
                             onChange={(e) => {
                               const raw = e.target.value.replace(/\D/g, "");
-                              setDepositAmount(Number(raw) || "");
+                              setDepositAmount(raw === "" ? "" : Number(raw));
                             }}
-                            className="w-full bg-white border border-slate-300 focus:border-amber-500 rounded px-2 py-1 text-[11px] font-bold font-mono text-slate-800 outline-none text-right pr-6"
+                            className="w-full bg-white border border-slate-200 focus:border-amber-500 rounded px-2 py-1 text-[11px] outline-none font-mono font-bold text-slate-800 text-right pr-6"
                           />
                           <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-bold">đ</span>
                         </div>
@@ -984,7 +998,7 @@ export default function ContractForm({
 
                     {/* HÀNG TRẢ CỌC */}
                     <div className="flex items-center gap-1.5 bg-slate-50/50 p-2 rounded-lg border border-slate-100 group min-w-max">
-                      <div className="w-[85px] shrink-0">
+                      <div className="w-[95px] shrink-0">
                         <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 px-2 py-1 rounded cursor-pointer hover:bg-slate-100 transition-colors w-full justify-center">
                           <input 
                             type="checkbox" 
@@ -999,7 +1013,7 @@ export default function ContractForm({
                         </label>
                       </div>
 
-                      {depositReturned && (
+                      {depositReturned ? (
                         <>
                           <div className="w-[90px] shrink-0">
                             <input 
@@ -1009,9 +1023,9 @@ export default function ContractForm({
                               className="w-full bg-white border border-slate-300 focus:border-amber-500 rounded px-1.5 py-1 text-[10px] font-semibold outline-none text-slate-600"
                             />
                           </div>
-                          <div className="flex-1 min-w-[155px]"></div> {/* Spacer to align with Amount + Method */}
+                          <div className="flex-1 min-w-[155px]"></div>
                           
-                          <div className="w-[85px] flex shrink-0 items-center justify-start border-l border-slate-200 pl-2 ml-1">
+                          <div className="w-[120px] flex shrink-0 items-center justify-start border-l border-slate-200 pl-1.5 ml-0.5">
                             {depositReturnImageLink ? (
                               <div className="flex w-full items-center gap-1 bg-white border border-slate-200 px-1.5 py-1 rounded min-w-0">
                                 <a href={depositReturnImageLink} target="_blank" rel="noreferrer" className="flex-1 text-[10px] font-bold text-emerald-600 flex items-center gap-1 hover:underline min-w-0">
@@ -1027,9 +1041,10 @@ export default function ContractForm({
                               </label>
                             )}
                           </div>
-                          
-                          <div className="w-[30px] flex shrink-0 justify-end"></div>
+                          <div className="w-[28px] shrink-0"></div>
                         </>
+                      ) : (
+                        <div className="flex-1"></div>
                       )}
                     </div>
                   </div>

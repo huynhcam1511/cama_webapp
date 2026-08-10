@@ -216,6 +216,10 @@ export default function ContractDialog({
       });
     }
 
+    const totalPaidCalculated = installments.filter(i => i.status === "PAID").reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const nextUnpaidInstallment = installments.find(i => i.status !== "PAID" && i.date);
+    const calculatedPaymentDueDate = nextUnpaidInstallment ? nextUnpaidInstallment.date : undefined;
+
     const payload: any = {
       customer_id: finalCustomerId,
       contract_code: contractCode,
@@ -226,8 +230,9 @@ export default function ContractDialog({
       discount_type: "AMOUNT",
       surcharge_amount: 0,
       total_amount: totalAmount,
+      paid_amount: totalPaidCalculated,
       required_deposit: totalAmount * 0.5,
-      payment_due_date: paymentDueDate || undefined,
+      payment_due_date: calculatedPaymentDueDate,
       assigned_staff_names: assignedStaffInput.split(",").map(s => s.trim()).filter(s => s.length > 0),
       initial_payment: installments[0]?.status === "PAID" ? {
         amount: Number(installments[0].amount),
@@ -446,28 +451,29 @@ export default function ContractDialog({
                           <td className="px-0.5 py-1 align-top">
                             <input 
                               type="number" 
-                              min="1"
-                              value={item.quantity || ""} 
+                              min="0"
+                              value={item.quantity === 0 ? "" : item.quantity} 
                               onChange={(e) => {
                                 const updated = [...services];
-                                updated[idx].quantity = Math.max(1, parseInt(e.target.value) || 1);
+                                const val = e.target.value;
+                                updated[idx].quantity = val === "" ? 0 : Math.max(0, parseInt(val) || 0);
                                 setServices(updated);
                               }} 
-                              className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-0.5 py-1 text-[11px] text-center outline-none" 
+                              className="w-full bg-white border border-slate-200 rounded px-1.5 py-1 text-[11px] text-center outline-none" 
                             />
                           </td>
                           <td className="px-1 py-1 align-top">
                             <input 
                               type="text" 
                               placeholder="0"
-                              value={item.price ? new Intl.NumberFormat("vi-VN").format(item.price) : ""} 
+                              value={item.price === 0 ? "0" : new Intl.NumberFormat("vi-VN").format(item.price)} 
                               onChange={(e) => {
                                 const raw = e.target.value.replace(/\D/g, "");
                                 const updated = [...services];
-                                updated[idx].price = Number(raw) || 0;
+                                updated[idx].price = raw === "" ? 0 : Number(raw);
                                 setServices(updated);
                               }} 
-                              className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-1 py-1 text-[12px] text-right outline-none font-mono text-emerald-700 font-semibold" 
+                              className="w-full bg-white border border-slate-200 focus:border-amber-500 rounded px-2 py-1 text-[11px] text-right font-mono font-bold outline-none text-emerald-700" 
                             />
                           </td>
                           <td className="px-1 py-1 align-top text-right">
@@ -566,15 +572,15 @@ export default function ContractDialog({
                           </td>
                           <td className="px-1 py-1.5 text-right">
                             <input 
-                              type="text" 
-                              placeholder="0"
-                              value={inst.amount ? new Intl.NumberFormat("vi-VN").format(inst.amount) : ""} 
+                              type="text"
+                              placeholder="Số tiền..."
+                              value={inst.amount === 0 ? "0" : new Intl.NumberFormat("vi-VN").format(inst.amount)}
                               onChange={(e) => {
                                 const raw = e.target.value.replace(/\D/g, "");
                                 const updated = [...installments];
-                                updated[idx].amount = Number(raw) || 0;
+                                updated[idx].amount = raw === "" ? 0 : Number(raw);
                                 setInstallments(updated);
-                              }} 
+                              }}
                               className="w-full bg-amber-50 border border-amber-200 focus:border-amber-500 rounded px-1 py-1 text-[12px] text-right outline-none font-mono text-amber-700 font-bold" 
                             />
                           </td>

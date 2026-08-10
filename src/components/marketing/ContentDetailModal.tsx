@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Save, ExternalLink } from "lucide-react";
-import { createMarketingContent, updateMarketingContent } from "@/app/dashboard/marketing/content-feed/actions";
+import { createMarketingContent, updateMarketingContent } from "@/app/dashboard/marketing/actions";
 
 interface ContentDetailModalProps {
   isOpen: boolean;

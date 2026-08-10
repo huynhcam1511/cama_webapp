@@ -1,9 +1,8 @@
 import { Megaphone, CheckCircle2, AlertCircle, Clock, Link as LinkIcon, BarChart3, TrendingUp } from "lucide-react";
-import { getMarketingContents } from "../content-feed/actions";
+import { getMarketingContents } from "../actions";
 
 export default async function ManagerDashboardPage() {
-  const res = await getMarketingContents();
-  const tasks = (res.success && res.data) ? res.data : [];
+  const tasks = await getMarketingContents() || [];
 
   const publishedTasks = tasks.filter((t: any) => t.status === "PUBLISHED");
   const draftTasks = tasks.filter((t: any) => t.status === "DRAFT" || t.status === "IDEA");

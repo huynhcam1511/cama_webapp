@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getMarketingContents, deleteMarketingContent, createMarketingContent } from '../actions';
+import { getMarketingContents, deleteMarketingContent, createMarketingContent, updateMarketingContent } from '../actions';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -11,7 +12,6 @@ export default function IdeasPage() {
   const [contents, setContents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
-  const [selectedSubRow, setSelectedSubRow] = useState<any>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importJson, setImportJson] = useState("");
 
@@ -40,6 +40,16 @@ export default function IdeasPage() {
     if (confirm('Bạn có chắc chắn muốn xóa Ý Tưởng này?')) {
       await deleteMarketingContent(id);
       loadContents();
+    }
+  };
+
+  const handlePushToProduction = async (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (confirm('Xác nhận đẩy toàn bộ Gói Campaign này sang bộ phận Sản xuất Content?')) {
+      await updateMarketingContent(id, { status: 'IN_PROGRESS' });
+      loadContents();
+      alert('Đã chuyển thành công sang Module Sản Xuất Content.');
     }
   };
 
@@ -273,7 +283,7 @@ export default function IdeasPage() {
                         </button>
                       </td>
                       <td className="px-4 py-3 text-xs font-mono font-semibold text-gray-500">{displayId}</td>
-                      <td className="px-4 py-3 text-sm font-bold text-gray-900" colSpan={4}>
+                      <td className="px-4 py-3 text-sm font-bold text-gray-900" colSpan={5}>
                         {item.title} <span className="text-gray-400 text-xs font-normal ml-2 bg-white px-2 py-0.5 rounded border border-gray-200 shadow-sm">{subRows.length} đầu mục</span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
@@ -292,7 +302,7 @@ export default function IdeasPage() {
                       <tr 
                         key={idx} 
                         className="hover:bg-blue-50/40 transition-colors cursor-pointer group"
-                        onClick={() => setSelectedSubRow(sub)}
+                        onClick={() => window.location.href = `/dashboard/marketing/ideas/${item.id}/preview?subId=${sub.id}`}
                       >
                         <td className="px-4 py-3"></td>
                         <td className="px-4 py-3 text-gray-400 text-[10px] text-right pr-4 font-mono whitespace-nowrap">└─ Item {idx+1}</td>
@@ -314,7 +324,7 @@ export default function IdeasPage() {
                         <td className="px-4 py-3"></td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           <button 
-                            onClick={(e) => { e.stopPropagation(); alert('Đã chuyển toàn bộ Gói Campaign này sang Module Sản Xuất Content. Trúc giờ đây có thể toàn quyền xóa/sửa.'); }}
+                            onClick={(e) => handlePushToProduction(item.id, e)}
                             className="bg-green-500 text-white px-3 py-1.5 rounded shadow-sm hover:bg-green-600 text-xs font-semibold transition-transform transform active:scale-95"
                           >
                             Đẩy sang SX Content
@@ -329,69 +339,6 @@ export default function IdeasPage() {
           </tbody>
         </table>
       </div>
-
-      {/* Right Drawer (Markdown Editor Look) */}
-      {selectedSubRow && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-gray-900/20 backdrop-blur-sm transition-all" onClick={() => setSelectedSubRow(null)}>
-          <div 
-            className="w-full max-w-6xl h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-gray-200"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Drawer Header */}
-            <div className="bg-white border-b border-gray-200 px-8 py-6 flex justify-between items-center shrink-0">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h3 className="font-extrabold text-2xl text-gray-900 tracking-tight">Chi tiết Bản thảo (Draft)</h3>
-                  <span className="bg-yellow-100 text-yellow-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded border border-yellow-200">AI Generated</span>
-                </div>
-                <p className="text-sm text-gray-500 font-medium">{selectedSubRow.platform} &bull; {selectedSubRow.category} &bull; {selectedSubRow.page}</p>
-              </div>
-              <button onClick={() => setSelectedSubRow(null)} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors bg-gray-50 border border-gray-200">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-              </button>
-            </div>
-
-            {/* Read-only Alert */}
-            <div className="bg-blue-50 border-b border-blue-100 px-8 py-3 flex items-start gap-3 shrink-0">
-              <svg className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <p className="text-sm text-blue-800 leading-relaxed">
-                <strong className="font-semibold">Chế độ Chỉ Xem (Read-only):</strong> Bản thảo này được tự động gen ra bởi AI (Cẩm). Bạn không thể chỉnh sửa trực tiếp ở đây để đảm bảo tính toàn vẹn dữ liệu gốc. Hãy nhấn <strong className="font-semibold">"Đẩy sang SX Content"</strong> để chuyển giao qua bộ phận Sản Xuất (Trúc) tiến hành review và xóa/sửa chi tiết.
-              </p>
-            </div>
-
-            {/* Drawer Body (Markdown Content) */}
-            <div className="flex-1 overflow-y-auto bg-gray-100/50 p-4 md:p-8">
-              <div 
-                className="w-full max-w-5xl mx-auto bg-white shadow-sm border border-gray-200 min-h-full px-8 py-12 md:px-16 md:py-16
-                           prose prose-sm md:prose-base max-w-none prose-headings:font-bold prose-headings:text-gray-900 
-                           prose-h1:text-3xl prose-h1:border-b prose-h1:pb-4 prose-h1:mb-8
-                           prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-6
-                           prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-4
-                           prose-a:text-blue-600 
-                           prose-table:w-full prose-table:border-collapse prose-table:mt-4 prose-table:mb-8
-                           prose-thead:bg-gray-50 prose-th:border prose-th:border-gray-200 prose-th:px-4 prose-th:py-3 prose-th:text-left prose-th:text-sm
-                           prose-td:border prose-td:border-gray-200 prose-td:px-4 prose-td:py-3 prose-td:text-sm prose-td:align-top
-                           prose-li:my-1"
-              >
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                  {selectedSubRow.markdown_content || '*Nội dung trống*'}
-                </ReactMarkdown>
-              </div>
-            </div>
-            
-            {/* Drawer Footer */}
-            <div className="p-5 border-t border-gray-200 bg-white flex justify-between items-center shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-               <button className="text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-100 flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 transition-colors bg-white shadow-sm" onClick={() => { navigator.clipboard.writeText(selectedSubRow.markdown_content); alert('Đã sao chép nội dung'); }}>
-                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                 Sao chép (Copy)
-               </button>
-               <button onClick={() => setSelectedSubRow(null)} className="px-6 py-2.5 bg-gray-900 text-white rounded-lg font-semibold text-sm hover:bg-gray-800 transition-colors shadow-md">
-                 Đóng
-               </button>
-            </div>
-          </div>
-        </div>
-      )}
     
       {/* Import JSON Modal */}
       {showImportModal && (

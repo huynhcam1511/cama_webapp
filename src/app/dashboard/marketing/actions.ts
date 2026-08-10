@@ -80,6 +80,19 @@ export async function getMarketingContentById(id: string) {
 export async function updateMarketingContent(id: string, payload: any) {
   const supabase = createClient();
   
+  // LOGIC AUDIT TRAIL: Nếu đẩy sang Sản xuất (IN_PROGRESS), lưu lại bản gốc của AI
+  if (payload.status === 'IN_PROGRESS') {
+    const { data: currentContent } = await supabase
+      .from('marketing_contents')
+      .select('original_deliverables, deliverables')
+      .eq('id', id)
+      .single();
+      
+    if (currentContent && !currentContent.original_deliverables && currentContent.deliverables) {
+      payload.original_deliverables = currentContent.deliverables;
+    }
+  }
+
   const { error } = await supabase
     .from('marketing_contents')
     .update(payload)

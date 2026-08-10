@@ -12,7 +12,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
 async function test() {
   const res = await fetch(`${supabaseUrl}/rest/v1/attendance_logs?select=*`, {
     headers: {
-      "apikey": supabaseServiceKey,
+      "apikey": supabaseServiceKey as string,
       "Authorization": `Bearer ${supabaseServiceKey}`
     }
   });

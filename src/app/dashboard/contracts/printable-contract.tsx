@@ -38,116 +38,119 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
     const remainingAmount = Math.max(0, totalAmount - depositAmount);
 
     return (
-      <div ref={ref} className={`${forceShow ? 'block shadow-2xl' : 'hidden print:block'} bg-white text-black p-8 w-full max-w-[210mm] mx-auto min-h-[297mm] font-sans`}>
+      <div ref={ref} className={`${forceShow ? 'block shadow-2xl' : 'hidden print:block'} bg-white text-black p-6 md:p-10 w-full max-w-[210mm] mx-auto min-h-[297mm] font-serif print:p-8`}>
         {/* Header - Brand Identity */}
-        <div className="flex justify-between items-end border-b-2 border-amber-500 pb-4 mb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-widest uppercase text-slate-900">CAMA</h1>
-            <p className="text-sm tracking-widest text-slate-500 uppercase mt-1">Haute Couture</p>
+        <div className="flex justify-between items-start border-b-2 border-slate-800 pb-3 mb-4">
+          <div className="w-[120px]">
+            <h1 className="text-2xl font-bold tracking-widest uppercase text-slate-900 m-0 leading-none">CAMA</h1>
+            <p className="text-[9px] tracking-widest text-slate-500 uppercase mt-1">Haute Couture</p>
           </div>
-          <div className="text-right text-xs text-slate-600 space-y-1">
-            <p>Số HĐ: {activeData?.paper_contract_number || activeData?.contract_code || contract?.contract_code}</p>
-            <p>Ngày lập: {new Date().toLocaleDateString("vi-VN")}</p>
+          <div className="flex-1 text-center">
+            <h2 className="text-[13px] font-bold uppercase text-slate-900">Cộng Hòa Xã Hội Chủ Nghĩa Việt Nam</h2>
+            <h3 className="text-[11px] font-bold text-slate-700 mt-0.5">Độc lập - Tự do - Hạnh phúc</h3>
+            <p className="text-[10px] mt-1">--- o0o ---</p>
+          </div>
+          <div className="text-right text-[10px] text-slate-600 space-y-0.5 w-[120px]">
+            <p>Số HĐ: <span className="font-bold text-slate-800">{activeData?.paper_contract_number || activeData?.contract_code || contract?.contract_code}</span></p>
+            <p>Ngày lập: <span className="font-bold text-slate-800">{activeData?.contract_date ? new Date(activeData.contract_date).toLocaleDateString("vi-VN") : new Date().toLocaleDateString("vi-VN")}</span></p>
           </div>
         </div>
 
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold uppercase text-slate-900">Hợp Đồng Dịch Vụ Cưới</h2>
+        <div className="text-center mb-6 mt-6">
+          <h2 className="text-lg font-bold uppercase text-slate-900">Hợp Đồng Dịch Vụ Cưới</h2>
         </div>
 
         {/* Section 1: Customer Info */}
-        <div className="mb-8">
-          <h2 className="text-sm font-bold uppercase text-amber-600 mb-3 border-b border-amber-200 pb-1">1. Thông Tin Khách Hàng</h2>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Tên khách hàng:</span> <span className="font-bold">{activeCustomerInfo?.name || "..."}</span></div>
-            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Số điện thoại:</span> <span className="font-bold">{activeCustomerInfo?.phone || "..."}</span></div>
-            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày hỏi:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_hoi || activeData?.ngay_hoi || "..."}</span></div>
-            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày cưới:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_cuoi || activeData?.ngay_cuoi || "..."}</span></div>
+        <div className="mb-5">
+          <h2 className="text-[11px] font-bold uppercase text-slate-900 mb-2 border-b border-slate-300 pb-1">Điều 1: Thông tin Khách hàng (Bên A)</h2>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-[11px] pl-2">
+            <div className="flex justify-between border-b border-slate-100 border-dashed pb-1"><span className="text-slate-600">Họ và tên:</span> <span className="font-bold text-slate-900">{activeCustomerInfo?.name || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 border-dashed pb-1"><span className="text-slate-600">Số điện thoại:</span> <span className="font-bold text-slate-900">{activeCustomerInfo?.phone || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 border-dashed pb-1"><span className="text-slate-600">Ngày hỏi:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_hoi || activeData?.ngay_hoi || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 border-dashed pb-1"><span className="text-slate-600">Ngày cưới:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_cuoi || activeData?.ngay_cuoi || "..."}</span></div>
           </div>
         </div>
 
         {/* Section 2: Schedule & Details */}
-        <div className="mb-8">
-          <h2 className="text-sm font-bold uppercase text-amber-600 mb-3 border-b border-amber-200 pb-1">2. Lịch Trình & Chi Tiết</h2>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Địa điểm chụp:</span> <span className="font-semibold">{activeData?.notesObj?.dia_diem || activeData?.dia_diem || "..."}</span></div>
-            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày chụp:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_chup || activeData?.ngay_chup || "..."}</span></div>
-            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày giao (Album/Ảnh):</span> <span className="font-semibold">{activeData?.notesObj?.ngay_giao || activeData?.ngay_giao || "..."}</span></div>
-            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Quy cách Album:</span> <span className="font-semibold">{activeData?.notesObj?.kho_album ? `${activeData.notesObj.kho_album} - ${activeData.notesObj.so_trang} trang (${activeData.notesObj.chat_lieu})` : (activeData?.kho_album ? `${activeData.kho_album} - ${activeData.so_trang} trang (${activeData.chat_lieu})` : "...")}</span></div>
-            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày lấy váy:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_giao_vay || activeData?.ngay_giao_vay || "..."}</span></div>
-            <div className="flex justify-between border-b border-slate-100 pb-1"><span className="text-slate-500">Ngày trả váy:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_tra_vay || activeData?.ngay_tra_vay || "..."}</span></div>
+        <div className="mb-5">
+          <h2 className="text-[11px] font-bold uppercase text-slate-900 mb-2 border-b border-slate-300 pb-1">Điều 2: Lịch trình & Sản phẩm</h2>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-[11px] pl-2">
+            <div className="flex justify-between border-b border-slate-100 border-dashed pb-1"><span className="text-slate-600">Địa điểm chụp:</span> <span className="font-semibold">{activeData?.notesObj?.dia_diem || activeData?.dia_diem || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 border-dashed pb-1"><span className="text-slate-600">Ngày chụp:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_chup || activeData?.ngay_chup || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 border-dashed pb-1"><span className="text-slate-600">Ngày giao sản phẩm:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_giao || activeData?.ngay_giao || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 border-dashed pb-1"><span className="text-slate-600">Quy cách Album:</span> <span className="font-semibold">{activeData?.notesObj?.kho_album ? `${activeData.notesObj.kho_album} - ${activeData.notesObj.so_trang} trang (${activeData.notesObj.chat_lieu})` : (activeData?.kho_album ? `${activeData.kho_album} - ${activeData.so_trang} trang (${activeData.chat_lieu})` : "...")}</span></div>
+            <div className="flex justify-between border-b border-slate-100 border-dashed pb-1"><span className="text-slate-600">Ngày lấy váy:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_giao_vay || activeData?.ngay_giao_vay || "..."}</span></div>
+            <div className="flex justify-between border-b border-slate-100 border-dashed pb-1"><span className="text-slate-600">Ngày trả váy:</span> <span className="font-semibold">{activeData?.notesObj?.ngay_tra_vay || activeData?.ngay_tra_vay || "..."}</span></div>
           </div>
         </div>
 
         {/* Section 3: Services */}
-        <div className="mb-8">
-          <h2 className="text-sm font-bold uppercase text-amber-600 mb-3 border-b border-amber-200 pb-1">3. Chi Tiết Dịch Vụ & Sản Phẩm</h2>
-          <table className="w-full text-sm border-collapse">
+        <div className="mb-5">
+          <h2 className="text-[11px] font-bold uppercase text-slate-900 mb-2 border-b border-slate-300 pb-1">Điều 3: Báo giá dịch vụ & Thanh toán</h2>
+          <table className="w-full text-[11px] border-collapse border border-slate-800">
             <thead>
-              <tr className="bg-slate-50 text-slate-600 uppercase text-xs">
-                <th className="py-2 px-2 text-left font-semibold border-b border-slate-200 w-1/3">Dịch vụ</th>
-                <th className="py-2 px-2 text-left font-semibold border-b border-slate-200">Ghi chú</th>
-                <th className="py-2 px-2 text-center font-semibold border-b border-slate-200 w-12">SL</th>
-                <th className="py-2 px-2 text-right font-semibold border-b border-slate-200 w-28">Đơn giá</th>
-                <th className="py-2 px-2 text-right font-semibold border-b border-slate-200 w-32">Thành tiền</th>
+              <tr className="bg-slate-100 text-slate-900 font-bold uppercase text-[10px]">
+                <th className="py-1.5 px-2 text-left border border-slate-800 w-1/3">Dịch vụ</th>
+                <th className="py-1.5 px-2 text-left border border-slate-800">Ghi chú</th>
+                <th className="py-1.5 px-2 text-center border border-slate-800 w-10">SL</th>
+                <th className="py-1.5 px-2 text-right border border-slate-800 w-24">Đơn giá</th>
+                <th className="py-1.5 px-2 text-right border border-slate-800 w-28">Thành tiền</th>
               </tr>
             </thead>
             <tbody>
               {activeServices.filter((s: any) => (s.category || s.item_name || "").trim()).map((item: any, idx: number) => (
-                <tr key={idx} className="border-b border-slate-100">
-                  <td className="py-2 px-2 text-slate-900 font-medium">{item.category || item.item_name} {item.detail ? `- ${item.detail}` : ""}</td>
-                  <td className="py-2 px-2 text-slate-500 text-xs italic">{item.notes}</td>
-                  <td className="py-2 px-2 text-center text-slate-700">{item.quantity}</td>
-                  <td className="py-2 px-2 text-right text-slate-700 font-mono text-xs">{(item.price || item.unit_price) > 0 ? formatCurrency(item.price || item.unit_price) : "-"}</td>
-                  <td className="py-2 px-2 text-right font-bold text-slate-900 font-mono">{formatCurrency((item.price || item.unit_price) * item.quantity)}</td>
+                <tr key={idx} className="border-b border-slate-800">
+                  <td className="py-1.5 px-2 border-r border-slate-800 text-slate-900 font-medium">{item.category || item.item_name} {item.detail ? `- ${item.detail}` : ""}</td>
+                  <td className="py-1.5 px-2 border-r border-slate-800 text-slate-600 text-[10px] italic">{item.notes}</td>
+                  <td className="py-1.5 px-2 border-r border-slate-800 text-center text-slate-800">{item.quantity}</td>
+                  <td className="py-1.5 px-2 border-r border-slate-800 text-right text-slate-800 font-mono text-[10px]">{(item.price || item.unit_price) > 0 ? formatCurrency(item.price || item.unit_price) : "-"}</td>
+                  <td className="py-1.5 px-2 border-r border-slate-800 text-right font-bold text-slate-900 font-mono">{formatCurrency((item.price || item.unit_price) * item.quantity)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="mt-4 flex justify-end">
-            <div className="w-1/2 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500 uppercase font-semibold">Tổng Cộng:</span>
-                <span className="font-bold text-lg font-mono text-slate-900">{formatCurrency(totalAmount)}</span>
+          <div className="mt-3 flex justify-end">
+            <div className="w-2/3 md:w-1/2 space-y-1 text-[11px]">
+              <div className="flex justify-between border-b border-slate-200 border-dashed pb-1">
+                <span className="text-slate-700 uppercase font-bold">Tổng Giá Trị Hợp Đồng:</span>
+                <span className="font-bold text-[12px] font-mono text-slate-900">{formatCurrency(totalAmount)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500 uppercase font-semibold">Đã Thanh Toán (Cọc):</span>
-                <span className="font-bold font-mono text-emerald-600">{formatCurrency(depositAmount)}</span>
+              <div className="flex justify-between border-b border-slate-200 border-dashed pb-1 pt-1">
+                <span className="text-slate-700 uppercase font-bold">Đã Thanh Toán (Cọc):</span>
+                <span className="font-bold font-mono text-slate-900">{formatCurrency(depositAmount)}</span>
               </div>
-              <div className="flex justify-between text-sm border-t border-slate-800 pt-2">
-                <span className="text-slate-900 uppercase font-bold">Còn Nợ:</span>
-                <span className="font-bold text-xl font-mono text-red-600">{formatCurrency(remainingAmount)}</span>
+              <div className="flex justify-between pt-1">
+                <span className="text-slate-900 uppercase font-bold">Giá Trị Còn Lại (Cần Thanh Toán):</span>
+                <span className="font-bold text-[13px] font-mono text-slate-900">{formatCurrency(remainingAmount)}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Section 4: Terms & Signatures */}
-        <div className="mb-12 break-inside-avoid">
-          <h2 className="text-sm font-bold uppercase text-amber-600 mb-3 border-b border-amber-200 pb-1">4. Điều Khoản & Ghi Chú</h2>
-          <div className="text-xs text-slate-600 space-y-2 leading-relaxed bg-slate-50 p-4 rounded-lg">
+        <div className="mb-6 break-inside-avoid">
+          <h2 className="text-[11px] font-bold uppercase text-slate-900 mb-2 border-b border-slate-300 pb-1">Điều 4: Trách nhiệm & Điều khoản chung</h2>
+          <div className="text-[10px] text-slate-800 space-y-1.5 leading-relaxed text-justify">
             {data?.notesObj?.userNotes ? (
-              <p className="whitespace-pre-wrap">{data.notesObj.userNotes}</p>
-            ) : (
-              <>
-                <p>- Khách hàng vui lòng kiểm tra kỹ thông tin dịch vụ và lịch trình trước khi ký.</p>
-                <p>- Thời gian trả ảnh/album có thể xê dịch 1-2 ngày tùy vào tình hình thực tế, CAMA sẽ thông báo trước.</p>
-                <p>- Khách hàng bảo quản váy cưới cẩn thận, trường hợp rách hỏng sẽ đền bù theo quy định của CAMA.</p>
-                <p>- Các khoản thanh toán còn lại vui lòng hoàn tất theo đúng tiến độ đã thỏa thuận.</p>
-              </>
-            )}
+              <p className="whitespace-pre-wrap font-medium italic pb-2 mb-2 border-b border-slate-200">Ghi chú riêng: {data.notesObj.userNotes}</p>
+            ) : null}
+            <p><strong>1. Trách nhiệm Bên A (Khách hàng):</strong> Cung cấp thông tin đầy đủ, chính xác. Thanh toán đúng tiến độ hợp đồng. Đến đúng giờ hẹn thử váy/chụp ảnh. Tuân thủ quy định bảo quản váy cưới/Vest của Bên B; nếu xảy ra rách/hỏng do lỗi của Bên A, Bên A chịu trách nhiệm bồi thường theo giá trị niêm yết của Bên B.</p>
+            <p><strong>2. Trách nhiệm Bên B (CAMA):</strong> Đảm bảo thực hiện dịch vụ đúng chất lượng và tiến độ đã cam kết. Thông báo trước cho Bên A nếu có thay đổi về lịch trình hoặc nhân sự do trường hợp bất khả kháng.</p>
+            <p><strong>3. Quy định thanh toán:</strong> Bên A thanh toán đợt 1 (Đặt cọc) ngay khi ký hợp đồng để giữ lịch và chốt dịch vụ. Hợp đồng chỉ có hiệu lực kể từ thời điểm Bên B nhận được tiền cọc. Bên A thanh toán số tiền còn lại vào ngày nhận sản phẩm hoặc ngày thực hiện dịch vụ (tùy theo thỏa thuận chi tiết).</p>
+            <p><strong>4. Hủy/Dời lịch:</strong> Trong mọi trường hợp Bên A đơn phương hủy hợp đồng, số tiền cọc sẽ không được hoàn lại. Nếu Bên A có nhu cầu dời lịch, cần thông báo trước cho Bên B ít nhất 07 ngày làm việc (việc dời lịch phụ thuộc vào lịch trống thực tế của Bên B).</p>
+            <p className="mt-2 pt-2 border-t border-slate-200"><em>Hợp đồng này được lập thành 02 bản, mỗi bên giữ 01 bản có giá trị pháp lý như nhau. Hợp đồng có hiệu lực kể từ ngày ký.</em></p>
           </div>
         </div>
 
         {/* Signatures */}
-        <div className="flex justify-between items-start mt-12 pt-8 break-inside-avoid">
+        <div className="flex justify-between items-start mt-6 pt-4 break-inside-avoid">
           <div className="text-center w-1/3">
-            <p className="font-bold text-slate-900 uppercase text-sm mb-16">Đại diện CAMA</p>
-            <p className="text-slate-400 italic text-xs">(Ký & Ghi rõ họ tên)</p>
+            <p className="font-bold text-slate-900 uppercase text-[11px] mb-16">Đại diện Bên B (CAMA)</p>
+            <p className="text-slate-500 italic text-[10px]">(Ký & Ghi rõ họ tên)</p>
           </div>
           <div className="text-center w-1/3">
-            <p className="font-bold text-slate-900 uppercase text-sm mb-16">Khách hàng</p>
-            <p className="text-slate-400 italic text-xs">(Ký & Ghi rõ họ tên)</p>
+            <p className="font-bold text-slate-900 uppercase text-[11px] mb-16">Khách hàng (Bên A)</p>
+            <p className="text-slate-500 italic text-[10px]">(Ký & Ghi rõ họ tên)</p>
           </div>
         </div>
 
