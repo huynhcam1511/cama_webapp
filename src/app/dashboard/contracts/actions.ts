@@ -102,9 +102,9 @@ function normalizeContract(row: any): Contract {
     };
   });
 
-  // If metadata items array exists, merge or override if DB contract_services is empty
-  const metaItems = meta.items || [];
-  const finalItems = items.length > 0 ? items : metaItems;
+  // If metadata items array exists, merge or override
+  const metaItems = meta.items;
+  const finalItems = (metaItems && metaItems.length > 0) ? metaItems : items;
 
   // Calculate Subtotal & Total
   const calculatedSubtotal = finalItems.reduce(
@@ -144,7 +144,28 @@ function normalizeContract(row: any): Contract {
     };
   });
 
-  const finalPayments = paymentsFromDb.length > 0 ? paymentsFromDb : meta.payments || [];
+  const rawMetaPayments = meta.payments || meta.legacy_installments || [];
+  const mergedPayments = (rawMetaPayments && rawMetaPayments.length > 0) ? rawMetaPayments : paymentsFromDb;
+  
+  const finalPayments = mergedPayments.map((p: any, idx: number) => ({
+      id: p.id || `pay-${idx}`,
+      contract_id: row.id,
+      receipt_code: p.receipt_code || `PT-2026-${String(idx + 1).padStart(5, "0")}`,
+      amount: Number(p.amount || 0),
+      payment_date: p.payment_date || p.date || p.created_at || new Date().toISOString(),
+      payment_method: p.payment_method || p.method || "TRANSFER",
+      account_fund: p.account_fund || "Tài khoản Ngân hàng CAMA",
+      collector_name: p.collector_name || "Kế Toán Studio",
+      content: p.content || p.title || p.notes || `Thu tiền đợt ${idx + 1}`,
+      receipt_attachment_url: p.receipt_attachment_url || p.billLink || p.receipt_url || "",
+      notes: p.notes || "",
+      status: p.status === "CANCELLED" ? "CANCELLED" : (p.status === "PAID" || p.status === "COMPLETED" ? "COMPLETED" : "PENDING"),
+      created_by: p.created_by || "Admin",
+      created_at: p.created_at || new Date().toISOString(),
+      cancelled_at: p.cancelled_at,
+      cancelled_by: p.cancelled_by,
+      cancel_reason: p.cancel_reason,
+  }));
 
   // Compute status fields
   let paymentStatus: PaymentStatus = meta.payment_status;
@@ -273,7 +294,7 @@ function normalizeContract(row: any): Contract {
         created_at: row.created_at || new Date().toISOString(),
       },
     ],
-    notes: meta.userNotes || (row.notes && typeof row.notes === "string" && !row.notes.trim().startsWith("{") ? row.notes : ""),
+    notes: row.notes || "",
     link_pdf: row.link_pdf,
     orders: row.orders || [],
     created_at: row.created_at || new Date().toISOString(),
@@ -405,6 +426,7 @@ export async function createContract(payload: {
     notes?: string;
   };
   payment_due_date?: string;
+  paid_amount?: number;
   notes?: string;
 }) {
   try {
@@ -420,7 +442,7 @@ export async function createContract(payload: {
     }
 
     const paperNo = payload.paper_contract_number?.trim() || String(Math.floor(1000000 + Math.random() * 9000000));
-    const initialPaid = payload.initial_payment ? Number(payload.initial_payment.amount || 0) : 0;
+    const initialPaid = payload.paid_amount !== undefined ? Number(payload.paid_amount) : (payload.initial_payment ? Number(payload.initial_payment.amount || 0) : 0);
 
     const initialStatus: ContractStatus = "CONFIRMED";
     let paymentStatus: PaymentStatus = "UNPAID";
@@ -482,7 +504,13 @@ export async function createContract(payload: {
       debt_status: (payload.total_amount === 0 || isNaN(payload.total_amount)) ? "NO_DEBT" : (initialPaid >= payload.total_amount ? "FULLY_COLLECTED" : "IN_TERM" as DebtStatus),
       payment_due_date: payload.payment_due_date,
       items: payload.items,
-      checklist: [],
+      checklist: [
+        { id: "chk-1", title: "Khách đã chọn Váy/Vest", done: false, group: "Chuẩn bị" },
+        { id: "chk-2", title: "Đã hoàn thành chụp ảnh", done: false, group: "Sản xuất" },
+        { id: "chk-3", title: "Đã duyệt Layout Album", done: false, group: "Hậu kỳ" },
+        { id: "chk-4", title: "Đã in ấn thành phẩm", done: false, group: "Hậu kỳ" },
+        { id: "chk-5", title: "Bàn giao toàn bộ cho khách", done: false, group: "Bàn giao" }
+      ],
       schedules: payload.schedules || [],
       payments: payload.initial_payment
         ? [
@@ -513,7 +541,7 @@ export async function createContract(payload: {
           customer_id: payload.customer_id,
           total_amount: payload.total_amount,
           paid_amount: initialPaid,
-          status: "IN_PROGRESS",
+          status: initialStatus,
           notes: stringifyMetadata(metaData),
         },
       ])
@@ -523,6 +551,23 @@ export async function createContract(payload: {
     if (error || !contract) {
       console.error("Error creating contract:", error);
       return { success: false, error: error?.message || "Lỗi tạo hợp đồng" };
+    }
+
+    // Tự động tạo Đơn hàng (Order) cho phòng Vận Hành / Kho
+    try {
+      const orderServiceType = payload.items && payload.items.length > 0 ? (payload.items[0].category === "Dịch Vụ Cưới" ? "WEDDING" : "PRE-WEDDING") : "WEDDING";
+      await supabase.from("orders").insert([
+        {
+          order_code: `ORD-${code.replace("CAMA-2026-", "")}`,
+          contract_id: contract.id,
+          service_type: orderServiceType,
+          completion_status: "PENDING",
+          notes: `Đơn hàng tự động sinh từ Hợp đồng ${code}`,
+          checklist: [],
+        }
+      ]);
+    } catch (orderErr) {
+      console.error("Automation Error (Order):", orderErr);
     }
 
     // Insert contract_services for legacy compatibility
@@ -685,7 +730,7 @@ export async function recordPaymentTransaction(
     .from("contracts")
     .update({
       paid_amount: newTotalPaid,
-      status: newTotalPaid >= currentContract.total_amount ? "COMPLETED" : "IN_PROGRESS",
+      status: newTotalPaid >= currentContract.total_amount ? "COMPLETED" : currentContract.contract_status,
       notes: stringifyMetadata(metaData),
       updated_at: new Date().toISOString(),
     })
@@ -1041,7 +1086,14 @@ export async function updateContract(contractId: string, payload: any) {
     }
     
     const meta = {
+      ...currentNotesObj,
       ...incomingNotes,
+      contract_date: payload.contract_date || incomingNotes.contract_date || currentNotesObj.contract_date,
+      paper_contract_number: payload.paper_contract_number || incomingNotes.paper_contract_number || currentNotesObj.paper_contract_number,
+      assigned_staff_names: payload.assigned_staff_names || incomingNotes.assigned_staff_names || currentNotesObj.assigned_staff_names,
+      assigned_staff_name: payload.assigned_staff_names?.[0] || payload.assigned_staff_name || incomingNotes.assigned_staff_name || currentNotesObj.assigned_staff_name,
+      subtotal_amount: payload.subtotal_amount || currentNotesObj.subtotal_amount,
+      total_amount: total,
       items: payload.items || currentNotesObj.items || [],
       payments: payload.installments || incomingNotes.legacy_installments || currentNotesObj.payments || [],
       activities: currentNotesObj.activities || [],
@@ -1063,6 +1115,12 @@ export async function updateContract(contractId: string, payload: any) {
       notes: JSON.stringify(meta),
     };
     if (payload.customer_id) updateData.customer_id = payload.customer_id;
+    if (payload.paid_amount !== undefined) {
+      updateData.paid_amount = Number(payload.paid_amount) || 0;
+    }
+    if (payload.payment_due_date !== undefined) {
+      updateData.payment_due_date = payload.payment_due_date || null;
+    }
 
     const { data, error } = await supabase
       .from("contracts")
