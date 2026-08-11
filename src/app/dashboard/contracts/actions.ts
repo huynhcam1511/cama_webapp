@@ -103,7 +103,8 @@ function normalizeContract(row: any): Contract {
   });
 
   // If metadata items array exists, merge or override
-  const metaItems = meta.items;
+  let metaItems = meta.items;
+  if (!Array.isArray(metaItems)) metaItems = [];
   const finalItems = (metaItems && metaItems.length > 0) ? metaItems : items;
 
   // Calculate Subtotal & Total
@@ -120,7 +121,7 @@ function normalizeContract(row: any): Contract {
   const remainingAmount = contractStatus === "CANCELLED" ? 0 : Math.max(0, totalAmount - paidAmount);
 
   // Payments mapping
-  const installments = row.payment_installments || [];
+  const installments = Array.isArray(row.payment_installments) ? row.payment_installments : [];
   const paymentsFromDb: ContractPayment[] = installments.map((inst: any, idx: number) => {
     const pMeta = parseMetadata(inst.notes);
     return {
@@ -144,7 +145,8 @@ function normalizeContract(row: any): Contract {
     };
   });
 
-  const rawMetaPayments = meta.payments || meta.legacy_installments || [];
+  let rawMetaPayments = meta.payments || meta.legacy_installments || [];
+  if (!Array.isArray(rawMetaPayments)) rawMetaPayments = [];
   const mergedPayments = (rawMetaPayments && rawMetaPayments.length > 0) ? rawMetaPayments : paymentsFromDb;
   
   const finalPayments = mergedPayments.map((p: any, idx: number) => ({
@@ -401,6 +403,51 @@ export async function getContractById(id: string): Promise<Contract | null> {
   return normalizeContract(data);
 }
 
+export async function getContractActivities(contractId: string) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("contract_activities")
+    .select("*")
+    .eq("contract_id", contractId)
+    .order("created_at", { ascending: false });
+  
+  // If no data from table or error, fallback to legacy JSON notes array
+  if (error || !data || data.length === 0) {
+    const { data: contractData } = await supabase.from("contracts").select("notes").eq("id", contractId).single();
+    if (contractData?.notes) {
+      const meta = parseMetadata(contractData.notes);
+      return meta.activities || [];
+    }
+    return [];
+  }
+  return data;
+}
+
+export async function logContractActivity(
+  contractId: string,
+  actionType: string,
+  content: string,
+  actorName: string = "Admin",
+  oldValue: any = null,
+  newValue: any = null
+) {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("contract_activities").insert([
+    {
+      contract_id: contractId,
+      actor_name: actorName,
+      action_type: actionType,
+      content: content,
+      old_value: oldValue,
+      new_value: newValue,
+    },
+  ]);
+  
+  if (error) {
+    console.error("logContractActivity error:", error);
+  }
+}
+
 export async function createContract(payload: {
   customer_id: string;
   contract_code?: string;
@@ -502,7 +549,6 @@ export async function createContract(payload: {
       payment_status: paymentStatus,
       execution_status: "PREPARING" as ExecutionStatus,
       debt_status: (payload.total_amount === 0 || isNaN(payload.total_amount)) ? "NO_DEBT" : (initialPaid >= payload.total_amount ? "FULLY_COLLECTED" : "IN_TERM" as DebtStatus),
-      payment_due_date: payload.payment_due_date,
       items: payload.items,
       checklist: [
         { id: "chk-1", title: "Khách đã chọn Váy/Vest", done: false, group: "Chuẩn bị" },
@@ -628,6 +674,16 @@ export async function createContract(payload: {
         },
       ]);
     }
+
+    // Log the creation to contract_activities
+    await logContractActivity(
+      contract.id,
+      "CREATE_CONTRACT",
+      `Tạo hợp đồng mới với tổng giá trị ${new Intl.NumberFormat("vi-VN").format(payload.total_amount || 0)} ₫`,
+      "Admin",
+      null,
+      payload
+    );
 
     revalidatePath("/dashboard/contracts");
     revalidatePath(`/dashboard/contracts/${contract.id}`);
@@ -1085,8 +1141,11 @@ export async function updateContract(contractId: string, payload: any) {
       currentNotesObj = { userNotes: current.notes };
     }
     
+    const { notes, ...restPayload } = payload;
+
     const meta = {
       ...currentNotesObj,
+      ...restPayload,
       ...incomingNotes,
       contract_date: payload.contract_date || incomingNotes.contract_date || currentNotesObj.contract_date,
       paper_contract_number: payload.paper_contract_number || incomingNotes.paper_contract_number || currentNotesObj.paper_contract_number,
@@ -1099,28 +1158,126 @@ export async function updateContract(contractId: string, payload: any) {
       activities: currentNotesObj.activities || [],
       updated_at: new Date().toISOString()
     };
+    let changes: string[] = [];
     
-    
+    try {
+      // THÔNG TIN CHUNG
+      const oldStaff = current.assigned_staff_name || currentNotesObj.assigned_staff_name || currentNotesObj.nguoi_phu_trach || "Trống";
+      const newStaff = (Array.isArray(payload.assigned_staff_names) ? payload.assigned_staff_names[0] : payload.assigned_staff_names) || incomingNotes.assigned_staff_name || "Trống";
+      if (newStaff !== "Trống" && oldStaff !== newStaff) changes.push(`[THÔNG TIN] Đổi Sale: ${oldStaff} ➜ ${newStaff}`);
+
+      const oldTotal = current.total_amount || currentNotesObj.total_amount || 0;
+      if (total !== oldTotal) changes.push(`[TỔNG TIỀN] Thay đổi: ${oldTotal.toLocaleString()}đ ➜ ${total.toLocaleString()}đ`);
+
+      const oldDate = current.contract_date || currentNotesObj.contract_date || "Trống";
+      const newDate = payload.contract_date || incomingNotes.contract_date || "Trống";
+      if (newDate !== "Trống" && oldDate !== newDate) changes.push(`[THÔNG TIN] Ngày lập HĐ: ${oldDate} ➜ ${newDate}`);
+
+      // DỊCH VỤ (ITEMS)
+      const oldItems = Array.isArray(currentNotesObj.items) ? currentNotesObj.items : [];
+      const newItems = Array.isArray(payload.items) ? payload.items : [];
+      
+      newItems.forEach((nItem: any, idx: number) => {
+        const matchingOld = oldItems.find((o: any) => (o.id && nItem.id && o.id === nItem.id) || (o.detail === nItem.detail && o.category === nItem.category));
+        const nName = nItem.detail || nItem.category || `Dịch vụ ${idx + 1}`;
+        const nPrice = Number(nItem.price || 0) * Number(nItem.quantity || 1);
+        
+        if (!matchingOld && (nName.trim() !== "" || nPrice > 0)) {
+          changes.push(`[DỊCH VỤ] Thêm mới: ${nName} (${nPrice.toLocaleString()}đ)`);
+        } else if (matchingOld) {
+          const oPrice = Number(matchingOld.price || 0) * Number(matchingOld.quantity || 1);
+          if (oPrice !== nPrice || matchingOld.detail !== nItem.detail) {
+            if (oPrice !== nPrice) {
+              changes.push(`[DỊCH VỤ] Cập nhật '${matchingOld.detail || matchingOld.category}': Giá ${oPrice.toLocaleString()}đ ➜ ${nPrice.toLocaleString()}đ`);
+            } else {
+              changes.push(`[DỊCH VỤ] Cập nhật '${matchingOld.detail || matchingOld.category}' ➜ '${nName}'`);
+            }
+          }
+        }
+      });
+
+      oldItems.forEach((oItem: any) => {
+        const matchingNew = newItems.find((n: any) => (oItem.id && n.id && oItem.id === n.id) || (oItem.detail === n.detail && oItem.category === n.category));
+        if (!matchingNew && (oItem.detail?.trim() !== "" || oItem.category?.trim() !== "")) {
+          const oName = oItem.detail || oItem.category || "Dịch vụ";
+          const oPrice = Number(oItem.price || 0) * Number(oItem.quantity || 1);
+          changes.push(`[DỊCH VỤ] Xóa: ${oName} (${oPrice.toLocaleString()}đ)`);
+        }
+      });
+
+      // THANH TOÁN (PAYMENTS)
+      const oldPayments = Array.isArray(currentNotesObj.payments) ? currentNotesObj.payments : [];
+      const incomingPays = payload.installments || incomingNotes.legacy_installments;
+      const newPayments = Array.isArray(incomingPays) ? incomingPays : [];
+      
+      newPayments.forEach((nPay: any, idx: number) => {
+        const nTitle = nPay.title || `Lần ${idx + 1}`;
+        const matchingOld = oldPayments.find((o: any) => o.title === nTitle || (o.id && nPay.id && o.id === nPay.id));
+        const nAmount = Number(nPay.amount || 0);
+        const nStatus = nPay.status === "PAID" ? "Đã thu" : "Chưa thu";
+
+        if (!matchingOld && nAmount > 0) {
+          changes.push(`[THANH TOÁN] Thêm đợt: ${nTitle} (${nAmount.toLocaleString()}đ - ${nStatus})`);
+        } else if (matchingOld) {
+          const oAmount = Number(matchingOld.amount || 0);
+          const oStatus = matchingOld.status === "PAID" ? "Đã thu" : "Chưa thu";
+          
+          if (oAmount !== nAmount || oStatus !== nStatus) {
+            if (oStatus !== nStatus) {
+              changes.push(`[THANH TOÁN] Cập nhật '${nTitle}': ${oStatus} ➜ ${nStatus}`);
+            }
+            if (oAmount !== nAmount) {
+              changes.push(`[THANH TOÁN] Đổi số tiền '${nTitle}': ${oAmount.toLocaleString()}đ ➜ ${nAmount.toLocaleString()}đ`);
+            }
+          }
+        }
+      });
+      
+      oldPayments.forEach((oPay: any) => {
+        const oTitle = oPay.title || "Đợt thanh toán";
+        const matchingNew = newPayments.find((n: any) => n.title === oTitle || (oPay.id && n.id && oPay.id === n.id));
+        const oAmount = Number(oPay.amount || 0);
+        if (!matchingNew && oAmount > 0) {
+          changes.push(`[THANH TOÁN] Xóa đợt: ${oTitle} (${oAmount.toLocaleString()}đ)`);
+        }
+      });
+    } catch (diffErr) {
+      console.error("Deep Diff Error:", diffErr);
+      changes = []; // Reset on error
+    }
+
+    const actionDesc = changes.length > 0 ? `${changes.join(" | ")}` : `[THÔNG TIN] Chỉnh sửa thông tin chung`;
+
     const newActivity: ContractActivity = {
       id: `act-${Date.now()}`,
       actor_name: "Admin",
       action_type: "UPDATE_CONTRACT",
-      content: `Chỉnh sửa thông tin hợp đồng`,
+      content: actionDesc,
       created_at: new Date().toISOString(),
     };
-    meta.activities = [newActivity, ...(meta.activities || [])];
+    
+    const safeActivities = Array.isArray(meta.activities) ? meta.activities : [];
+    meta.activities = [newActivity, ...safeActivities];
 
     const updateData: any = {
       total_amount: total,
       notes: JSON.stringify(meta),
+      updated_at: new Date().toISOString()
     };
     if (payload.customer_id) updateData.customer_id = payload.customer_id;
     if (payload.paid_amount !== undefined) {
       updateData.paid_amount = Number(payload.paid_amount) || 0;
     }
-    if (payload.payment_due_date !== undefined) {
-      updateData.payment_due_date = payload.payment_due_date || null;
-    }
+
+    // Log the update to contract_activities
+    await logContractActivity(
+      contractId,
+      "UPDATE_CONTRACT",
+      actionDesc,
+      "Admin",
+      current,
+      updateData
+    );
 
     const { data, error } = await supabase
       .from("contracts")

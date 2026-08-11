@@ -189,8 +189,35 @@ export default function BookingScheduleClient({ initialData, users }: { initialD
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1">Giờ hẹn *</label>
-                      <input required type="time" value={formData.start_time || ''} onChange={e => setFormData({...formData, start_time: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg text-sm" />
+                      <label className="block text-xs font-medium text-slate-700 mb-1">Giờ hẹn * (Giờ : Phút)</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="08" 
+                          maxLength={2}
+                          value={formData.start_time ? formData.start_time.split(':')[0] : ''} 
+                          onChange={e => {
+                            const h = e.target.value.replace(/\\D/g, '');
+                            const m = formData.start_time ? formData.start_time.split(':')[1] || '00' : '00';
+                            setFormData({...formData, start_time: `${h}:${m}`});
+                          }} 
+                          className="w-full p-2 border border-slate-200 rounded-lg text-sm text-center" 
+                        />
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="00" 
+                          maxLength={2}
+                          value={formData.start_time ? (formData.start_time.split(':')[1] || '') : ''} 
+                          onChange={e => {
+                            const m = e.target.value.replace(/\\D/g, '');
+                            const h = formData.start_time ? formData.start_time.split(':')[0] || '08' : '08';
+                            setFormData({...formData, start_time: `${h}:${m}`});
+                          }} 
+                          className="w-full p-2 border border-slate-200 rounded-lg text-sm text-center" 
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-700 mb-1">SĐT</label>
@@ -214,6 +241,8 @@ export default function BookingScheduleClient({ initialData, users }: { initialD
                         <option value="KHÁCH CŨ">KHÁCH CŨ</option>
                         <option value="Facebook - Cama Haute Couture">Facebook - Cama Haute Couture</option>
                         <option value="Facebook - Cama Suit">Facebook - Cama Suit</option>
+                        <option value="Facebook - Cama Wedding Studio">Facebook - Cama Wedding Studio</option>
+                        <option value="Facebook - Cama Wedding">Facebook - Cama Wedding</option>
                         <option value="ZALO">ZALO</option>
                       </select>
                     </div>
@@ -318,8 +347,13 @@ export default function BookingScheduleClient({ initialData, users }: { initialD
                 </div>
 
               </div>
+              
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-4 py-3 rounded-lg flex items-start gap-2 mt-4">
+                <icons.Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                <p>Hệ thống sẽ tự động gửi thông báo cảnh báo về lịch hẹn qua Email cho khách hàng trước 2 tiếng.</p>
+              </div>
 
-              <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 mt-8">
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 mt-6">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                   Hủy bỏ
                 </button>

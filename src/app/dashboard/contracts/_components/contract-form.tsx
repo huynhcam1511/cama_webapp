@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, FileText, Plus, Trash2, Save, Loader2, DollarSign, User, Calendar, Briefcase, Settings2, Phone, Printer, Image as ImageIcon, UploadCloud } from "lucide-react";
+import { X, FileText, Plus, Trash2, Save, Loader2, DollarSign, User, Calendar, Briefcase, Settings2, Phone, Printer, Image as ImageIcon, UploadCloud, Clock } from "lucide-react";
 import { createContract, updateContract, ContractFormData, ServiceItem, InstallmentItem } from "../actions";
 import { createCustomer } from "../../customers/actions";
 import { createClient } from "@/lib/supabase/client";
 import { PrintableContract } from "../printable-contract";
+import { ContractAuditDrawer } from "./contract-audit-drawer";
 import { ContractStatus, ExecutionStatus, DebtStatus } from "../types";
 import { useLayoutScale } from "@/hooks/use-layout-scale";
 
@@ -57,6 +58,7 @@ export default function ContractForm({
   
   // Initializing state directly from props (either edit data or new defaults)
   const scale = useLayoutScale(1536); // Base width for scaling
+  const [isAuditDrawerOpen, setIsAuditDrawerOpen] = useState(false);
 
   // 1. Thông Tin Chung
   const [phoneInput, setPhoneInput] = useState("");
@@ -197,8 +199,11 @@ export default function ContractForm({
       setPaperContractCode(parsedNotes.paper_contract_number || "");
       if (initialData.contract_code) setContractCode(initialData.contract_code);
       if (initialData.contract_date) setContractDate(initialData.contract_date);
+      setPaperContractCode(initialData.paper_contract_number || parsedNotes.paper_contract_number || "");
       
       // Schedule & Details
+      setInquiryDate(parsedNotes.ngay_hoi || "");
+      setWeddingDate(parsedNotes.ngay_cuoi || "");
       setShootLocation(parsedNotes.dia_diem || "");
       setShootDate(parsedNotes.ngay_chup || "");
       setDeliverDate(parsedNotes.ngay_giao || "");
@@ -209,7 +214,7 @@ export default function ContractForm({
       setDressDeliverDate(parsedNotes.ngay_giao_vay || "");
       setDressReturnDate(parsedNotes.ngay_tra_vay || "");
       setPaymentDueDate(parsedNotes.han_thanh_toan || "");
-      setAssignedStaffInput(parsedNotes.nguoi_phu_trach || "");
+      setAssignedStaffInput(initialData.assigned_staff_name || parsedNotes.assigned_staff_name || parsedNotes.nguoi_phu_trach || "");
       setGeneralNotes(parsedNotes.userNotes || "");
       if (initialData.events && Array.isArray(initialData.events) && initialData.events.length > 0) {
         const loadedEvents = [...initialData.events];
@@ -906,7 +911,7 @@ export default function ContractForm({
                     </h3>
                   </div>
                   <div className="text-[10px] text-slate-500 font-medium mb-2 leading-tight">
-                    💡 Tip cho Sale: Hãy chủ động nhập trước Ngày dự kiến và Số tiền còn lại ở các đợt tiếp theo (để trạng thái "Chưa thu"). Hệ thống sẽ tự động canh ngày để nhắc Kế toán đi thu nợ!
+                    💡 Tip cho Sale: Hãy chủ động nhập trước Ngày dự kiến và Số tiền còn lại ở các đợt tiếp theo (để trạng thái &quot;Chưa thu&quot;). Hệ thống sẽ tự động canh ngày để nhắc Kế toán đi thu nợ!
                   </div>
 
                   <div className="space-y-2 pr-1 pb-1">
@@ -1269,6 +1274,14 @@ export default function ContractForm({
             )}
           </div>
           <div className="flex items-center gap-1.5 w-full md:w-auto justify-end">
+            <button 
+              type="button" 
+              onClick={() => setIsAuditDrawerOpen(true)} 
+              className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-full transition-colors mr-1"
+              title="Lịch sử chỉnh sửa"
+            >
+              <Clock className="w-5 h-5" />
+            </button>
             <button type="button" onClick={() => router.push("/dashboard/contracts")} className="px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-600 transition-colors">
               Hủy
             </button>
@@ -1314,6 +1327,11 @@ export default function ContractForm({
         services={services}
         installments={installments}
         customerInfo={{ name: nameInput, phone: phoneInput }}
+      />
+      <ContractAuditDrawer 
+        contractId={initialData?.id || ""} 
+        isOpen={isAuditDrawerOpen} 
+        onClose={() => setIsAuditDrawerOpen(false)} 
       />
     </div>
   );
