@@ -2,7 +2,7 @@ export type ModuleCode =
   | "DASHBOARD" 
   | "STUDIO_CONTRACTS" 
   | "CUSTOMERS" 
-  | "CUSTOMER_SERVICE"
+  | "CUSTOMER_JOURNEY"
   | "SCHEDULES_GROUP"
   | "STAFF_SCHEDULE"
   | "OPERATION_SCHEDULE"
@@ -82,7 +82,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   },
   {
     moduleCode: "CUSTOMERS",
-    label: "Khách hàng CRM",
+    label: "Khách hàng",
     shortLabel: "Khách hàng",
     route: "/dashboard/customers",
     icon: "Users",
@@ -109,11 +109,11 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     isActive: true
   },
   {
-    moduleCode: "CUSTOMER_SERVICE",
-    label: "Chăm sóc khách hàng",
-    shortLabel: "CSKH",
-    route: "/dashboard/customer-service",
-    icon: "HeartHandshake",
+    moduleCode: "CUSTOMER_JOURNEY",
+    label: "Hành trình khách hàng",
+    shortLabel: "Hành trình KH",
+    route: "/dashboard/customer-journey",
+    icon: "Route",
     group: "BUSINESS",
     parentCode: null,
     sortOrder: 3,

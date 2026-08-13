@@ -1,17 +1,17 @@
-import { getCustomerServiceData } from "./actions";
-import CustomerServiceClient from "./customer-service-client";
+import { getCustomerJourneyData } from "./actions";
+import CustomerJourneyClient from "./customer-journey-client";
 import { requirePermission } from "@/lib/rbac";
 import { Suspense } from "react";
 import * as icons from "lucide-react";
 
 export const metadata = {
-  title: "Chăm sóc khách hàng | CAMA Studio",
+  title: "Hành trình khách hàng | CAMA Studio",
 };
 
-export default async function CustomerServicePage() {
-  await requirePermission("CUSTOMER_SERVICE", "view");
+export default async function CustomerJourneyPage() {
+  await requirePermission("CUSTOMER_JOURNEY", "view");
 
-  const { contracts, schedules, error } = await getCustomerServiceData();
+  const { contracts, schedules, error } = await getCustomerJourneyData();
 
   if (error) {
     return (
@@ -27,7 +27,7 @@ export default async function CustomerServicePage() {
         <icons.Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     }>
-      <CustomerServiceClient 
+      <CustomerJourneyClient 
         initialContracts={contracts || []} 
         initialSchedules={schedules || []}
       />

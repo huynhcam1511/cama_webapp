@@ -22,7 +22,7 @@ export default function PdfViewWrapper({ contract }: PdfViewWrapperProps) {
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between print:hidden">
         <div className="flex items-center gap-4">
           <Link
-            href="/dashboard/contracts"
+            href={`/dashboard/contracts/${contract.id}/edit`}
             className="p-2 hover:bg-slate-100 rounded-full transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-slate-600" />

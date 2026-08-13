@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import * as icons from "lucide-react";
-import { CustomerFormData, updateCustomer, createCustomer } from "./actions";
+import { updateCustomer } from "./actions";
+import Link from "next/link";
 
 interface Props {
   initialCustomers: any[];
@@ -19,9 +20,6 @@ const COLUMNS = [
 export default function LeadsKanbanView({ initialCustomers }: Props) {
   const [customers, setCustomers] = useState(initialCustomers);
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [quickName, setQuickName] = useState("");
-  const [quickPhone, setQuickPhone] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -61,41 +59,19 @@ export default function LeadsKanbanView({ initialCustomers }: Props) {
     });
   };
 
-  const handleQuickAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickName || !quickPhone) return;
 
-    startTransition(async () => {
-      const { success, data, error } = await createCustomer({ 
-        bride_name: quickName, 
-        phone: quickPhone, 
-        lead_status: "CONTACTED",
-        source: "Manual",
-        lead_date: new Date().toISOString()
-      }); 
-      
-      if (success && data) {
-        setCustomers([data, ...customers]);
-        setShowQuickAdd(false);
-        setQuickName("");
-        setQuickPhone("");
-      } else {
-        alert("Lỗi khi thêm lead: " + error);
-      }
-    });
-  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-180px)]">
       <div className="mb-4 flex justify-between items-center shrink-0">
         <h2 className="text-lg font-bold text-slate-800">Leads Pipeline</h2>
-        <button 
-          onClick={() => setShowQuickAdd(true)}
+        <Link 
+          href="/dashboard/customers/create"
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2 text-sm"
         >
           <icons.Plus className="w-4 h-4" />
           Thêm Lead
-        </button>
+        </Link>
       </div>
 
       <div className="flex flex-1 gap-4 overflow-x-auto pb-4 items-start select-none">
@@ -164,9 +140,9 @@ export default function LeadsKanbanView({ initialCustomers }: Props) {
                     <span className="text-[10px] text-slate-400">
                       {customer.lead_date ? new Date(customer.lead_date).toLocaleDateString('vi-VN') : new Date(customer.created_at).toLocaleDateString('vi-VN')}
                     </span>
-                    <button className="p-1 hover:bg-slate-100 text-slate-400 hover:text-blue-600 rounded">
-                      <icons.MoreHorizontal className="w-4 h-4" />
-                    </button>
+                    <Link href={`/dashboard/customers/${customer.id}/edit`} className="p-1 hover:bg-slate-100 text-slate-400 hover:text-blue-600 rounded">
+                      <icons.Edit className="w-4 h-4" />
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -182,60 +158,7 @@ export default function LeadsKanbanView({ initialCustomers }: Props) {
       })}
       </div>
 
-      {/* Quick Add Modal */}
-      {showQuickAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-800">Thêm Lead Nhanh</h3>
-              <button onClick={() => setShowQuickAdd(false)} className="text-slate-400 hover:text-slate-600">
-                <icons.X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleQuickAdd} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Tên Khách Hàng (Cô dâu) *</label>
-                <input 
-                  type="text" 
-                  required
-                  value={quickName}
-                  onChange={e => setQuickName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Nhập tên khách hàng"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Số điện thoại *</label>
-                <input 
-                  type="tel" 
-                  required
-                  value={quickPhone}
-                  onChange={e => setQuickPhone(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Nhập số điện thoại"
-                />
-              </div>
-              <div className="pt-2 flex justify-end gap-2">
-                <button 
-                  type="button" 
-                  onClick={() => setShowQuickAdd(false)}
-                  className="px-4 py-2 font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                >
-                  Hủy
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={isPending}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  {isPending && <icons.Loader2 className="w-4 h-4 animate-spin" />}
-                  {isPending ? "Đang lưu..." : "Thêm Ngay"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

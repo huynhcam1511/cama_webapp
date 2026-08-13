@@ -216,8 +216,9 @@ export default function ContractForm({
       setPaymentDueDate(parsedNotes.han_thanh_toan || "");
       setAssignedStaffInput(initialData.assigned_staff_name || parsedNotes.assigned_staff_name || parsedNotes.nguoi_phu_trach || "");
       setGeneralNotes(parsedNotes.userNotes || "");
-      if (initialData.events && Array.isArray(initialData.events) && initialData.events.length > 0) {
-        const loadedEvents = [...initialData.events];
+      const sourceEvents = (initialData.events && Array.isArray(initialData.events) && initialData.events.length > 0) ? initialData.events : parsedNotes.events;
+      if (sourceEvents && Array.isArray(sourceEvents) && sourceEvents.length > 0) {
+        const loadedEvents = [...sourceEvents];
         while (loadedEvents.length < 3) loadedEvents.push({name: "", event_date: "", pickup_date: "", return_date: "", location: ""});
         setEvents(loadedEvents.slice(0, 3));
       }
@@ -408,7 +409,7 @@ export default function ContractForm({
     }
   };
 
-  const handleSubmit = async (e?: React.FormEvent, shouldPrint = false) => {
+  const handleSubmit = async (e?: React.FormEvent, shouldViewPdf = false) => {
     if (e) e.preventDefault();
     if (!phoneInput.trim() || !nameInput.trim()) {
       setErrorMsg("Vui lòng nhập Tên và Số điện thoại khách hàng!");
@@ -505,7 +506,6 @@ export default function ContractForm({
       required_deposit: totalAmount * 0.5,
       contract_date: contractDate,
       payment_due_date: calculatedPaymentDueDate,
-      events: events.filter(e => e.name.trim() !== ""),
       assigned_staff_names: assignedStaffInput.split(",").map(s => s.trim()).filter(s => s.length > 0),
       initial_payment: (installments[0]?.amount > 0 && installments[0]?.status === "PAID") ? {
         amount: Number(installments[0].amount),
@@ -514,6 +514,7 @@ export default function ContractForm({
       } : undefined,
       notes: JSON.stringify({
         userNotes: generalNotes,
+        events: events.filter(e => (e.name || "").trim() !== ""),
         deposit_type: (depositAmount && depositNotes) ? "BOTH" : (depositAmount ? "MONEY" : (depositNotes ? "ASSET" : "")),
         asset_deposit_date: assetDepositDate,
         asset_deposit_image: assetDepositImage,
@@ -564,11 +565,13 @@ export default function ContractForm({
   
       if (res.success) {
         onSaved?.();
-        if (shouldPrint) {
-          setTimeout(() => {
-            window.print();
+        if (shouldViewPdf) {
+          const targetId = isEditMode && initialData?.id ? initialData.id : ((res as any).data?.id || (res as any).contractId);
+          if (targetId) {
+            router.push(`/dashboard/contracts/${targetId}`);
+          } else {
             router.push("/dashboard/contracts");
-          }, 300);
+          }
         } else {
           router.push("/dashboard/contracts");
         }
@@ -675,7 +678,13 @@ export default function ContractForm({
                         </div>
                         <div className="flex flex-col">
                           <label className="text-[9px] font-semibold text-slate-500 uppercase mb-0.5">Ngày trả đồ</label>
-                          <input type="date" value={event.return_date} onChange={(e) => { const updated = [...events]; updated[idx].return_date = e.target.value; setEvents(updated); }} className="w-full bg-white border border-slate-200 rounded px-1.5 py-1 text-[11px] font-medium outline-none focus:border-amber-500 text-slate-700" />
+                          <input type="date" value={event.return_date} onChange={(e) => { const updated = [...events]; updated[idx].return_date = e.target.value; setEvents(updated); }} className={`w-full bg-white border ${event.return_date && new Date(event.return_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0) ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : 'border-slate-200 focus:ring-amber-500/20 focus:border-amber-500'} rounded px-1.5 py-1 text-[11px] font-medium outline-none text-slate-700`} />
+                          {event.return_date && new Date(event.return_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0) && (
+                            <span className="text-[9px] text-red-600 font-bold mt-0.5">🚨 Đã quá hạn trả đồ!</span>
+                          )}
+                          {event.return_date && new Date(event.return_date).setHours(0,0,0,0) === new Date().setHours(0,0,0,0) && (
+                            <span className="text-[9px] text-amber-600 font-bold mt-0.5">🚨 Hạn trả đồ hôm nay!</span>
+                          )}
                         </div>
                       </div>
                       
@@ -1167,10 +1176,10 @@ export default function ContractForm({
                         </div>
                         <div className="min-w-0">
                           <select value={assetDepositMethod} onChange={(e) => setAssetDepositMethod(e.target.value)} className={`w-full border rounded px-1.5 py-1 text-[10px] outline-none font-medium ${!assetDepositMethod ? 'bg-white border-slate-200 text-slate-400' : 'bg-white border-slate-200 text-slate-700'}`}>
-                            <option value="">Phương thức</option>
-                            <option value="TRANSFER">Chuyển khoản</option>
-                            <option value="CASH">Tiền mặt</option>
-                            <option value="CARD">Cà thẻ</option>
+                            <option value="">Loại giấy tờ</option>
+                            <option value="CMND/ CCCD">CMND/ CCCD</option>
+                            <option value="Bằng lái xe">Bằng lái xe</option>
+                            <option value="Hộ chiếu">Hộ chiếu</option>
                           </select>
                         </div>
                         <div className="min-w-0">
@@ -1181,7 +1190,7 @@ export default function ContractForm({
                           </select>
                         </div>
                         <div className="min-w-0">
-                          <input type="text" placeholder="Chi tiết giấy tờ..." value={depositNotes} onChange={(e) => setDepositNotes(e.target.value)} className="w-full bg-white border border-slate-300 focus:border-amber-500 rounded px-2 py-1 text-[11px] outline-none" />
+                          <input type="text" placeholder="Ghi chú..." value={depositNotes} onChange={(e) => setDepositNotes(e.target.value)} className="w-full bg-white border border-slate-300 focus:border-amber-500 rounded px-2 py-1 text-[11px] outline-none" />
                         </div>
                         <div className="min-w-0 flex items-center justify-center">
                           {assetDepositImage ? (
@@ -1214,10 +1223,10 @@ export default function ContractForm({
                         </div>
                         <div className="min-w-0">
                           <select value={assetDepositMethod2} onChange={(e) => setAssetDepositMethod2(e.target.value)} className={`w-full border rounded px-1.5 py-1 text-[10px] outline-none font-medium ${!assetDepositMethod2 ? 'bg-white border-slate-200 text-slate-400' : 'bg-white border-slate-200 text-slate-700'}`}>
-                            <option value="">Phương thức</option>
-                            <option value="TRANSFER">Chuyển khoản</option>
-                            <option value="CASH">Tiền mặt</option>
-                            <option value="CARD">Cà thẻ</option>
+                            <option value="">Loại giấy tờ</option>
+                            <option value="CMND/ CCCD">CMND/ CCCD</option>
+                            <option value="Bằng lái xe">Bằng lái xe</option>
+                            <option value="Hộ chiếu">Hộ chiếu</option>
                           </select>
                         </div>
                         <div className="min-w-0">
@@ -1228,7 +1237,7 @@ export default function ContractForm({
                           </select>
                         </div>
                         <div className="min-w-0">
-                          <input type="text" placeholder="Chi tiết giấy tờ..." value={depositNotes2} onChange={(e) => setDepositNotes2(e.target.value)} className="w-full bg-white border border-slate-300 focus:border-amber-500 rounded px-2 py-1 text-[11px] outline-none" />
+                          <input type="text" placeholder="Ghi chú..." value={depositNotes2} onChange={(e) => setDepositNotes2(e.target.value)} className="w-full bg-white border border-slate-300 focus:border-amber-500 rounded px-2 py-1 text-[11px] outline-none" />
                         </div>
                         <div className="min-w-0 flex items-center justify-center">
                           {assetDepositImage2 ? (
@@ -1291,7 +1300,7 @@ export default function ContractForm({
               className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-slate-900 text-white flex items-center gap-1.5 transition-all shadow-md shadow-slate-800/20"
             >
               <Printer className="w-4 h-4" />
-              Lưu & In PDF
+              Lưu & Xem PDF View
             </button>
             <button 
               type="button" 
@@ -1310,6 +1319,7 @@ export default function ContractForm({
         data={{
           contract_code: contractCode,
           paper_contract_number: paperContractCode,
+          events: events.filter(e => (e.name || "").trim() !== ""),
           notesObj: {
             ngay_hoi: inquiryDate,
             ngay_cuoi: weddingDate,
@@ -1319,6 +1329,7 @@ export default function ContractForm({
             kho_album: albumSize,
             so_trang: albumPages,
             chat_lieu: albumMaterial,
+            tang_kem: gifts,
             ngay_giao_vay: dressDeliverDate,
             ngay_tra_vay: dressReturnDate,
             userNotes: generalNotes

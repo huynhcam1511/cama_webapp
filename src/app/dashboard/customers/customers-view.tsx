@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { UserPlus, Search, Filter, Edit, Trash2, FileText, Phone, Calendar, Heart, Sparkles, RefreshCw } from "lucide-react";
-import CustomerDialog from "./customer-dialog";
 import { deleteCustomer } from "./actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,8 +16,6 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
   const [customers, setCustomers] = useState(initialCustomers);
   const [searchQuery, setSearchQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { hasPermission } = usePermissions();
@@ -28,6 +25,8 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
   const canCreateContract = hasPermission("STUDIO_CONTRACTS", "create");
 
   // Filter customers logic
+  const uniqueSources = Array.from(new Set(customers.map(c => c.source).filter(Boolean)));
+
   const filteredCustomers = customers.filter((customer) => {
     const matchesSearch =
       customer.bride_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -39,16 +38,6 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
 
     return matchesSearch && matchesSource;
   });
-
-  const handleOpenAdd = () => {
-    setEditingCustomer(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleOpenEdit = (customer: any) => {
-    setEditingCustomer(customer);
-    setIsDialogOpen(true);
-  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa khách hàng này? (Dữ liệu sẽ được lưu trữ mềm)")) {
@@ -86,13 +75,13 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
             </p>
           </div>
           {canCreate && (
-            <button
-              onClick={handleOpenAdd}
+            <Link
+              href="/dashboard/customers/create"
               className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shrink-0"
             >
               <UserPlus className="w-4 h-4" />
               Thêm Khách Hàng Mới
-            </button>
+            </Link>
           )}
         </div>
 
@@ -117,11 +106,9 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
               className="bg-white text-slate-800 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-48 shadow-sm"
             >
               <option value="">Tất cả Nguồn tiếp cận</option>
-              <option value="Facebook">Facebook Fanpage</option>
-              <option value="TikTok">TikTok Studio</option>
-              <option value="Người quen">Người quen giới thiệu</option>
-              <option value="Website">Website Studio</option>
-              <option value="Khác">Khác / Vãng lai</option>
+              {uniqueSources.map(source => (
+                <option key={source} value={source}>{source}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -129,27 +116,34 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
         {/* Table View */}
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead className="uppercase bg-slate-50 text-slate-500 border-b border-slate-200 font-bold tracking-wider">
+            <thead className="uppercase bg-white text-slate-500 border-b border-slate-200 font-bold tracking-wider text-[10px]">
               <tr>
-                <th className="px-6 py-4">Mã KH</th>
-                <th className="px-6 py-4">Cô Dâu & Chú Rể</th>
-                <th className="px-6 py-4">Liên Hệ</th>
-                <th className="px-6 py-4">Ngày Cưới</th>
-                <th className="px-6 py-4">Trạng Thái</th>
-                <th className="px-6 py-4">Nguồn</th>
-                <th className="px-6 py-4 text-right">Thao Tác</th>
+                <th className="px-4 py-3 whitespace-nowrap">Mã KH</th>
+                <th className="px-4 py-3 whitespace-nowrap">Ngày Tạo</th>
+                <th className="px-4 py-3 min-w-[150px]">Cô Dâu & Chú Rể</th>
+                <th className="px-4 py-3 whitespace-nowrap">Liên Hệ</th>
+                <th className="px-4 py-3 whitespace-nowrap">Ngày Cưới</th>
+                <th className="px-4 py-3 whitespace-nowrap">Trạng Thái</th>
+                <th className="px-4 py-3 whitespace-nowrap">Nguồn</th>
+                <th className="px-4 py-3 whitespace-nowrap min-w-[120px]">Follow-up</th>
+                <th className="px-4 py-3 text-right whitespace-nowrap">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800">
               {filteredCustomers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-slate-50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <span className="font-mono font-bold text-xs text-slate-700">
+                <tr key={customer.id} className="hover:bg-slate-50 transition-colors group border-b border-slate-50">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="font-mono font-bold text-[11px] text-slate-500">
                       {customer.customer_code}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="text-[11px] text-slate-600 font-medium">
+                      {new Date(customer.created_at).toLocaleDateString("vi-VN")}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="font-bold text-slate-800 text-[12px] flex items-center gap-1.5 truncate max-w-[200px]" title={customer.bride_name + (customer.groom_name ? ` & ${customer.groom_name}` : "")}>
                       <span>{customer.bride_name}</span>
                       {customer.groom_name && (
                         <>
@@ -159,38 +153,36 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
                       )}
                     </div>
                     {customer.notes && (
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-1 italic">
+                      <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1 italic max-w-[200px]" title={customer.notes}>
                         &quot;{customer.notes}&quot;
                       </p>
                     )}
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="font-bold text-slate-700 text-xs">
                       <span>{customer.phone}</span>
                     </div>
                     {customer.email && (
-                      <div className="text-xs text-slate-500 mt-0.5">{customer.email}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">{customer.email}</div>
                     )}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     {customer.wedding_date ? (
-                      <div className="flex items-center gap-1.5 text-slate-800 font-medium">
-                        <Calendar className="w-3.5 h-3.5 text-purple-600" />
+                      <div className="text-slate-700 font-medium text-xs">
                         <span>{new Date(customer.wedding_date).toLocaleDateString("vi-VN")}</span>
                       </div>
                     ) : (
-                      <span className="text-xs text-slate-400 italic">Chưa xác định</span>
+                      <span className="text-[11px] text-slate-400 italic">Chưa xác định</span>
                     )}
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                      customer.lead_status === 'WON' ? 'bg-emerald-100 text-emerald-700' :
-                      customer.lead_status === 'APPOINTMENT' ? 'bg-blue-100 text-blue-700' :
-                      customer.lead_status === 'VISITED' ? 'bg-purple-100 text-purple-700' :
-                      customer.lead_status === 'CONTACTED' ? 'bg-amber-100 text-amber-700' :
-                      customer.lead_status === 'LOST' ? 'bg-rose-100 text-rose-700' :
-                      'bg-slate-100 text-slate-500'
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`flex items-center text-[11px] font-bold uppercase tracking-wider ${
+                      customer.lead_status === 'WON' ? 'text-emerald-600' :
+                      customer.lead_status === 'APPOINTMENT' ? 'text-blue-600' :
+                      customer.lead_status === 'VISITED' ? 'text-purple-600' :
+                      customer.lead_status === 'CONTACTED' ? 'text-amber-600' :
+                      customer.lead_status === 'LOST' ? 'text-rose-600' :
+                      'text-slate-500'
                     }`}>
                       {customer.lead_status === 'WON' ? 'Đã chốt' :
                        customer.lead_status === 'APPOINTMENT' ? 'Đã hẹn' :
@@ -200,21 +192,26 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
                        customer.lead_status || 'Mới'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="text-xs font-medium text-slate-600">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="text-[11px] font-medium text-slate-500">
                       {customer.source || "Khác"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="text-[11px] font-medium text-slate-500 max-w-[120px] truncate block" title={customer.next_follow_up}>
+                      {customer.next_follow_up || "—"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-2">
                       {canUpdate && (
-                        <button
-                          onClick={() => handleOpenEdit(customer)}
-                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors"
+                        <Link
+                          href={`/dashboard/customers/${customer.id}/edit`}
+                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors inline-block"
                           title="Chỉnh sửa thông tin"
                         >
                           <Edit className="w-4 h-4" />
-                        </button>
+                        </Link>
                       )}
                       {canCreateContract && (
                         <Link
@@ -264,14 +261,6 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
           </table>
         </div>
       </div>
-
-      {/* Modal Add/Edit Customer */}
-      <CustomerDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        customer={editingCustomer}
-        onSaved={handleSaved}
-      />
     </div>
   );
 }

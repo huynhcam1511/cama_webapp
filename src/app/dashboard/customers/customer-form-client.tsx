@@ -1,18 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, UserPlus, Save, Loader2, Heart, Phone, Mail, MapPin, Calendar, Globe, FileText, User } from "lucide-react";
+import { UserPlus, Save, Loader2, Heart, Phone, MapPin, Calendar, Globe, FileText, User, ArrowLeft } from "lucide-react";
 import { createCustomer, updateCustomer, CustomerFormData } from "./actions";
-import { CustomDatePicker } from "@/components/ui/date-picker";
 
-interface CustomerDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+import { useRouter } from "next/navigation";
+
+interface CustomerFormClientProps {
   customer?: any;
-  onSaved: () => void;
 }
 
-export default function CustomerDialog({ isOpen, onClose, customer, onSaved }: CustomerDialogProps) {
+export default function CustomerFormClient({ customer }: CustomerFormClientProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [formData, setFormData] = useState<CustomerFormData>({
@@ -60,33 +59,9 @@ export default function CustomerDialog({ isOpen, onClose, customer, onSaved }: C
         priority_task: customer.priority_task || "",
         general_notes: customer.general_notes || "",
       });
-    } else {
-      setFormData({
-        customer_code: "",
-        bride_name: "",
-        groom_name: "",
-        phone: "",
-        email: "",
-        address: "",
-        wedding_date: "",
-        source: "Facebook",
-        notes: "",
-        lead_status: "Mới",
-        budget: "",
-        social_link: "",
-        lead_date: "",
-        initial_request: "",
-        consulting_package: "",
-        last_contact: "",
-        next_followup: "",
-        priority_task: "",
-        general_notes: "",
-      });
     }
     setErrorMsg("");
-  }, [customer, isOpen]);
-
-  if (!isOpen) return null;
+  }, [customer]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,16 +87,26 @@ export default function CustomerDialog({ isOpen, onClose, customer, onSaved }: C
     setLoading(false);
 
     if (res.success) {
-      onSaved();
-      onClose();
+      router.push("/dashboard/customers");
+      router.refresh();
     } else {
       setErrorMsg(res.error || "Có lỗi xảy ra, vui lòng thử lại.");
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col text-slate-900 text-xs">
+    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-200 pb-12">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-medium text-sm"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Quay lại danh sách
+        </button>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col text-slate-900 text-xs">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -135,16 +120,10 @@ export default function CustomerDialog({ isOpen, onClose, customer, onSaved }: C
               <p className="text-[11px] text-slate-500">Quản lý hồ sơ cô dâu chú rể</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Body Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 flex-1">
           {errorMsg && (
             <div className="p-3 text-xs rounded-lg bg-red-50 border border-red-200 text-red-600 font-medium">
               {errorMsg}
@@ -152,106 +131,107 @@ export default function CustomerDialog({ isOpen, onClose, customer, onSaved }: C
           )}
 
           {/* Thông tin Khách hàng Section */}
-          <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
               <User className="w-5 h-5 text-blue-500" /> Thông tin khách hàng
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Tên Cô dâu */}
-            <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Tên Cô dâu */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5 text-blue-600" /> Tên Cô Dâu <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Nguyễn Thị Hoa"
+                  value={formData.bride_name}
+                  onChange={(e) => setFormData({ ...formData, bride_name: e.target.value })}
+                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                />
+              </div>
+
+              {/* Tên Chú rể */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5 text-indigo-600" /> Tên Chú Rể
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Trần Văn Bình"
+                  value={formData.groom_name}
+                  onChange={(e) => setFormData({ ...formData, groom_name: e.target.value })}
+                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                />
+              </div>
+
+              {/* Số điện thoại */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-emerald-600" /> Số Điện Thoại <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="0901234567"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                />
+              </div>
+
+              {/* Ngày đám cưới */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-purple-600" /> Ngày Cưới Dự Kiến
+                </label>
+                <input
+                  type="date"
+                  value={formData.wedding_date}
+                  onChange={(e) => setFormData({ ...formData, wedding_date: e.target.value })}
+                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                />
+              </div>
+
+              {/* Nguồn khách */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-blue-600" /> Nguồn Tiếp Cận
+                </label>
+                <select
+                  value={formData.source}
+                  onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                >
+                  <option value="CAMA HAUTE COUTURE">CAMA HAUTE COUTURE</option>
+                  <option value="CAMA WEDDING">CAMA WEDDING</option>
+                  <option value="CAMA SUIT">CAMA SUIT</option>
+                  <option value="TikTok Studio">TikTok Studio</option>
+                  <option value="Người quen">Người quen giới thiệu</option>
+                  <option value="Website">Website Studio</option>
+                  <option value="Khác">Khác / Vãng lai</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Ghi chú */}
+            <div className="mt-4">
               <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                <Heart className="w-3.5 h-3.5 text-blue-600" /> Tên Cô Dâu <span className="text-red-500">*</span>
+                <FileText className="w-3.5 h-3.5 text-slate-500" /> Ghi Chú Chi Tiết
               </label>
-              <input
-                type="text"
-                required
-                placeholder="Ví dụ: Nguyễn Thị Hoa"
-                value={formData.bride_name}
-                onChange={(e) => setFormData({ ...formData, bride_name: e.target.value })}
-                className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+              <textarea
+                rows={3}
+                placeholder="Yêu cầu đặc biệt, phong cách mong muốn, lưu ý thêm..."
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all resize-none shadow-sm"
               />
             </div>
-
-            {/* Tên Chú rể */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                <Heart className="w-3.5 h-3.5 text-indigo-600" /> Tên Chú Rể
-              </label>
-              <input
-                type="text"
-                placeholder="Ví dụ: Trần Văn Bình"
-                value={formData.groom_name}
-                onChange={(e) => setFormData({ ...formData, groom_name: e.target.value })}
-                className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
-              />
-            </div>
-
-            {/* Số điện thoại */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-emerald-600" /> Số Điện Thoại <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="0901234567"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
-              />
-            </div>
-
-
-
-            {/* Ngày đám cưới */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-purple-600" /> Ngày Cưới Dự Kiến
-              </label>
-              <CustomDatePicker
-                value={formData.wedding_date}
-                onChange={(val) => setFormData({ ...formData, wedding_date: val })}
-              />
-            </div>
-
-            {/* Nguồn khách */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5 text-blue-600" /> Nguồn Tiếp Cận
-              </label>
-              <select
-                value={formData.source}
-                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
-              >
-                <option value="Facebook">Facebook Fanpage</option>
-                <option value="TikTok">TikTok Studio</option>
-                <option value="Người quen">Người quen giới thiệu</option>
-                <option value="Website">Website Studio</option>
-                <option value="Khác">Khác / Vãng lai</option>
-              </select>
-            </div>
-          </div>
-
-          </div>
-
-          {/* Ghi chú */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-slate-500" /> Ghi Chú Chi Tiết
-            </label>
-            <textarea
-              rows={3}
-              placeholder="Yêu cầu đặc biệt, phong cách mong muốn, lưu ý thêm..."
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all resize-none shadow-sm"
-            />
           </div>
 
           {/* Theo Dõi Tình Trạng (Pipeline) Section */}
-          <div className="pt-5 mt-4 border-t border-slate-200">
-            <h3 className="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2">
+          <div className="pt-4">
+            <h3 className="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
               <FileText className="w-5 h-5 text-orange-500" /> Theo Dõi Tình Trạng (Pipeline)
             </h3>
             
@@ -290,9 +270,11 @@ export default function CustomerDialog({ isOpen, onClose, customer, onSaved }: C
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Ngày vào Lead</label>
-                <CustomDatePicker
+                <input
+                  type="date"
                   value={formData.lead_date}
-                  onChange={(val) => setFormData({ ...formData, lead_date: val })}
+                  onChange={(e) => setFormData({ ...formData, lead_date: e.target.value })}
+                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
                 />
               </div>
               <div>
@@ -302,22 +284,26 @@ export default function CustomerDialog({ isOpen, onClose, customer, onSaved }: C
                   placeholder="Ví dụ: Combo Váy Vest 15tr..."
                   value={formData.consulting_package}
                   onChange={(e) => setFormData({ ...formData, consulting_package: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none shadow-sm"
                 />
               </div>
               
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Liên hệ gần nhất</label>
-                <CustomDatePicker
+                <input
+                  type="date"
                   value={formData.last_contact}
-                  onChange={(val) => setFormData({ ...formData, last_contact: val })}
+                  onChange={(e) => setFormData({ ...formData, last_contact: e.target.value })}
+                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
                 />
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Follow-up tiếp theo (Nhắc lịch)</label>
-                <CustomDatePicker
+                <input
+                  type="date"
                   value={formData.next_followup}
-                  onChange={(val) => setFormData({ ...formData, next_followup: val })}
+                  onChange={(e) => setFormData({ ...formData, next_followup: e.target.value })}
+                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
                 />
               </div>
             </div>
@@ -330,7 +316,7 @@ export default function CustomerDialog({ isOpen, onClose, customer, onSaved }: C
                   placeholder="Ví dụ: Cần chốt gấp studio trước thứ 6..."
                   value={formData.priority_task}
                   onChange={(e) => setFormData({ ...formData, priority_task: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none resize-none"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none resize-none shadow-sm"
                 />
               </div>
               <div>
@@ -340,25 +326,25 @@ export default function CustomerDialog({ isOpen, onClose, customer, onSaved }: C
                   placeholder="Ghi nhận ban đầu từ lúc tiếp cận..."
                   value={formData.initial_request}
                   onChange={(e) => setFormData({ ...formData, initial_request: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none resize-none"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none resize-none shadow-sm"
                 />
               </div>
             </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+          <div className="pt-6 border-t border-slate-200 flex items-center justify-end gap-3 mt-4">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 transition-colors"
+              onClick={() => router.back()}
+              className="px-6 py-2.5 text-xs font-semibold rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 transition-colors"
             >
               Hủy Bỏ
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 transition-all shadow-md shadow-blue-500/20 disabled:opacity-50"
+              className="px-6 py-2.5 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 transition-all shadow-md shadow-blue-500/20 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

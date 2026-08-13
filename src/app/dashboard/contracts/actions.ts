@@ -70,6 +70,102 @@ function stringifyMetadata(metaObj: any) {
   return JSON.stringify(metaObj);
 }
 
+const auditText = (value: any) => {
+  if (value === null || value === undefined || String(value).trim() === "") return "Trống";
+  return String(value).trim();
+};
+
+const auditNumber = (value: any) => Number(value || 0);
+const auditMoney = (value: any) => `${auditNumber(value).toLocaleString("vi-VN")}đ`;
+
+function paymentView(payment: any, index: number) {
+  let embedded: any = {};
+  try {
+    const raw = payment?.content || payment?.notes || "";
+    if (typeof raw === "string" && raw.trim().startsWith("{")) embedded = JSON.parse(raw);
+  } catch {}
+  return {
+    id: payment?.id,
+    title: payment?.title || embedded.title || `Lần ${index + 1}`,
+    amount: auditNumber(payment?.amount),
+    method: payment?.payment_method || payment?.method || "",
+    status: payment?.status === "COMPLETED" ? "PAID" : (payment?.status || ""),
+    date: payment?.payment_date || payment?.date || "",
+    billLink: payment?.receipt_attachment_url || payment?.receipt_url || payment?.billLink || embedded.billLink || "",
+  };
+}
+
+function pushFieldChange(changes: string[], scope: string, label: string, oldValue: any, newValue: any, money = false) {
+  const oldNormalized = money ? auditNumber(oldValue) : auditText(oldValue);
+  const newNormalized = money ? auditNumber(newValue) : auditText(newValue);
+  if (oldNormalized === newNormalized) return;
+  const oldDisplay = money ? auditMoney(oldValue) : auditText(oldValue);
+  const newDisplay = money ? auditMoney(newValue) : auditText(newValue);
+  changes.push(`[${scope}] SỬA ${label}: Cũ: ${oldDisplay} → Mới: ${newDisplay}`);
+}
+
+function buildContractChanges(current: any, oldMeta: any, payload: any, newMeta: any) {
+  const changes: string[] = [];
+  const scalarFields = [
+    ["THÔNG TIN KHÁCH HÀNG", "Ngày lập HĐ", current.contract_date || oldMeta.contract_date, payload.contract_date || newMeta.contract_date],
+    ["THÔNG TIN KHÁCH HÀNG", "Số hợp đồng giấy", current.paper_contract_number || oldMeta.paper_contract_number, payload.paper_contract_number || newMeta.paper_contract_number],
+    ["THÔNG TIN KHÁCH HÀNG", "Phụ trách", current.assigned_staff_name || oldMeta.assigned_staff_name, newMeta.assigned_staff_name],
+    ["THÔNG TIN ALBUM", "Khổ album", oldMeta.kho_album, newMeta.kho_album],
+    ["THÔNG TIN ALBUM", "Số trang", oldMeta.so_trang, newMeta.so_trang],
+    ["THÔNG TIN ALBUM", "Chất liệu", oldMeta.chat_lieu, newMeta.chat_lieu],
+    ["THÔNG TIN ALBUM", "Tặng kèm / phụ kiện", oldMeta.tang_kem, newMeta.tang_kem],
+    ["THÔNG TIN ALBUM", "Ghi chú", oldMeta.userNotes, newMeta.userNotes],
+  ];
+  scalarFields.forEach(([scope, label, oldValue, newValue]) => pushFieldChange(changes, scope, label, oldValue, newValue));
+  pushFieldChange(changes, "TỔNG TIỀN", "Tổng hợp đồng", current.total_amount || oldMeta.total_amount, payload.total_amount, true);
+
+  const compareRows = (scope: string, oldRows: any[], newRows: any[], fields: Array<[string, string, boolean?]>, meaningful: (row: any) => boolean, keyOf?: (row: any, index: number) => string) => {
+    const oldMap = new Map(oldRows.map((row, index) => [keyOf?.(row, index) || row?.id || `row-${index}`, { row, index }]));
+    const matched = new Set<string>();
+    newRows.forEach((row, index) => {
+      if (!meaningful(row)) return;
+      const key = keyOf?.(row, index) || row?.id || `row-${index}`;
+      const oldEntry = oldMap.get(key);
+      const card = `${scope} – CARD ${index + 1}`;
+      if (!oldEntry || !meaningful(oldEntry.row)) {
+        const detail = fields.map(([field, label, money]) => `${label}: ${money ? auditMoney(row[field]) : auditText(row[field])}`).join(", ");
+        changes.push(`[${card}] THÊM — ${detail}`);
+        return;
+      }
+      matched.add(key);
+      fields.forEach(([field, label, money]) => pushFieldChange(changes, card, label, oldEntry.row[field], row[field], money));
+    });
+    oldMap.forEach(({ row, index }, key) => {
+      if (!meaningful(row) || matched.has(key)) return;
+      const detail = fields.map(([field, label, money]) => `${label}: ${money ? auditMoney(row[field]) : auditText(row[field])}`).join(", ");
+      changes.push(`[${scope} – CARD ${index + 1}] XÓA — ${detail}`);
+    });
+  };
+
+  compareRows("LỊCH TRÌNH", oldMeta.events || [], payload.events || newMeta.events || [], [
+    ["name", "Tên sự kiện"], ["event_date", "Ngày diễn ra"], ["pickup_date", "Ngày nhận đồ"], ["return_date", "Ngày trả đồ"], ["location", "Địa điểm"]
+  ], row => Boolean(auditText(row?.name) !== "Trống"), (row, index) => row?.id || `event-${index}`);
+
+  compareRows("DỊCH VỤ", oldMeta.items || [], payload.items || [], [
+    ["category", "Nhóm dịch vụ"], ["item_name", "Tên chi tiết"], ["notes", "Ghi chú"], ["quantity", "Số lượng"], ["unit_price", "Đơn giá", true]
+  ], row => Boolean(row?.category || row?.item_name), (row, index) => row?.id || `service-${index}`);
+
+  const oldPayments = (oldMeta.payments || oldMeta.legacy_installments || []).map(paymentView);
+  const newPayments = (payload.installments || newMeta.legacy_installments || []).map(paymentView);
+  compareRows("THANH TOÁN", oldPayments, newPayments, [
+    ["title", "Tên đợt"], ["date", "Ngày dự kiến"], ["method", "Phương thức"], ["status", "Trạng thái"], ["billLink", "Chứng từ"], ["amount", "Số tiền", true]
+  ], row => auditNumber(row?.amount) > 0 || Boolean(row?.date || row?.status), row => row?.id || `payment-${auditText(row?.title)}`);
+
+  const depositFields: Array<[string, string, boolean?]> = [
+    ["deposit_receive_date", "Ngày nhận"], ["deposit_method", "Phương thức"], ["deposit_status", "Tình trạng"], ["deposit_image", "Chứng từ"], ["deposit_amount", "Số tiền", true],
+    ["deposit_receive_date_2", "Ngày nhận (2)"], ["deposit_method_2", "Phương thức (2)"], ["deposit_status_2", "Tình trạng (2)"], ["deposit_image_2", "Chứng từ (2)"], ["deposit_amount_2", "Số tiền (2)", true],
+    ["asset_deposit_date", "Ngày nhận giấy tờ"], ["asset_deposit_method", "Phương thức giấy tờ"], ["asset_deposit_status", "Tình trạng giấy tờ"], ["deposit_notes", "Chi tiết giấy tờ"], ["asset_deposit_image", "Ảnh giấy tờ"],
+    ["asset_deposit_date_2", "Ngày nhận giấy tờ (2)"], ["asset_deposit_method_2", "Phương thức giấy tờ (2)"], ["asset_deposit_status_2", "Tình trạng giấy tờ (2)"], ["deposit_notes_2", "Chi tiết giấy tờ (2)"], ["asset_deposit_image_2", "Ảnh giấy tờ (2)"]
+  ];
+  depositFields.forEach(([field, label, money]) => pushFieldChange(changes, "CỌC GIỮ CHÂN", label, oldMeta[field], newMeta[field], money));
+  return changes;
+}
+
 // Convert DB row to normalized Contract object
 function normalizeContract(row: any): Contract {
   const meta = parseMetadata(row.notes);
@@ -145,29 +241,33 @@ function normalizeContract(row: any): Contract {
     };
   });
 
-  let rawMetaPayments = meta.payments || meta.legacy_installments || [];
-  if (!Array.isArray(rawMetaPayments)) rawMetaPayments = [];
+  let rawMetaPayments = Array.isArray(meta.payments) && meta.payments.length > 0
+    ? meta.payments
+    : (Array.isArray(meta.legacy_installments) ? meta.legacy_installments : []);
   const mergedPayments = (rawMetaPayments && rawMetaPayments.length > 0) ? rawMetaPayments : paymentsFromDb;
   
-  const finalPayments = mergedPayments.map((p: any, idx: number) => ({
+  const finalPayments = mergedPayments.map((p: any, idx: number) => {
+    const embedded = parseMetadata(typeof p.notes === "string" ? p.notes : null);
+    return {
       id: p.id || `pay-${idx}`,
       contract_id: row.id,
       receipt_code: p.receipt_code || `PT-2026-${String(idx + 1).padStart(5, "0")}`,
       amount: Number(p.amount || 0),
-      payment_date: p.payment_date || p.date || p.created_at || new Date().toISOString(),
-      payment_method: p.payment_method || p.method || "TRANSFER",
+      payment_date: p.payment_date || p.date || p.created_at || "",
+      payment_method: p.payment_method || p.method || "",
       account_fund: p.account_fund || "Tài khoản Ngân hàng CAMA",
       collector_name: p.collector_name || "Kế Toán Studio",
-      content: p.content || p.title || p.notes || `Thu tiền đợt ${idx + 1}`,
-      receipt_attachment_url: p.receipt_attachment_url || p.billLink || p.receipt_url || "",
-      notes: p.notes || "",
+      content: p.content || p.title || embedded.title || `Thu tiền đợt ${idx + 1}`,
+      receipt_attachment_url: p.receipt_attachment_url || p.billLink || p.receipt_url || embedded.billLink || "",
+      notes: embedded.userNotes || p.notes || "",
       status: p.status === "CANCELLED" ? "CANCELLED" : (p.status === "PAID" || p.status === "COMPLETED" ? "COMPLETED" : "PENDING"),
       created_by: p.created_by || "Admin",
       created_at: p.created_at || new Date().toISOString(),
       cancelled_at: p.cancelled_at,
       cancelled_by: p.cancelled_by,
       cancel_reason: p.cancel_reason,
-  }));
+    };
+  });
 
   // Compute status fields
   let paymentStatus: PaymentStatus = meta.payment_status;
@@ -1117,6 +1217,12 @@ export async function updateContract(contractId: string, payload: any) {
   try {
     await requirePermission("STUDIO_CONTRACTS", "update");
     const supabase = createAdminClient();
+    const authClient = createClient();
+    const { data: { user } } = await authClient.auth.getUser();
+    const { data: actorProfile } = user
+      ? await supabase.from("users").select("full_name, email").eq("id", user.id).maybeSingle()
+      : { data: null } as any;
+    const actorName = actorProfile?.full_name || actorProfile?.email || user?.email || "Không xác định";
     
     // fetch current
     const { data: current, error: fetchErr } = await supabase.from("contracts").select("*").eq("id", contractId).single();
@@ -1158,9 +1264,10 @@ export async function updateContract(contractId: string, payload: any) {
       activities: currentNotesObj.activities || [],
       updated_at: new Date().toISOString()
     };
-    let changes: string[] = [];
+    let changes: string[] = buildContractChanges(current, currentNotesObj, payload, meta);
     
     try {
+      if (false) {
       // THÔNG TIN CHUNG
       const oldStaff = current.assigned_staff_name || currentNotesObj.assigned_staff_name || currentNotesObj.nguoi_phu_trach || "Trống";
       const newStaff = (Array.isArray(payload.assigned_staff_names) ? payload.assigned_staff_names[0] : payload.assigned_staff_names) || incomingNotes.assigned_staff_name || "Trống";
@@ -1172,6 +1279,37 @@ export async function updateContract(contractId: string, payload: any) {
       const oldDate = current.contract_date || currentNotesObj.contract_date || "Trống";
       const newDate = payload.contract_date || incomingNotes.contract_date || "Trống";
       if (newDate !== "Trống" && oldDate !== newDate) changes.push(`[THÔNG TIN] Ngày lập HĐ: ${oldDate} ➜ ${newDate}`);
+
+      // Track additional fields
+      const extraFields = [
+        { key: 'ngay_hoi', label: 'Ngày hỏi' },
+        { key: 'ngay_cuoi', label: 'Ngày cưới' },
+        { key: 'ngay_chup', label: 'Ngày chụp' },
+        { key: 'dia_diem', label: 'Địa điểm' },
+        { key: 'kho_album', label: 'Khổ Album' },
+        { key: 'so_trang', label: 'Số trang' },
+        { key: 'tang_kem', label: 'Tặng kèm' },
+        { key: 'userNotes', label: 'Ghi chú riêng' }
+      ];
+      extraFields.forEach(f => {
+        const oldVal = currentNotesObj[f.key] || "Trống";
+        const newVal = incomingNotes[f.key] || "Trống";
+        if (newVal !== "Trống" && oldVal !== newVal) {
+          changes.push(`[THÔNG TIN] ${f.label}: ${oldVal} ➜ ${newVal}`);
+        }
+      });
+
+      // SỰ KIỆN (EVENTS)
+      const oldEvents = Array.isArray(currentNotesObj.events) ? currentNotesObj.events : [];
+      const newEvents = Array.isArray(payload.events) ? payload.events : [];
+
+      newEvents.forEach((nEvent: any, idx: number) => {
+        const oEvent = oldEvents[idx];
+        if (oEvent) {
+          if (nEvent.event_date !== oEvent.event_date) changes.push(`[SỰ KIỆN] '${nEvent.name}': Ngày ${oEvent.event_date || 'Trống'} ➜ ${nEvent.event_date || 'Trống'}`);
+          if (nEvent.location !== oEvent.location) changes.push(`[SỰ KIỆN] '${nEvent.name}': Địa điểm ${oEvent.location || 'Trống'} ➜ ${nEvent.location || 'Trống'}`);
+        }
+      });
 
       // DỊCH VỤ (ITEMS)
       const oldItems = Array.isArray(currentNotesObj.items) ? currentNotesObj.items : [];
@@ -1241,23 +1379,24 @@ export async function updateContract(contractId: string, payload: any) {
           changes.push(`[THANH TOÁN] Xóa đợt: ${oTitle} (${oAmount.toLocaleString()}đ)`);
         }
       });
+      }
     } catch (diffErr) {
       console.error("Deep Diff Error:", diffErr);
       changes = []; // Reset on error
     }
 
-    const actionDesc = changes.length > 0 ? `${changes.join(" | ")}` : `[THÔNG TIN] Chỉnh sửa thông tin chung`;
+    const actionDesc = changes.join(" | ");
 
     const newActivity: ContractActivity = {
       id: `act-${Date.now()}`,
-      actor_name: "Admin",
+      actor_name: actorName,
       action_type: "UPDATE_CONTRACT",
       content: actionDesc,
       created_at: new Date().toISOString(),
     };
     
     const safeActivities = Array.isArray(meta.activities) ? meta.activities : [];
-    meta.activities = [newActivity, ...safeActivities];
+    meta.activities = changes.length > 0 ? [newActivity, ...safeActivities] : safeActivities;
 
     const updateData: any = {
       total_amount: total,
@@ -1270,14 +1409,16 @@ export async function updateContract(contractId: string, payload: any) {
     }
 
     // Log the update to contract_activities
-    await logContractActivity(
-      contractId,
-      "UPDATE_CONTRACT",
-      actionDesc,
-      "Admin",
-      current,
-      updateData
-    );
+    if (changes.length > 0) {
+      await logContractActivity(
+        contractId,
+        "UPDATE_CONTRACT",
+        actionDesc,
+        actorName,
+        current,
+        updateData
+      );
+    }
 
     const { data, error } = await supabase
       .from("contracts")

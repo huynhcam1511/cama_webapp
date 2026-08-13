@@ -1,21 +1,28 @@
 const { Client } = require('pg');
-const fs = require('fs');
 
-async function run() {
-  const client = new Client({
-    connectionString: "postgresql://postgres:Huynhcam_151102@db.scthnppbdshbnmmrdfep.supabase.co:5432/postgres"
-  });
-  
+const connectionString = "postgresql://postgres:Huynhcam_151102@db.scthnppbdshbnmmrdfep.supabase.co:5432/postgres";
+
+const client = new Client({
+  connectionString,
+});
+
+async function runMigration() {
   try {
     await client.connect();
-    const sql = fs.readFileSync('supabase/migrations/20260731000016_garments_inventory.sql', 'utf8');
-    await client.query(sql);
-    console.log("Migration executed successfully.");
-  } catch (err) {
-    console.error("Migration failed:", err);
+    console.log("Connected to database.");
+
+    const query = `
+      ALTER TABLE public.contracts
+      ADD COLUMN IF NOT EXISTS journey_data JSONB DEFAULT '{}'::jsonb;
+    `;
+    
+    await client.query(query);
+    console.log("Migration executed successfully: Added journey_data to contracts.");
+  } catch (error) {
+    console.error("Error executing migration:", error);
   } finally {
     await client.end();
   }
 }
 
-run();
+runMigration();

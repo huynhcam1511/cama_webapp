@@ -141,8 +141,8 @@ export async function GET(req: Request) {
             ${todoHtml}
           </div>
 
-          <!-- MODULE 2: CHĂM SÓC KHÁCH HÀNG -->
-          <h3 style="color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-top: 0; font-size: 16px;">🎧 Chăm Sóc Khách Hàng (Gợi ý cần xử lý)</h3>
+          <!-- MODULE 2: LỊCH TRÌNH KHÁCH HÀNG -->
+          <h3 style="color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-top: 0; font-size: 16px;">🎧 Lịch Trình Khách Hàng (Gợi ý cần xử lý)</h3>
           <div style="margin-bottom: 25px;">
             ${csHtml}
           </div>

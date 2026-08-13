@@ -12,6 +12,10 @@ export default function CustomersPageClient({ bookings, users, customers }: { bo
   const [showQuickContract, setShowQuickContract] = useState(false);
   const { hasPermission } = usePermissions();
   const canCreateContract = hasPermission("STUDIO_CONTRACTS", "create") && hasPermission("CUSTOMERS", "create");
+  
+  const canCreate = hasPermission("CUSTOMERS", "create");
+  const canUpdate = hasPermission("CUSTOMERS", "update");
+  const canDelete = hasPermission("CUSTOMERS", "delete");
 
   return (
     <div className="space-y-6 relative">

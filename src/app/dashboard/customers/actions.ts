@@ -28,6 +28,20 @@ export async function saveBooking(booking: any) {
   }
 }
 
+export async function getBookingById(id: string) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("operation_schedules")
+    .select("*, users:primary_assignee_id(full_name)")
+    .eq("id", id)
+    .single();
+  if (error) {
+    console.error("Error fetching booking by id:", error);
+    return null;
+  }
+  return data;
+}
+
 export async function deleteBooking(id: string) {
   const supabase = createAdminClient();
   const { error } = await supabase.from("operation_schedules").delete().eq("id", id);
@@ -62,6 +76,16 @@ export async function getCustomers() {
   if (error) {
     console.error("Error fetching customers:", error);
     return [];
+  }
+  return data;
+}
+
+export async function getCustomerById(id: string) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.from("customers").select("*").eq("id", id).single();
+  if (error) {
+    console.error("Error fetching customer by id:", error);
+    return null;
   }
   return data;
 }
