@@ -153,7 +153,7 @@ export default function ContractDialog({
       setLoading(true);
       try {
         const custRes = await createCustomer({
-          customer_code: `KH-${Date.now().toString().slice(-6)}`,
+          customer_code: "", // Server will auto-generate CUST-xxxxxx
           bride_name: nameInput,
           phone: phoneInput,
           wedding_date: weddingDate || undefined,

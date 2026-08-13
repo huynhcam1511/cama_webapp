@@ -1,4 +1,5 @@
 import { getCustomerJourneyData } from "./actions";
+import { getStaffs } from "../contracts/actions";
 import CustomerJourneyClient from "./customer-journey-client";
 import { requirePermission } from "@/lib/rbac";
 import { Suspense } from "react";
@@ -11,7 +12,8 @@ export const metadata = {
 export default async function CustomerJourneyPage() {
   await requirePermission("CUSTOMER_JOURNEY", "view");
 
-  const { contracts, schedules, error } = await getCustomerJourneyData();
+  const { contracts, schedules, journeyTasks, error } = await getCustomerJourneyData();
+  const staffs = await getStaffs();
 
   if (error) {
     return (
@@ -30,6 +32,8 @@ export default async function CustomerJourneyPage() {
       <CustomerJourneyClient 
         initialContracts={contracts || []} 
         initialSchedules={schedules || []}
+        journeyTasks={journeyTasks || []}
+        staffs={staffs || []}
       />
     </Suspense>
   );

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/rbac";
+import { generateSequentialCode } from "@/utils/code-generator";
 
 export async function saveBooking(booking: any) {
   const supabase = createAdminClient();
@@ -94,8 +95,8 @@ export async function createCustomer(customer: CustomerFormData) {
   try {
     await requirePermission("CUSTOMERS", "create");
     const supabase = createAdminClient();
-    if (!customer.customer_code) {
-      customer.customer_code = "KH-" + Math.floor(1000 + Math.random() * 9000);
+    if (!customer.customer_code || customer.customer_code.startsWith("KH-")) {
+      customer.customer_code = await generateSequentialCode(supabase, "customers", "customer_code", "CUST");
     }
     const { data, error } = await supabase.from("customers").insert(customer).select().single();
     return { success: !error, data, error: error?.message };
@@ -125,7 +126,7 @@ export async function createQuickContract(data: { name: string, phone: string, a
   const supabase = createAdminClient();
   
   // 1. Create Customer
-  const customerCode = "KH-" + Math.floor(1000 + Math.random() * 9000);
+  const customerCode = await generateSequentialCode(supabase, "customers", "customer_code", "CUST");
   const { data: customerData, error: customerError } = await supabase.from("customers").insert({
     customer_code: customerCode,
     bride_name: data.name,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import * as icons from "lucide-react";
-import { saveBooking } from "./actions";
+import { saveBooking } from "../customers/actions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -34,16 +34,16 @@ export default function BookingFormClient({
       alert("Lỗi: " + error);
       setIsSaving(false);
     } else if (data) {
-      router.push("/dashboard/customers?tab=booking");
+      router.push("/dashboard/appointments");
       router.refresh();
     }
   };
 
   return (
     <div className="max-w-4xl mx-auto py-8">
-      <Link href="/dashboard/customers?tab=booking" className="inline-flex items-center text-sm text-slate-500 hover:text-blue-600 mb-6 gap-1 font-medium">
+      <Link href="/dashboard/appointments" className="inline-flex items-center text-sm text-slate-500 hover:text-blue-600 mb-6 gap-1 font-medium">
         <icons.ArrowLeft className="w-4 h-4" />
-        Quay lại Booking Schedule
+        Quay lại Lịch Hẹn Khách
       </Link>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -250,7 +250,7 @@ export default function BookingFormClient({
           </div>
 
           <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 mt-6">
-            <Link href="/dashboard/customers?tab=booking" className="px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+            <Link href="/dashboard/appointments" className="px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
               Hủy bỏ
             </Link>
             <button type="submit" disabled={isSaving} className="px-8 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2">

@@ -63,6 +63,8 @@ export function SalesCharts({
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
+                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    labelLine={true}
                   >
                     {categoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -86,7 +88,7 @@ export function SalesCharts({
               <AreaChart data={funnelData} layout="vertical" margin={{ top: 10, right: 30, left: 30, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                 <XAxis type="number" hide />
-                <YAxis dataKey="stage" type="category" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 13, fontWeight: 600}} width={120} />
+                <YAxis dataKey="stageLabel" type="category" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 13, fontWeight: 600}} width={160} />
                 <RechartsTooltip 
                   formatter={((val: number) => [val, 'Số lượng']) as any}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
@@ -103,18 +105,34 @@ export function SalesCharts({
         <h3 className="text-lg font-bold text-slate-800 mb-4">Bảng xếp hạng Sales Xuất Sắc</h3>
         <div className="space-y-4">
           {topPerformers.length > 0 ? topPerformers.map((user, idx) => (
-            <div key={user.name} className={`flex items-center justify-between p-4 rounded-2xl ${idx === 0 ? 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200' : 'bg-slate-50 border border-slate-100'}`}>
+            <div key={user.name} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl gap-4 sm:gap-0 ${idx === 0 ? 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200' : 'bg-slate-50 border border-slate-100'}`}>
               <div className="flex items-center gap-4">
                 <div className={`font-black text-2xl w-6 text-center ${idx === 0 ? 'text-amber-500' : 'text-slate-300'}`}>{idx + 1}</div>
-                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold">
+                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold shrink-0">
                   {user.name.charAt(0)}
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-800">{user.name}</h4>
+                  <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                    {user.name}
+                    {idx === 0 && <span className="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full">Top 1</span>}
+                    {user.progress >= 100 && <span className="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded-full">Đạt Target</span>}
+                  </h4>
                   <p className="text-xs text-slate-500">{user.contractsCount} Hợp đồng</p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="flex-1 w-full sm:w-auto sm:ml-8 sm:mr-4 max-w-xs flex flex-col justify-center">
+                 <div className="flex justify-between text-[10px] font-semibold text-slate-500 mb-1">
+                   <span>Tiến độ mục tiêu</span>
+                   <span>{Math.round(user.progress)}%</span>
+                 </div>
+                 <div className="w-full bg-slate-200 rounded-full h-1.5">
+                   <div className={`h-1.5 rounded-full ${user.progress >= 100 ? 'bg-emerald-500' : 'bg-blue-500'}`} style={{width: `${user.progress}%`}}></div>
+                 </div>
+                 <div className="text-[10px] text-slate-400 mt-1 text-right">
+                   Target: {formatVND(user.target)}
+                 </div>
+              </div>
+              <div className="text-right whitespace-nowrap">
                 <div className="font-black text-lg text-emerald-600">{formatVND(user.revenue)}</div>
               </div>
             </div>

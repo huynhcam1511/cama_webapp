@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import BookingScheduleClient from "./booking-schedule-client";
 import CustomersView from "./customers-view";
 import QuickContractModal from "../quick-contract-modal";
 import * as icons from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 
-export default function CustomersPageClient({ bookings, users, customers }: { bookings: any[], users: any[], customers: any[] }) {
-  const [activeTab, setActiveTab] = useState<"customers" | "schedules">("customers");
+export default function CustomersPageClient({ customers }: { customers: any[] }) {
   const [showQuickContract, setShowQuickContract] = useState(false);
   const { hasPermission } = usePermissions();
   const canCreateContract = hasPermission("STUDIO_CONTRACTS", "create") && hasPermission("CUSTOMERS", "create");
@@ -19,31 +17,15 @@ export default function CustomersPageClient({ bookings, users, customers }: { bo
 
   return (
     <div className="space-y-6 relative">
-      <div className="flex justify-between items-center border-b border-slate-200">
-        <div className="flex space-x-1">
-          <button
-          onClick={() => setActiveTab("customers")}
-          className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
-            activeTab === "customers" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          <icons.Users className="w-4 h-4" />
+      <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+        <h1 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+          <icons.Users className="w-6 h-6 text-blue-600" />
           Leads Pipeline
-        </button>
-        <button
-          onClick={() => setActiveTab("schedules")}
-          className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
-            activeTab === "schedules" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          <icons.CalendarDays className="w-4 h-4" />
-          Booking Schedule
-        </button>
-        </div>
+        </h1>
         {canCreateContract && (
           <button 
             onClick={() => setShowQuickContract(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm transition-colors flex items-center gap-1.5 mb-2"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm transition-colors flex items-center gap-1.5"
           >
             <icons.Zap className="w-3.5 h-3.5" />
             Tạo nhanh Hợp đồng
@@ -51,8 +33,7 @@ export default function CustomersPageClient({ bookings, users, customers }: { bo
         )}
       </div>
 
-      {activeTab === "customers" && <CustomersView initialCustomers={customers} />}
-      {activeTab === "schedules" && <BookingScheduleClient initialData={bookings} users={users} />}
+      <CustomersView initialCustomers={customers} />
 
       {showQuickContract && (
         <QuickContractModal 

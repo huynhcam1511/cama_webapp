@@ -1,4 +1,5 @@
 import { getCustomerJourneyById } from "../actions";
+import { getStaffs } from "../../contracts/actions";
 import CustomerJourneyDetailClient from "./customer-journey-detail-client";
 import { requirePermission } from "@/lib/rbac";
 import * as icons from "lucide-react";
@@ -12,6 +13,7 @@ export default async function CustomerJourneyDetailPage({ params }: { params: { 
   await requirePermission("CUSTOMER_JOURNEY", "view");
 
   const { contract, error } = await getCustomerJourneyById(params.id);
+  const staffs = await getStaffs();
 
   if (error || !contract) {
     return (
@@ -27,7 +29,7 @@ export default async function CustomerJourneyDetailPage({ params }: { params: { 
         <icons.Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     }>
-      <CustomerJourneyDetailClient initialContract={contract} />
+      <CustomerJourneyDetailClient initialContract={contract} staffs={staffs} />
     </Suspense>
   );
 }

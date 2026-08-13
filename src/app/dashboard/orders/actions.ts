@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
+import { generateSequentialCode } from "@/utils/code-generator";
 
 export type OrderChecklistItem = {
   task: string;
@@ -11,7 +12,7 @@ export type OrderChecklistItem = {
   done: boolean;
 };
 
-export type OrderStatus = 'PENDING' | 'PREPARING' | 'WAITING_FITTING' | 'READY_TO_DELIVER' | 'DELIVERED' | 'WAITING_RETURN' | 'COMPLETED' | 'ISSUE';
+export type OrderStatus = 'PENDING' | 'PREPARING' | 'WAITING_FITTING' | 'READY_TO_DELIVER' | 'DELIVERED' | 'WAITING_RETURN' | 'COMPLETED' | 'ISSUE' | 'CANCELLED';
 
 export interface Order {
   id: string;
@@ -48,7 +49,7 @@ export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> 
     *,
     contract:contracts (
       contract_code,
-      meta,
+      notes,
       customer:customers ( bride_name, groom_name, phone )
     ),
     pic:users ( full_name ),
@@ -64,6 +65,7 @@ export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> 
     console.error("Error fetching orders:", error);
     return [];
   }
+  console.log("getOrders returned length:", data?.length);
   return data as any;
 }
 
@@ -96,20 +98,35 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   revalidatePath("/dashboard/orders");
 }
 
-export async function updateOrderChecklist(orderId: string, checklist: OrderChecklistItem[]) {
+export async function updateOrderChecklist(id: string, checklist: OrderChecklistItem[]) {
   await requirePermission("ORDERS", "update");
   const supabase = createAdminClient();
-  const { error } = await supabase.from("orders").update({ checklist: JSON.stringify(checklist) }).eq("id", orderId);
-  if (error) throw new Error(error.message);
+  const { error } = await supabase.from("orders").update({ checklist }).eq("id", id);
+  if (error) throw error;
   revalidatePath("/dashboard/orders");
+  revalidatePath(`/dashboard/orders/${id}`);
+}
+
+export async function saveOrderNotesAndImages(id: string, text: string, images: string[]) {
+  const supabase = createAdminClient();
+  const newNotes = JSON.stringify({ text, images });
+  const { error } = await supabase.from("orders").update({ notes: newNotes }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/dashboard/orders");
+  revalidatePath(`/dashboard/orders/${id}`);
 }
 
 export async function createOrder(payload: Partial<Order>) {
   const supabase = createAdminClient();
+  let code = payload.order_code?.trim();
+  if (!code || code.startsWith("ORD-")) {
+    code = await generateSequentialCode(supabase, "orders", "order_code", "ORDE");
+  }
+
   const { data, error } = await supabase
     .from("orders")
     .insert([{
-      order_code: payload.order_code,
+      order_code: code,
       contract_id: payload.contract_id || null,
       service_type: payload.service_type,
       event_date: payload.event_date || null,
@@ -123,4 +140,47 @@ export async function createOrder(payload: Partial<Order>) {
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/orders");
   return data;
+}
+
+export async function getOrderById(orderId: string): Promise<Order | null> {
+  const supabase = createAdminClient();
+  
+  const { data, error } = await supabase.from("orders").select(`
+    *,
+    contract:contracts (
+      id,
+      contract_code,
+      notes,
+      customer:customers ( bride_name, groom_name, phone, email, address, wedding_date ),
+      services:contract_services(*)
+    ),
+    pic:users ( full_name ),
+    operation_schedules (*)
+  `).eq("id", orderId).is("deleted_at", null).single();
+
+  if (error) {
+    console.error("Error fetching order:", error);
+    return null;
+  }
+  
+  if (data?.contract?.notes) {
+    try {
+      const meta = typeof data.contract.notes === 'string' && data.contract.notes.startsWith('{') 
+        ? JSON.parse(data.contract.notes) 
+        : {};
+      data.contract.items = meta.items || [];
+      data.contract.garments = meta.garments || [];
+    } catch (e) {}
+  }
+  
+  return data as any;
+}
+
+export async function deleteOrder(orderId: string): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("orders").update({ completion_status: 'CANCELLED', updated_at: new Date().toISOString() }).eq("id", orderId);
+  if (error) {
+    console.error("Error deleting order:", error);
+    throw error;
+  }
 }

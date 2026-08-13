@@ -165,7 +165,7 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               ) : (
                 <div className="grid grid-cols-2 gap-x-12 gap-y-3 text-[13px] font-sans mb-4 pt-1">
                   <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Ngày hỏi:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.ngay_hoi || activeData?.ngay_hoi || "..."}</span></div>
-                  <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Ngày cưới:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.ngay_cuoi || activeData?.ngay_cuoi || "..."}</span></div>
+                  <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Ngày giao/trả đồ:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.ngay_cuoi || activeData?.ngay_cuoi || "..."}</span></div>
                   <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Địa điểm chụp:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.dia_diem || activeData?.dia_diem || "..."}</span></div>
                   <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Ngày chụp:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.ngay_chup || activeData?.ngay_chup || "..."}</span></div>
                 </div>

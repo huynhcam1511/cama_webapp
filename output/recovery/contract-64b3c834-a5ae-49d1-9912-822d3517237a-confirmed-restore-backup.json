@@ -1,0 +1,60 @@
+{
+  "id": "64b3c834-a5ae-49d1-9912-822d3517237a",
+  "contract_code": "CAMA-2026-00010",
+  "customer_id": "b0bba3d8-596e-43d8-a4a4-c0300070b10e",
+  "total_amount": 65000120,
+  "paid_amount": 65000000,
+  "status": "CONFIRMED",
+  "notes": "{\"userNotes\":\"NHÀ TRAI YC ...\"}",
+  "link_pdf": null,
+  "created_at": "2026-08-10T12:50:20.844956+00:00",
+  "updated_at": "2026-08-12T18:26:42.475+00:00",
+  "deleted_at": null,
+  "deleted_by": null,
+  "journey_data": {
+    "stages": [
+      {
+        "id": "stage-1",
+        "name": "Tiếp nhận & Hợp đồng (Leads & Ký kết)",
+        "tasks": [
+          {
+            "id": "task-1786559479346",
+            "text": "Tạo group zalo",
+            "status": "DONE",
+            "dueDate": null,
+            "subtasks": []
+          },
+          {
+            "id": "task-1786559498938",
+            "text": "Làm moodboard",
+            "status": "PLANNED",
+            "dueDate": null,
+            "subtasks": [
+              {
+                "id": "subtask-1786559506714",
+                "text": "Lựa hình trước",
+                "status": "PLANNED",
+                "dueDate": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "stage-2",
+        "name": "Chuẩn bị & Fitting (Thử váy, Chọn đồ)",
+        "tasks": []
+      },
+      {
+        "id": "stage-3",
+        "name": "Trước ngày sự kiện (Sát ngày cưới)",
+        "tasks": []
+      },
+      {
+        "id": "stage-4",
+        "name": "Sau sự kiện (Thu hồi & Nghiệm thu)",
+        "tasks": []
+      }
+    ]
+  }
+}

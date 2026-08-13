@@ -39,11 +39,14 @@ export default async function SalesDashboardPage() {
       }
     });
   });
-  const dailyData = Object.keys(dailyMap).sort().slice(-14).map(date => ({
-    date: date.substring(5), // e.g., '08-15'
-    contractsCount: dailyMap[date].contractsCount,
-    revenue: dailyMap[date].revenue
-  }));
+  const dailyData = Object.keys(dailyMap).sort().slice(-14).map(date => {
+    const parts = date.split('-'); // e.g., '2026-08-15'
+    return {
+      date: parts.length === 3 ? `${parts[2]}/${parts[1]}` : date.substring(5),
+      contractsCount: dailyMap[date].contractsCount,
+      revenue: dailyMap[date].revenue
+    };
+  });
 
   // 2. Category Data (Pie Chart)
   const catMap: Record<string, number> = {};
@@ -59,12 +62,17 @@ export default async function SalesDashboardPage() {
   // Since we don't have a real 'leads' table in this mock, we will estimate based on contracts
   const totalContracts = contracts.length;
   const paidContracts = contracts.filter(c => c.paid_amount > 0).length;
-  const funnelData = [
+  const rawFunnelData = [
     { stage: "Lead đổ về", value: Math.max(totalContracts * 3, 100) },
     { stage: "Khách đến tiệm", value: Math.max(totalContracts * 1.5, 50) },
     { stage: "Ký hợp đồng", value: totalContracts },
     { stage: "Đã thanh toán", value: paidContracts },
   ];
+  const maxFunnelValue = rawFunnelData[0].value || 1;
+  const funnelData = rawFunnelData.map(d => ({
+    ...d,
+    stageLabel: `${d.stage} (${Math.round((d.value / maxFunnelValue) * 100)}%)`
+  }));
 
   // 4. Leaderboard
   const staffMap: Record<string, { contractsCount: number; revenue: number }> = {};
@@ -74,8 +82,17 @@ export default async function SalesDashboardPage() {
     staffMap[staff].contractsCount += 1;
     staffMap[staff].revenue += Number(c.paid_amount || 0);
   });
+  const STAFF_TARGET = 150000000; // Mục tiêu cá nhân (150 triệu)
   const topPerformers = Object.keys(staffMap)
-    .map(k => ({ name: k, ...staffMap[k] }))
+    .map(k => {
+      const p = staffMap[k];
+      return { 
+        name: k, 
+        ...p,
+        target: STAFF_TARGET,
+        progress: Math.min((p.revenue / STAFF_TARGET) * 100, 100)
+      };
+    })
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
 

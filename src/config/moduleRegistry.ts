@@ -3,6 +3,7 @@ export type ModuleCode =
   | "STUDIO_CONTRACTS" 
   | "CUSTOMERS" 
   | "CUSTOMER_JOURNEY"
+  | "APPOINTMENTS"
   | "SCHEDULES_GROUP"
   | "STAFF_SCHEDULE"
   | "OPERATION_SCHEDULE"
@@ -102,7 +103,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     icon: "FileText",
     group: "BUSINESS",
     parentCode: null,
-    sortOrder: 2,
+    sortOrder: 3,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",
@@ -116,7 +117,21 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     icon: "Route",
     group: "BUSINESS",
     parentCode: null,
-    sortOrder: 3,
+    sortOrder: 4,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
+    moduleCode: "APPOINTMENTS",
+    label: "Lịch hẹn khách",
+    shortLabel: "Lịch hẹn",
+    route: "/dashboard/appointments",
+    icon: "CalendarClock",
+    group: "BUSINESS",
+    parentCode: null,
+    sortOrder: 2,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",
@@ -198,8 +213,8 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   },
   {
     moduleCode: "OPERATION_SCHEDULE",
-    label: "Lịch khách & Lịch giao hàng",
-    shortLabel: "Lịch Khách",
+    label: "(ẨN) Lịch khách & Lịch giao hàng",
+    shortLabel: "(Ẩn) Lịch KH",
     route: "/dashboard/schedules/operation",
     icon: "CalendarCheck2",
     group: "OPERATIONS",

@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import * as icons from "lucide-react";
-import { deleteBooking } from "./actions";
+import { deleteBooking } from "../customers/actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type Booking = any;
 type User = { id: string; full_name: string; email: string };
 
-export default function BookingScheduleClient({ initialData, users }: { initialData: Booking[], users: User[] }) {
+export default function AppointmentsClient({ initialData, users }: { initialData: Booking[], users: User[] }) {
   const [bookings, setBookings] = useState<Booking[]>(initialData);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,7 +57,7 @@ export default function BookingScheduleClient({ initialData, users }: { initialD
         <div>
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <icons.CalendarDays className="w-5 h-5 text-blue-600" />
-            CAMA CRM SALES | BOOKING SCHEDULE
+            LỊCH HẸN KHÁCH
           </h2>
           <p className="text-sm text-slate-500 mt-1">Quản lý lịch hẹn, theo dõi tình trạng tư vấn và chốt sales</p>
         </div>
@@ -67,7 +67,7 @@ export default function BookingScheduleClient({ initialData, users }: { initialD
             Xem Calendar Lịch
           </Link>
           <Link
-            href="/dashboard/customers/booking/create"
+            href="/dashboard/appointments/booking/create"
             className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shrink-0"
           >
             <icons.Plus className="w-4 h-4" />
@@ -176,7 +176,7 @@ export default function BookingScheduleClient({ initialData, users }: { initialD
                   </td>
                   <td className="px-3 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Link href={`/dashboard/customers/booking/${b.id}/edit`} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Chỉnh sửa">
+                      <Link href={`/dashboard/appointments/booking/${b.id}/edit`} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Chỉnh sửa">
                         <icons.Edit className="w-4 h-4" />
                       </Link>
                       <button 

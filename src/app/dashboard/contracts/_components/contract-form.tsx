@@ -421,7 +421,7 @@ export default function ContractForm({
       setLoading(true);
       try {
         const custRes = await createCustomer({
-          customer_code: `KH-${Date.now().toString().slice(-6)}`,
+          customer_code: "", // Server will auto-generate CUST-xxxxxx
           bride_name: nameInput,
           phone: phoneInput,
           wedding_date: weddingDate || undefined,
@@ -457,7 +457,27 @@ export default function ContractForm({
     }));
 
     if (activeItems.length === 0) {
-      setErrorMsg("Vui lòng nhập ít nhất 1 dịch vụ!");
+      setErrorMsg("LỖI: Vui lòng nhập ít nhất 1 dịch vụ/sản phẩm!");
+      setLoading(false);
+      return;
+    }
+
+    const missingEvents = activeItems.some(item => !item.usage_events || item.usage_events.length === 0);
+    if (missingEvents) {
+      setErrorMsg("LỖI BẮT BUỘC: Mỗi dịch vụ/sản phẩm phải được chọn ít nhất 1 [Sự Kiện SD] (để Vận Hành biết ngày chuẩn bị đồ)!");
+      setLoading(false);
+      return;
+    }
+
+    const missingEventDates = activeItems.some(item => {
+      return item.usage_events?.some(eventName => {
+        const ev = events.find(e => e.name === eventName);
+        return ev && !ev.event_date;
+      });
+    });
+    
+    if (missingEventDates) {
+      setErrorMsg("LỖI BẮT BUỘC: Sự kiện bạn đã chọn cho sản phẩm CHƯA CÓ NGÀY. Vui lòng điền ngày cho sự kiện đó ở mục [2. Chi Tiết Thực Hiện]!");
       setLoading(false);
       return;
     }

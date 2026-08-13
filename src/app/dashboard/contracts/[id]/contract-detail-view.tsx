@@ -77,9 +77,10 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
   };
 
   const renderStatusBadge = (status: string) => {
-    if (status === "CANCELLED") return <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold uppercase">Đã Hủy</span>;
-    if (status === "COMPLETED") return <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs font-bold uppercase">Hoàn Tất</span>;
-    return <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold uppercase">Đang Thực Hiện</span>;
+    if (status === "CANCELLED") {
+      return <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold uppercase">Đã Hủy</span>;
+    }
+    return <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold uppercase">Đang Có Hiệu Lực</span>;
   };
 
   const TABS = [
@@ -155,7 +156,7 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
                     <div><span className="text-slate-500">Chú rể:</span> <strong>{customer.groom_name || "---"}</strong></div>
                     <div><span className="text-slate-500">SĐT:</span> <strong className="text-emerald-700">{customer.phone}</strong></div>
                     <div><span className="text-slate-500">Email:</span> {customer.email || "---"}</div>
-                    <div><span className="text-slate-500">Ngày cưới:</span> <strong className="text-pink-600">{customer.wedding_date || "Chưa xác định"}</strong></div>
+                    <div><span className="text-slate-500">Ngày giao/trả đồ:</span> <strong className="text-pink-600">{customer.wedding_date || "Chưa xác định"}</strong></div>
                     <div><span className="text-slate-500">Nguồn:</span> {customer.source}</div>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-1 text-xs">
@@ -458,9 +459,9 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
                         <span className="text-xs text-slate-500">Trạng thái:</span>
                         <span className="text-xs font-bold bg-slate-100 px-3 py-1 rounded-md text-slate-700 uppercase tracking-wider">{o.completion_status}</span>
                       </div>
-                      <div className="text-sm text-slate-600 flex items-center justify-between md:justify-end gap-2">
-                        <span className="text-xs text-slate-500">Ngày thực hiện:</span>
-                        <strong className="text-slate-800">{o.event_date ? new Date(o.event_date).toLocaleDateString("vi-VN") : "Chưa xác định"}</strong>
+                      <div className="flex justify-between items-end border-b border-slate-100 pb-2">
+                        <span className="text-xs text-slate-500">Ngày giao/trả đồ:</span>
+                        <span className="font-semibold text-slate-800">{o.event_date ? new Date(o.event_date).toLocaleDateString("vi-VN") : "Chưa có"}</span>
                       </div>
                     </div>
                   </div>

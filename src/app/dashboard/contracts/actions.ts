@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
+import { generateSequentialCode } from "@/utils/code-generator";
 import {
   Contract,
   ContractItem,
@@ -582,10 +583,8 @@ export async function createContract(payload: {
 
     // Generate code
     let code = payload.contract_code?.trim();
-    if (!code) {
-      const { count } = await supabase.from("contracts").select("*", { count: "exact", head: true });
-      const nextNum = (count || 0) + 1;
-      code = `CAMA-2026-${String(nextNum).padStart(5, "0")}`;
+    if (!code || code.startsWith("CAMA-")) {
+      code = await generateSequentialCode(supabase, "contracts", "contract_code", "CONT");
     }
 
     const paperNo = payload.paper_contract_number?.trim() || String(Math.floor(1000000 + Math.random() * 9000000));
@@ -699,19 +698,63 @@ export async function createContract(payload: {
       return { success: false, error: error?.message || "Lỗi tạo hợp đồng" };
     }
 
-    // Tự động tạo Đơn hàng (Order) cho phòng Vận Hành / Kho
+    // Tự động tạo Đơn hàng (Order) cho phòng Vận Hành / Kho dựa trên các sự kiện (events)
     try {
-      const orderServiceType = payload.items && payload.items.length > 0 ? (payload.items[0].category === "Dịch Vụ Cưới" ? "WEDDING" : "PRE-WEDDING") : "WEDDING";
-      await supabase.from("orders").insert([
-        {
-          order_code: `ORD-${code.replace("CAMA-2026-", "")}`,
-          contract_id: contract.id,
-          service_type: orderServiceType,
-          completion_status: "PENDING",
-          notes: `Đơn hàng tự động sinh từ Hợp đồng ${code}`,
-          checklist: [],
+      const events = parsedNotes?.events || [];
+      
+      if (events.length > 0) {
+        // Prepare orders to insert
+        const ordersToInsert: any[] = [];
+        
+        // Find the latest code to sequence locally
+        let latestCodeObj = await supabase
+          .from("orders")
+          .select("order_code")
+          .ilike("order_code", "ORDE-%")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+          
+        let nextNumber = 1;
+        if (latestCodeObj.data?.order_code) {
+          const parts = latestCodeObj.data.order_code.split("-");
+          if (parts.length === 2 && !isNaN(parseInt(parts[1], 10))) {
+            nextNumber = parseInt(parts[1], 10) + 1;
+          }
         }
-      ]);
+
+        for (const ev of events) {
+          const newCode = `ORDE-${String(nextNumber).padStart(6, '0')}`;
+          nextNumber++;
+          
+          ordersToInsert.push({
+            order_code: newCode,
+            contract_id: contract.id,
+            service_type: ev.name || "Dịch vụ cưới",
+            event_date: ev.event_date || null,
+            return_date: ev.return_date || null,
+            completion_status: "PENDING",
+            notes: `Đơn hàng tự động sinh từ Hợp đồng ${code} cho sự kiện: ${ev.name}\nNgày giao: ${ev.pickup_date || "Không có"}\nĐịa điểm: ${ev.location || "Không có"}`,
+            checklist: [],
+          });
+        }
+        
+        await supabase.from("orders").insert(ordersToInsert);
+      } else {
+        // Fallback for contracts with no events
+        const orderServiceType = payload.items && payload.items.length > 0 ? (payload.items[0].category === "Dịch Vụ Cưới" ? "WEDDING" : "PRE-WEDDING") : "WEDDING";
+        const newCode = await generateSequentialCode(supabase, "orders", "order_code", "ORDE");
+        await supabase.from("orders").insert([
+          {
+            order_code: newCode,
+            contract_id: contract.id,
+            service_type: orderServiceType,
+            completion_status: "PENDING",
+            notes: `Đơn hàng tự động sinh từ Hợp đồng ${code}`,
+            checklist: [],
+          }
+        ]);
+      }
     } catch (orderErr) {
       console.error("Automation Error (Order):", orderErr);
     }
@@ -1428,6 +1471,80 @@ export async function updateContract(contractId: string, payload: any) {
       .single();
       
     if (error) throw error;
+
+    // Tự động đồng bộ Đơn hàng (Order) cho phòng Vận Hành / Kho
+    try {
+      const newEvents = Array.isArray(payload.events) ? payload.events : (incomingNotes.events || []);
+      if (newEvents.length > 0) {
+        // Fetch existing orders for this contract
+        const { data: existingOrders } = await supabase
+          .from("orders")
+          .select("id, order_code, service_type")
+          .eq("contract_id", contractId);
+        
+        let existingOrdersArray = existingOrders || [];
+        
+        // Find the latest code to sequence locally for new orders
+        let latestCodeObj = await supabase
+          .from("orders")
+          .select("order_code")
+          .ilike("order_code", "ORDE-%")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+          
+        let nextNumber = 1;
+        if (latestCodeObj.data?.order_code) {
+          const parts = latestCodeObj.data.order_code.split("-");
+          if (parts.length === 2 && !isNaN(parseInt(parts[1], 10))) {
+            nextNumber = parseInt(parts[1], 10) + 1;
+          }
+        }
+
+        const ordersToInsert: any[] = [];
+        
+        for (const ev of newEvents) {
+          // Attempt to find an existing order for this event by matching the event name
+          const matchedOrder = existingOrdersArray.find((o: any) => o.service_type === ev.name);
+          
+          if (matchedOrder) {
+            // Update existing without overwriting notes
+            await supabase.from("orders").update({
+              event_date: ev.event_date || null,
+              return_date: ev.return_date || null
+            }).eq("id", matchedOrder.id);
+            // Remove from array so we know what's left (optional: to handle deletions later)
+            existingOrdersArray = existingOrdersArray.filter((o: any) => o.id !== matchedOrder.id);
+          } else {
+            // Insert new
+            const newCode = `ORDE-${String(nextNumber).padStart(6, '0')}`;
+            nextNumber++;
+            
+            ordersToInsert.push({
+              order_code: newCode,
+              contract_id: contractId,
+              service_type: ev.name || "Dịch vụ cưới",
+              event_date: ev.event_date || null,
+              return_date: ev.return_date || null,
+              completion_status: "PENDING",
+              notes: `Đơn hàng tự động sinh từ Hợp đồng ${current.contract_code} cho sự kiện: ${ev.name}\nNgày giao: ${ev.pickup_date || "Không có"}\nĐịa điểm: ${ev.location || "Không có"}`,
+              checklist: [],
+            });
+          }
+        }
+        
+        if (ordersToInsert.length > 0) {
+          await supabase.from("orders").insert(ordersToInsert);
+        }
+        
+        // (Optional) Could delete leftover existingOrdersArray here if we want strict sync
+        // if (existingOrdersArray.length > 0) {
+        //   await supabase.from("orders").delete().in("id", existingOrdersArray.map(o => o.id));
+        // }
+      }
+    } catch (orderSyncErr) {
+      console.error("Automation Error (Order Sync):", orderSyncErr);
+    }
     revalidatePath("/dashboard/contracts");
     revalidatePath(`/dashboard/contracts/${contractId}`);
     return { success: true, contractId };

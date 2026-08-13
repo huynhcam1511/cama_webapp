@@ -449,11 +449,11 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
   {/* Tiến Độ */}
   <td className="px-4 py-3">
-    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+    <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
       contract.contract_status === "COMPLETED" ? "bg-emerald-50 text-emerald-600" :
       contract.contract_status === "CANCELLED" ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
     }`}>
-      {contract.contract_status === "COMPLETED" ? "Hoàn Tất" : contract.contract_status === "CANCELLED" ? "Đã Hủy" : "Đang Thực Hiện"}
+      {contract.contract_status === "COMPLETED" ? "Hoàn Tất" : contract.contract_status === "CANCELLED" ? "Đã Hủy" : "Đang Có Hiệu Lực"}
     </span>
   </td>
 
