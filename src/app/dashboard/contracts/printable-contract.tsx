@@ -1,7 +1,7 @@
 "use client";
 
 import React, { forwardRef } from "react";
-
+import { Phone, MapPin } from "lucide-react";
 interface PrintableContractProps {
   data?: any;
   services?: any[];
@@ -68,7 +68,7 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
     return (
       <div 
         ref={ref} 
-        className={`${forceShow ? 'flex' : 'hidden'} print:block flex-col gap-8 print:gap-0 bg-slate-200 print:bg-white py-8 print:p-0 items-center min-h-screen contract-print-root`}
+        className={`${forceShow ? 'flex' : 'hidden'} print:block flex-col gap-0 bg-white p-0 items-center min-h-screen contract-print-root`}
       >
         <style type="text/css" dangerouslySetInnerHTML={{__html: `
           @media print {
@@ -81,28 +81,14 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
         <div 
           className="contract-print-document bg-white text-slate-900 w-full max-w-[210mm] min-h-[297mm] mx-auto shadow-2xl print:shadow-none relative box-border flex flex-col"
         >
-          {/* Keeping the fixed footer inside the printed document makes Chromium repeat it on every sheet. */}
-          <div className="contract-print-footer hidden print:flex print:px-[12mm] print:pb-[2mm] print:pt-[2mm] border-t border-slate-200 text-[10px] font-sans justify-between items-center text-slate-500">
-            <div className="space-y-0.5">
-              <p>Mã HĐ: <span className="font-medium text-slate-700">{contractCode}</span></p>
-              <p>Cập nhật lần cuối: <span className="text-slate-700">{lastUpdatedDate}</span></p>
-            </div>
-            <div className="text-center space-y-0.5">
-              <p>Ngày in: <span className="text-slate-700">{printedDate}</span></p>
-            </div>
-            <div>
-              <span className="mr-6">Nhân viên: <span className="font-medium text-slate-700">{saleStaff}</span></span>
-            </div>
-          </div>
           <div className="contract-print-content p-10 md:p-12 print:px-[12mm] print:pt-[4mm] print:pb-[18mm]">
             {/* Header Page 1 */}
-            <div className="flex justify-between items-start mb-2 border-b border-slate-900 pb-2">
-              <div className="w-[300px]">
-                <h1 className="text-4xl font-sans font-bold uppercase text-slate-900 m-0 leading-none tracking-wider">CAMA</h1>
-                <p className="text-[10px] font-sans text-slate-700 uppercase mt-1 mb-2 tracking-[0.3em]">Haute Couture</p>
-                <div className="text-[10px] font-sans text-slate-500 leading-relaxed">
-                  <p>Contact: 0983.144.444</p>
-                  <p className="whitespace-nowrap">Showroom: 33 Hoàng Văn Thụ, P.15, Q. Phú Nhuận, TP.HCM</p>
+            <div className="flex justify-between items-start mb-2 pb-2">
+              <div className="flex items-center gap-3">
+                <img src="/cama_logo_print.png?v=5" alt="CAMA Haute Couture" className="h-24 object-contain -ml-3" />
+                <div className="text-[10px] font-sans text-slate-500 leading-relaxed flex flex-col gap-1 border-l-2 border-slate-200 pl-3">
+                  <p className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-400" /> 0983.144.444</p>
+                  <p className="flex items-center gap-1.5 whitespace-nowrap"><MapPin className="w-3 h-3 text-slate-400" /> 33 Hoàng Văn Thụ, P.15, Q. Phú Nhuận, TP.HCM</p>
                 </div>
               </div>
               
@@ -115,6 +101,8 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
                 <p className="text-[12px] font-sans text-slate-800 italic mt-1">{contractDateStr}</p>
               </div>
             </div>
+
+            <hr className="w-3/4 mx-auto border-t border-slate-300 my-3" />
 
             <div className="text-center my-1">
               <h2 className="text-[22px] font-['Times_New_Roman',_Times,_serif] font-bold uppercase text-slate-900 tracking-wider mb-1">HỢP ĐỒNG DỊCH VỤ CƯỚI</h2>
@@ -176,10 +164,10 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
                 <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Tặng kèm / Phụ kiện:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.tang_kem || activeData?.tang_kem || activeData?.notesObj?.qua_tang || "..."}</span></div>
               </div>
               
-              {(activeData?.notesObj?.ghi_chu_lich_trinh || activeData?.ghi_chu_lich_trinh) && (
+              {(activeData?.notesObj?.userNotes || activeData?.userNotes) && (
                 <div className="mt-4 text-[13px] font-sans text-slate-700 italic border-l-[2px] border-slate-300 pl-4 py-1">
-                  <span className="font-medium text-slate-800 not-italic mr-2">Ghi chú:</span> 
-                  {activeData?.notesObj?.ghi_chu_lich_trinh || activeData?.ghi_chu_lich_trinh}
+                  <span className="font-medium text-slate-800 not-italic mr-2">Ghi chú riêng:</span> 
+                  <span className="whitespace-pre-wrap">{activeData?.notesObj?.userNotes || activeData?.userNotes}</span>
                 </div>
               )}
             </div>
@@ -192,23 +180,25 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               <table className="w-full table-fixed text-[13px] font-sans border-collapse mb-2">
                 <thead>
                   <tr className="border-b border-slate-400 text-slate-600 uppercase text-[11px]">
-                    <th className="py-1.5 px-1 text-left w-[21%] font-semibold border-r border-slate-200">Hạng mục</th>
-                    <th className="py-1.5 px-1 text-left w-[21%] font-semibold border-r border-slate-200">Sản phẩm / Chi tiết</th>
-                    <th className="py-1.5 px-1 text-left w-[21%] font-semibold border-r border-slate-200">Ghi chú</th>
+                    <th className="py-1.5 px-1 text-left w-[16%] font-semibold border-r border-slate-200">Sự kiện sử dụng</th>
+                    <th className="py-1.5 px-1 text-left w-[17%] font-semibold border-r border-slate-200">Hạng mục</th>
+                    <th className="py-1.5 px-1 text-left w-[18%] font-semibold border-r border-slate-200">Sản phẩm / Chi tiết</th>
+                    <th className="py-1.5 px-1 text-left w-[14%] font-semibold border-r border-slate-200">Ghi chú</th>
                     <th className="py-1.5 px-1 text-center w-[5%] font-semibold border-r border-slate-200">SL</th>
-                    <th className="py-1.5 px-1 text-right w-[15%] font-semibold border-r border-slate-200">Đơn giá</th>
-                    <th className="py-1.5 px-1 text-right w-[17%] font-semibold border-r border-slate-200">Thành tiền</th>
+                    <th className="py-1.5 px-2 text-right w-[14%] font-semibold border-r border-slate-200">Đơn giá</th>
+                    <th className="py-1.5 px-2 text-right w-[16%] font-semibold border-r border-slate-200">Thành tiền</th>
                   </tr>
                 </thead>
                 <tbody>
                   {printableServices.map((item: any, idx: number) => (
                     <tr key={idx} className="contract-product-row border-b border-slate-200 h-[2.8rem]">
+                      <td className="py-1.5 px-1 text-slate-800 text-[11px] align-top border-r border-slate-200 overflow-hidden"><div className="line-clamp-2 break-words leading-[1.35]">{Array.isArray(item.usage_events) && item.usage_events.length > 0 ? item.usage_events.join(", ") : "-"}</div></td>
                       <td className="py-1.5 px-1 text-slate-900 font-semibold align-top border-r border-slate-200 overflow-hidden"><div className="line-clamp-2 break-all leading-[1.35]">{item.category || item.item_name}</div></td>
                       <td className="py-1.5 px-1 text-slate-800 text-[12px] align-top border-r border-slate-200 overflow-hidden"><div className="line-clamp-2 break-all leading-[1.35]">{item.detail || item.item_name?.replace(`${item.category || ""} - `, "") || item.item_name || "-"}</div></td>
                       <td className="py-1.5 px-1 text-slate-700 text-[12px] italic align-top border-r border-slate-200 overflow-hidden"><div className="line-clamp-2 break-all leading-[1.35]">{item.notes || "-"}</div></td>
                       <td className="py-1.5 px-1 text-center text-slate-900 align-top font-medium border-r border-slate-200">{item.quantity}</td>
-                      <td className="py-1.5 px-0.5 text-right text-slate-700 font-mono text-[13px] align-top border-r border-slate-200 whitespace-nowrap overflow-hidden">{(item.price || item.unit_price) > 0 ? formatCurrency(item.price || item.unit_price) : "-"}</td>
-                      <td className="py-1.5 px-0.5 text-right font-semibold text-[13px] text-slate-900 font-mono align-top whitespace-nowrap overflow-hidden border-r border-slate-200">{formatCurrency((item.price || item.unit_price) * item.quantity)}</td>
+                      <td className="py-1.5 px-2 text-right text-slate-700 font-mono text-[13px] align-top border-r border-slate-200 whitespace-nowrap overflow-hidden">{(item.price || item.unit_price) > 0 ? formatCurrency(item.price || item.unit_price) : "-"}</td>
+                      <td className="py-1.5 px-2 text-right font-semibold text-[13px] text-slate-900 font-mono align-top whitespace-nowrap overflow-hidden border-r border-slate-200">{formatCurrency((item.price || item.unit_price) * item.quantity)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -225,16 +215,18 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
                     <span className="text-slate-600">Đã Thanh Toán:</span>
                     <span className="font-medium font-mono text-slate-800">{formatCurrency(paidAmountWithoutDeposit)}</span>
                   </div>
-                  <div className="flex justify-between py-1.5 mt-2 bg-slate-50 px-3 border border-slate-200 rounded">
-                    <span className="text-slate-900 uppercase font-bold text-[13px] flex items-center tracking-wide">Cần Thanh Toán:</span>
-                    <span className="font-bold text-[16px] font-mono text-slate-900">{formatCurrency(Math.max(0, totalAmount - paidAmountWithoutDeposit))}</span>
-                  </div>
+                  {totalAmount - paidAmountWithoutDeposit > 0 && (
+                    <div className="flex justify-between py-2">
+                      <span className="text-slate-900 uppercase font-bold text-[13px] flex items-center tracking-wide">Cần Thanh Toán:</span>
+                      <span className="font-bold text-[15px] font-mono text-slate-900">{formatCurrency(Math.max(0, totalAmount - paidAmountWithoutDeposit))}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
             
             {startPaymentsOnNewPage && (
-              <div className="contract-page-continuation flex justify-between items-center mb-3 border-b-[1.5px] border-slate-900 pb-3 pt-1">
+              <div className="contract-page-continuation flex justify-between items-center mb-3 border-b border-slate-300 pb-2 pt-1">
                 <div className="text-[14px] font-sans font-bold text-slate-900 uppercase tracking-widest">CAMA Haute Couture</div>
                 <div className="text-[12px] font-sans text-slate-800 tracking-wider">HỢP ĐỒNG SỐ <span className="font-bold">{contractCode}</span> • TRANG 02</div>
               </div>
@@ -339,41 +331,42 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
             {/* Section 6: Terms & Signatures */}
             <div className="contract-section mb-3">
               <h3 className="text-[13px] font-sans font-bold uppercase text-slate-900 mb-2 border-b border-slate-300 pb-1 tracking-wider">
-                VI. Điều khoản Chung
+                VI. Xin quý khách lưu ý
               </h3>
               <div className="text-[13px] font-sans text-slate-800 leading-[1.5] text-justify space-y-2.5">
-                {data?.notesObj?.userNotes ? (
-                  <div className="mb-2 pb-4 border-b border-slate-200">
-                    <p className="font-bold text-slate-900 uppercase text-[12px] mb-1.5 tracking-wide">Ghi chú riêng:</p>
-                    <p className="whitespace-pre-wrap font-medium italic text-slate-700">{data.notesObj.userNotes}</p>
-                  </div>
-                ) : null}
-                
+
                 <div className="flex items-start">
                   <span className="font-bold text-slate-900 w-6 shrink-0 mt-0.5">1.</span>
                   <p className="flex-1">
-                    <strong className="text-slate-900">Trách nhiệm Khách hàng:</strong> Cung cấp thông tin đầy đủ, chính xác. Thanh toán đúng tiến độ hợp đồng. Đến đúng giờ hẹn thử váy / chụp ảnh. Tuân thủ quy định bảo quản váy cưới/Vest của Studio; nếu xảy ra rách/hỏng do lỗi của Khách hàng, Khách hàng chịu trách nhiệm bồi thường theo giá trị niêm yết của Studio.
+                    Không hoàn cọc khi khách tự hủy hợp đồng dưới mọi hình thức.
                   </p>
                 </div>
 
                 <div className="flex items-start">
                   <span className="font-bold text-slate-900 w-6 shrink-0 mt-0.5">2.</span>
                   <p className="flex-1">
-                    <strong className="text-slate-900">Trách nhiệm CAMA (Studio):</strong> Đảm bảo thực hiện dịch vụ đúng chất lượng và tiến độ đã cam kết. Thông báo trước cho Khách hàng nếu có thay đổi về lịch trình hoặc nhân sự do trường hợp bất khả kháng.
+                    Váy bị dính rượu sâm banh, cháy, rách đền bù tùy theo mức độ thiệt hại của váy.
                   </p>
                 </div>
 
                 <div className="flex items-start">
                   <span className="font-bold text-slate-900 w-6 shrink-0 mt-0.5">3.</span>
                   <p className="flex-1">
-                    <strong className="text-slate-900">Quy định thanh toán:</strong> Khách hàng thanh toán đợt 1 (Đặt cọc) ngay khi ký hợp đồng để giữ lịch và chốt dịch vụ. Hợp đồng chỉ có hiệu lực kể từ thời điểm Studio nhận được tiền cọc. Khách hàng thanh toán số tiền còn lại vào ngày nhận sản phẩm hoặc ngày thực hiện dịch vụ (tùy theo thỏa thuận chi tiết tại Mục IV).
+                    Trả váy đúng ngày hẹn, quá ngày cộng thêm 50% phí trên giá váy.
                   </p>
                 </div>
 
                 <div className="flex items-start">
                   <span className="font-bold text-slate-900 w-6 shrink-0 mt-0.5">4.</span>
                   <p className="flex-1">
-                    <strong className="text-slate-900">Hủy/Dời lịch:</strong> Trong mọi trường hợp Khách hàng đơn phương hủy hợp đồng, số tiền cọc sẽ không được hoàn lại. Nếu Khách hàng có nhu cầu dời lịch, cần thông báo bằng văn bản (hoặc tin nhắn) cho Studio ít nhất 07 ngày làm việc (việc dời lịch phụ thuộc vào lịch trống thực tế của Studio).
+                    Quý khách thanh toán hợp đồng trước ngày cưới.
+                  </p>
+                </div>
+
+                <div className="flex items-start">
+                  <span className="font-bold text-slate-900 w-6 shrink-0 mt-0.5">5.</span>
+                  <p className="flex-1">
+                    Khi lấy váy mang theo giấy tờ xe hoặc bằng lái xe.
                   </p>
                 </div>
 
@@ -395,6 +388,19 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               </div>
             </div>
           </div>
+          {/* Keeping the fixed footer inside the printed document makes Chromium repeat it on every sheet. */}
+          <div className="contract-print-footer hidden print:flex print:px-[12mm] print:pb-[2mm] border-t border-slate-200 text-[10px] font-sans justify-between items-end text-slate-500">
+            <div className="space-y-0.5">
+              <p>Mã HĐ: <span className="font-medium text-slate-700">{contractCode}</span></p>
+              <p>Cập nhật lần cuối: <span className="text-slate-700">{lastUpdatedDate}</span></p>
+            </div>
+            <div className="text-center space-y-0.5">
+              <p>Ngày in: <span className="text-slate-700">{printedDate}</span></p>
+            </div>
+            <div>
+              <span className="mr-6">Nhân viên: <span className="font-medium text-slate-700">{saleStaff}</span></span>
+            </div>
+          </div>
           <div className="contract-screen-footer print:hidden mt-auto px-10 md:px-12 pb-5 pt-3 border-t border-slate-200 text-[10px] font-sans flex justify-between items-center text-slate-500">
             <div className="space-y-0.5">
               <p>Mã HĐ: <span className="font-medium text-slate-700">{contractCode}</span></p>
@@ -409,9 +415,14 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
         <style dangerouslySetInnerHTML={{
           __html: `
           @media print {
-            @page { margin: 10mm 12mm 16mm; size: A4 portrait; }
-            html, body { width: auto; margin: 0; padding: 0; }
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
+            @page { margin: 0; size: A4 portrait; background: white; }
+            html, body { width: 210mm; margin: 0 !important; padding: 0 !important; background: white !important; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body::before,
+            body::after {
+              display: none !important;
+              content: none !important;
+            }
             .contract-print-root {
               position: static !important;
               z-index: 2147483647 !important;
@@ -422,19 +433,40 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               padding: 0 !important;
               overflow: visible !important;
               background: white !important;
+              background-color: white !important;
+            }
+            .contract-print-root::before {
+              content: "" !important;
+              display: block !important;
+              position: fixed !important;
+              inset: 0 !important;
+              width: 210mm !important;
+              height: 297mm !important;
+              background: white !important;
+              background-color: white !important;
+              z-index: 0 !important;
+              pointer-events: none !important;
             }
             .contract-print-document {
-              width: auto !important;
+              position: relative !important;
+              z-index: 1 !important;
+              width: 210mm !important;
               max-width: none !important;
               min-height: 0 !important;
               margin: 0 !important;
-              padding: 0 !important;
+              padding: 8mm 12mm 10mm !important;
               overflow: visible !important;
               box-shadow: none !important;
+              background: white !important;
+              background-color: white !important;
+              -webkit-box-decoration-break: clone;
+              box-decoration-break: clone;
             }
             .contract-print-content {
               margin: 0 !important;
               padding: 0 !important;
+              background: white !important;
+              background-color: white !important;
             }
             .contract-screen-footer {
               display: none !important;
@@ -452,6 +484,7 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               page-break-before: always;
               break-after: avoid-page;
               page-break-after: avoid;
+              padding-top: 8mm !important;
             }
             .contract-section table { break-inside: auto; page-break-inside: auto; }
             .contract-section thead { display: table-header-group; }
@@ -465,16 +498,12 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               page-break-after: avoid;
             }
             .contract-product-row {
-              height: 10mm !important;
-              min-height: 10mm !important;
+              height: 8mm !important;
+              min-height: 8mm !important;
             }
             .contract-section tr[class*="h-[2.5rem]"] { height: 7mm !important; }
             .contract-section th,
             .contract-section td { padding-top: 0.6mm !important; padding-bottom: 0.6mm !important; }
-            .contract-signatures {
-              break-inside: avoid;
-              page-break-inside: avoid;
-            }
             .contract-print-footer {
               position: fixed !important;
               left: 0 !important;
@@ -485,6 +514,10 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               padding-left: 0 !important;
               padding-right: 0 !important;
               background: white !important;
+              break-inside: avoid;
+              display: flex !important;
+            }
+            .contract-signatures {
               break-inside: avoid;
               page-break-inside: avoid;
             }

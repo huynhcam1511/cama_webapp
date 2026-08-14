@@ -67,7 +67,7 @@ export async function getCustomerJourneyById(id: string) {
   const { data: contract, error } = await supabase
     .from("contracts")
     .select(`
-      id, contract_code, status, notes, journey_data,
+      id, contract_code, status, notes, journey_data, created_at,
       customers (id, bride_name, groom_name, phone)
     `)
     .eq("id", id)
@@ -87,7 +87,38 @@ export async function updateCustomerJourneyData(id: string, journey_data: any, n
 
   const updatePayload: any = { journey_data };
   if (notes !== null) {
-    updatePayload.notes = notes;
+    // contracts.notes is shared metadata owned by several modules. Customer
+    // Journey may update userNotes, but must never replace the whole document.
+    const { data: currentContract, error: currentContractError } = await supabase
+      .from("contracts")
+      .select("notes")
+      .eq("id", id)
+      .single();
+
+    if (currentContractError || !currentContract) {
+      console.error("Error loading contract metadata before journey update:", currentContractError);
+      return { error: currentContractError?.message || "Không tìm thấy hợp đồng" };
+    }
+
+    let currentNotes: Record<string, any> = {};
+    let incomingNotes: Record<string, any> = {};
+    try {
+      currentNotes = typeof currentContract.notes === "string"
+        ? JSON.parse(currentContract.notes || "{}")
+        : (currentContract.notes || {});
+    } catch {
+      currentNotes = { userNotes: currentContract.notes || "" };
+    }
+    try {
+      incomingNotes = typeof notes === "string" ? JSON.parse(notes || "{}") : (notes || {});
+    } catch {
+      incomingNotes = { userNotes: notes };
+    }
+
+    updatePayload.notes = JSON.stringify({
+      ...currentNotes,
+      userNotes: incomingNotes.userNotes ?? currentNotes.userNotes ?? "",
+    });
   }
 
   const { error } = await supabase

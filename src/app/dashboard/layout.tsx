@@ -13,12 +13,18 @@ import QRScanner from "@/components/qr-scanner";
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [isPinned, setIsPinned] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isCollapsed = !isPinned && !isHovered;
   const [userProfile, setUserProfile] = useState<{name: string, email: string, initial: string} | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { hasPermission, isLoading } = usePermissions();
+
+  useEffect(() => {
+    // Close mobile menu on route change
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -84,20 +90,30 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen print:h-auto bg-slate-50 text-slate-900">
-      {/* Sidebar Desktop (Clean Light Blue / White SaaS Sidebar) */}
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-slate-900/50 z-40" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Desktop & Mobile */}
       <aside
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`hidden md:flex flex-col bg-white border-r border-slate-200 sticky top-0 h-screen z-40 transition-all duration-300 print:hidden ${
-          isCollapsed ? "w-20" : "w-64"
+        className={`${
+          isMobileMenuOpen ? "flex fixed inset-y-0 left-0 z-50 shadow-2xl h-screen" : "hidden md:flex md:sticky md:top-0 md:h-screen z-40"
+        } flex-col bg-white border-r border-slate-200 transition-all duration-300 print:hidden ${
+          !isMobileMenuOpen && isCollapsed ? "w-20" : "w-64"
         }`}
       >
         {/* Brand Header */}
-        <div className="h-16 flex items-center border-b border-slate-200 shrink-0 relative px-4 overflow-hidden">
+        <div className="h-16 flex items-center justify-between border-b border-slate-200 shrink-0 relative px-4 overflow-hidden">
           <Link 
             href="/dashboard" 
             className={`flex items-center gap-3 overflow-hidden group whitespace-nowrap transition-all duration-300 ${
-              isCollapsed ? 'opacity-0 w-0 -translate-x-4' : 'opacity-100 w-full translate-x-0'
+              !isMobileMenuOpen && isCollapsed ? 'opacity-0 w-0 -translate-x-4' : 'opacity-100 w-full translate-x-0'
             }`}
           >
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
@@ -116,6 +132,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           >
             <icons.Menu className="w-5 h-5" />
           </button>
+          {/* Close button for mobile menu */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="md:hidden p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg shrink-0"
+          >
+            <icons.X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Navigation Items */}
@@ -130,7 +153,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             return (
               <div key={groupCode} className="space-y-1 mb-6">
                 <div className={`px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 whitespace-nowrap transition-all duration-300 ${
-                  isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto'
+                  !isMobileMenuOpen && isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto'
                 }`}>
                   {GROUP_LABELS[groupCode]}
                 </div>
@@ -150,8 +173,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       }`}
                       title={item.label}
                     >
-                      <Icon className={`w-5 h-5 shrink-0 transition-colors ${active ? "text-blue-600" : isCollapsed ? "text-slate-500" : "text-slate-400"}`} />
-                      <span className={`whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 -translate-x-4' : 'opacity-100 w-auto translate-x-0 ml-3'}`}>
+                      <Icon className={`w-5 h-5 shrink-0 transition-colors ${active ? "text-blue-600" : !isMobileMenuOpen && isCollapsed ? "text-slate-500" : "text-slate-400"}`} />
+                      <span className={`whitespace-nowrap transition-all duration-300 ${!isMobileMenuOpen && isCollapsed ? 'opacity-0 w-0 -translate-x-4' : 'opacity-100 w-auto translate-x-0 ml-3'}`}>
                         {item.label}
                       </span>
                     </Link>
@@ -170,7 +193,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             title="Đăng xuất"
           >
             <icons.LogOut className="w-5 h-5 shrink-0" />
-            <span className={`whitespace-nowrap font-medium text-sm transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 -translate-x-4' : 'opacity-100 w-auto translate-x-0 ml-3'}`}>
+            <span className={`whitespace-nowrap font-medium text-sm transition-all duration-300 ${!isMobileMenuOpen && isCollapsed ? 'opacity-0 w-0 -translate-x-4' : 'opacity-100 w-auto translate-x-0 ml-3'}`}>
               Đăng xuất
             </span>
           </button>
@@ -180,15 +203,35 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {/* Main Right Container */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden print:overflow-visible">
         {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 print:hidden">
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => router.back()}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
-              title="Quay lại"
-            >
-              <icons.ArrowLeft className="w-5 h-5" />
-            </button>
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-2 sm:px-6 lg:px-8 shrink-0 print:hidden">
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Logic: Root page shows Burger Menu (on Mobile). Detail page shows Back button. */}
+            {(() => {
+              const pathSegments = pathname.split('/').filter(Boolean);
+              // Path /dashboard/[module] has length 2
+              const isRootPage = pathSegments.length <= 2;
+              return (
+                <>
+                  {isRootPage ? (
+                    <button 
+                      onClick={() => setIsMobileMenuOpen(true)}
+                      className="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors shrink-0"
+                      title="Menu"
+                    >
+                      <icons.Menu className="w-5 h-5" />
+                    </button>
+                  ) : (
+                    <Link 
+                      href={"/" + pathSegments.slice(0, -1).join("/")}
+                      className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors shrink-0"
+                      title="Quay lại"
+                    >
+                      <icons.ArrowLeft className="w-5 h-5" />
+                    </Link>
+                  )}
+                </>
+              );
+            })()}
             <div className="hidden sm:flex items-center gap-2 text-sm text-slate-500 ml-2">
               {breadcrumbs.map((crumb, idx) => (
                 <span key={idx} className="flex items-center gap-2">
@@ -198,6 +241,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </span>
                 </span>
               ))}
+            </div>
+            {/* Mobile Title - Size reduced from text-lg font-serif to text-base */}
+            <div className="sm:hidden font-bold text-slate-800 text-base capitalize truncate max-w-[150px]">
+              {breadcrumbs[breadcrumbs.length - 1]}
             </div>
           </div>
 

@@ -741,10 +741,10 @@ export default function ContractForm({
                 {/* Phần Ghi chú chung tự động co giãn */}
                 <div className="flex flex-col flex-1 min-h-[30px] mt-2">
                   <label className="block text-[10px] font-semibold text-slate-500 mb-1 flex items-center gap-1">
-                    <FileText className="w-3 h-3 text-slate-400" /> Ghi chú lịch trình/In ấn
+                    <FileText className="w-3 h-3 text-slate-400" /> Ghi chú (Dành cho Sale & Khách)
                   </label>
                   <textarea 
-                    placeholder="Ghi chú thêm về hợp đồng, yêu cầu đặc biệt của khách hàng..."
+                    placeholder="Ví dụ: phí phim trường khách trả hay mình trả, phí đi xa, phí take care..."
                     value={generalNotes}
                     onChange={(e) => setGeneralNotes(e.target.value)}
                     className="w-full flex-1 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 p-2 text-[11px] text-slate-700 outline-none resize-none"

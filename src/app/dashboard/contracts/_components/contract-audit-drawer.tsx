@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X, Clock, User, Activity, FileText } from "lucide-react";
-import { getContractActivities } from "../actions";
+import { getContractActivities, restoreContractVersion } from "../actions";
 
 interface ContractAuditDrawerProps {
   contractId: string;
@@ -13,6 +13,8 @@ interface ContractAuditDrawerProps {
 export function ContractAuditDrawer({ contractId, isOpen, onClose }: ContractAuditDrawerProps) {
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [restoringId, setRestoringId] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (isOpen && contractId) {
@@ -20,6 +22,11 @@ export function ContractAuditDrawer({ contractId, isOpen, onClose }: ContractAud
       getContractActivities(contractId)
         .then((data) => {
           setActivities(data);
+          setErrorMessage("");
+        })
+        .catch(() => {
+          setActivities([]);
+          setErrorMessage("Lịch sử phiên bản chỉ dành cho chủ sở hữu hệ thống.");
         })
         .finally(() => {
           setLoading(false);
@@ -28,6 +35,19 @@ export function ContractAuditDrawer({ contractId, isOpen, onClose }: ContractAud
   }, [isOpen, contractId]);
 
   if (!isOpen) return null;
+
+  const handleRestore = async (versionId: number) => {
+    if (!window.confirm(`Phục hồi hợp đồng về phiên bản #${versionId}? Trạng thái hiện tại sẽ được lưu thành một phiên bản mới trước khi phục hồi.`)) return;
+    setRestoringId(versionId);
+    setErrorMessage("");
+    const result = await restoreContractVersion(contractId, versionId);
+    setRestoringId(null);
+    if (!result.success) {
+      setErrorMessage(result.error || "Không thể phục hồi phiên bản.");
+      return;
+    }
+    window.location.reload();
+  };
 
   return (
     <>
@@ -52,6 +72,9 @@ export function ContractAuditDrawer({ contractId, isOpen, onClose }: ContractAud
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+          {errorMessage && (
+            <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">{errorMessage}</div>
+          )}
           {loading ? (
             <div className="flex items-center justify-center h-32">
               <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
@@ -79,6 +102,24 @@ export function ContractAuditDrawer({ contractId, isOpen, onClose }: ContractAud
                   </div>
 
                   <div className="flex flex-col gap-2 pl-8">
+                    {act.is_version && (
+                      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">Phiên bản #{act.version_id}</div>
+                          <div className="text-[10px] uppercase tracking-wide text-slate-400">{act.action_type} • {act.source_module}</div>
+                        </div>
+                        {act.action_type !== "DELETE" && (
+                          <button
+                            type="button"
+                            disabled={restoringId !== null}
+                            onClick={() => handleRestore(Number(act.version_id))}
+                            className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+                          >
+                            {restoringId === Number(act.version_id) ? "Đang phục hồi..." : "Phục hồi bản này"}
+                          </button>
+                        )}
+                      </div>
+                    )}
                     {(act.content || "").split("|").map((change: string, idx: number) => {
                       let text = change.trim();
                       if (!text) return null;

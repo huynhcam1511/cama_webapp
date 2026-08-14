@@ -32,6 +32,16 @@ Mỗi khi người dùng tạo task mới, hãy đóng vai Giám đốc, gọi t
    - **Ví dụ**: Khách hàng (`CUST-000001`), Hợp đồng (`CONT-000001`), Đơn hàng (`ORDE-000001`).
    - **Tuyệt đối KHÔNG**: Không tự tạo mã bằng `Date.now()`, `Math.random()`, hoặc mã định dạng tuỳ hứng (như `KH-1234`, `CAMA-2026-0001`) để tránh lộn xộn. Khi tạo module mới có mã số, luôn tuân thủ chuẩn này.
 
+## QUY TẮC BẤT BIẾN VỀ AN TOÀN DỮ LIỆU (DATA INTEGRITY):
+5. **KHÔNG MODULE NÀO ĐƯỢC GHI ĐÈ DỮ LIỆU DÙNG CHUNG**: Các trường dùng chung như `contracts.notes`, `journey_data`, dịch vụ, lịch trình và thanh toán phải được đọc–merge–ghi theo đúng namespace hoặc cập nhật cột/bảng riêng. Tuyệt đối không thay toàn bộ JSON chỉ để sửa một thuộc tính.
+6. **MIGRATION PHẢI CÓ BACKUP VÀ DRY-RUN**: Trước mọi migration dữ liệu production phải xuất snapshot có thời gian, thống kê số bản ghi trước/sau, chạy dry-run, kiểm tra khóa ngoại và chuẩn bị rollback. Migration đổi mã chỉ được sửa cột mã, không được tái tạo bản ghi hay làm thay đổi `id`.
+7. **MỌI GHI DỮ LIỆU QUAN TRỌNG PHẢI CÓ VERSION**: Hợp đồng, dịch vụ, sự kiện, thanh toán, cọc và hành trình khách hàng phải lưu actor, thời điểm, `old_data`, `new_data` trong audit/version store bất biến. UI “Lịch sử chỉnh sửa” không được coi là hoàn thành nếu database chưa có bảng và trigger/transaction ghi lịch sử thực tế.
+8. **KHÔNG XÓA-CHÈN LẠI MÀ KHÔNG CÓ GIAO DỊCH**: Đồng bộ bảng con phải chạy trong transaction, lưu snapshot trước thay đổi và rollback toàn bộ nếu bất kỳ bước nào lỗi. Không được `delete()` trước rồi hy vọng `insert()` thành công.
+9. **KIỂM TRA LIÊN MODULE TRƯỚC KHI GHI**: Mọi thay đổi Hợp đồng phải rà soát Sales, Customer Journey, Orders/Vận hành, Kho và Payments/Kế toán. Module con chỉ được sửa phần dữ liệu mình sở hữu.
+10. **KHÔNG ĐƯỢC TỰ PHỤC HỒI TỪ DỮ LIỆU SUY ĐOÁN**: Khi có mất mát, ưu tiên snapshot/audit/bảng liên quan. Dữ liệu suy ra từ ảnh hoặc module khác phải được trình bày để người dùng duyệt trước khi ghi production.
+
+Chi tiết kiến trúc và quy trình phục hồi nằm tại `docs/DATA_INTEGRITY_ARCHITECTURE.md`.
+
 # MARKETING MODULE RULES 
 1. **ECOSYSTEM CHANNELS**: CAMA has 7 designated marketing channels: 
    - Facebook Fanpages: CAMA Haute Couture (Váy Bridal), CAMA Wedding (Studio/Chụp ảnh), CAMA Suit (Suit/Vest nam), CAMA Academy (Đào tạo). 

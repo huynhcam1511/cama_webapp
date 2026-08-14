@@ -788,10 +788,10 @@ export default function EditContractDialog({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Ghi Chú Hợp Đồng Nội Bộ</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Ghi chú dành cho Sale</label>
                 <textarea
                   rows={3}
-                  placeholder="Ghi chú yêu cầu đặc biệt của khách hàng..."
+                  placeholder="Ghi chú nội bộ để Sale theo dõi hợp đồng..."
                   value={contractNotes}
                   onChange={(e) => setContractNotes(e.target.value)}
                   className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-xs outline-none resize-none"

@@ -39,11 +39,21 @@ export default function OrderDetailClient({ order }: { order: Order }) {
     });
   }, [contract, eventName]);
 
-  const garments = contract?.garments || [];
+  const garments = useMemo(() => {
+    return (contract?.garments || []).filter((g: any) => {
+      if (g.usage_events && Array.isArray(g.usage_events) && g.usage_events.length > 0) {
+        return g.usage_events.includes(eventName);
+      }
+      if (g.event_type && g.event_type === eventName) {
+        return true;
+      }
+      return true; // Fallback if no event specified
+    });
+  }, [contract, eventName]);
 
   const eventDetails = useMemo(() => {
     if (!contract?.event_schedules) return {};
-    return contract.event_schedules.find((e: any) => e.event_name === eventName) || {};
+    return contract.event_schedules.find((e: any) => e.name === eventName) || {};
   }, [contract, eventName]);
 
   const [checklist, setChecklist] = useState<any[]>(() => {
@@ -51,35 +61,12 @@ export default function OrderDetailClient({ order }: { order: Order }) {
       return order.checklist;
     }
     
-    // Phát triển Phân hoá Checklist theo Phân Loại Đơn Hàng
-    const hasVay = items.some((i: any) => i.category?.toLowerCase().includes("váy")) || garments.some((g: any) => g.product_name?.toLowerCase().includes("váy"));
-    const hasVest = items.some((i: any) => i.category?.toLowerCase().includes("vest")) || garments.some((g: any) => g.product_name?.toLowerCase().includes("vest"));
-    
     const dynamicChecklist = [];
-    dynamicChecklist.push({ task: "Liên hệ xếp lịch thử đồ", category: "Thử đồ", done: false });
-    dynamicChecklist.push({ task: "Lấy số đo & Ghi chú chỉnh sửa", category: "Thử đồ", done: false });
-    
-    if (hasVay) {
-      dynamicChecklist.push({ task: "Đính thêm đá/hạt (nếu cần)", category: "Chỉnh sửa Váy", done: false });
-      dynamicChecklist.push({ task: "Chuẩn bị độn ngực", category: "Chỉnh sửa Váy", done: false });
-      dynamicChecklist.push({ task: "Hấp váy phẳng phiu", category: "Vệ sinh Váy", done: false });
-      dynamicChecklist.push({ task: "Đóng gói phụ kiện (voan, lúp, tùng)", category: "Đóng gói", done: false });
-    }
-    
-    if (hasVest) {
-      dynamicChecklist.push({ task: "Bóp/Nới eo vest theo số đo", category: "Chỉnh sửa Vest", done: false });
-      dynamicChecklist.push({ task: "Là ủi li quần", category: "Vệ sinh Vest", done: false });
-      dynamicChecklist.push({ task: "Chuẩn bị nơ/cavat/khăn cài", category: "Đóng gói", done: false });
-    }
-    
-    if (!hasVay && !hasVest) {
-      dynamicChecklist.push({ task: "Chỉnh sửa trang phục theo số đo", category: "Chỉnh sửa", done: false });
-      dynamicChecklist.push({ task: "Vệ sinh, ủi láng trước khi giao", category: "Vệ sinh", done: false });
-      dynamicChecklist.push({ task: "Đóng gói phụ kiện", category: "Đóng gói", done: false });
-    }
-
-    dynamicChecklist.push({ task: "Khách xác nhận nhận đồ", category: "Giao nhận", done: false });
-    dynamicChecklist.push({ task: "Kiểm tra đồ lúc trả & thu hồi", category: "Thu hồi", done: false });
+    dynamicChecklist.push({ task: "Liên hệ xếp lịch Thử đồ", category: "Thử đồ", done: false });
+    dynamicChecklist.push({ task: "Chỉnh sửa trang phục & Phụ kiện", category: "Chỉnh sửa", done: false });
+    dynamicChecklist.push({ task: "Vệ sinh, là ủi & Đóng gói", category: "Đóng gói", done: false });
+    dynamicChecklist.push({ task: "Bàn giao trang phục cho khách", category: "Giao nhận", done: false });
+    dynamicChecklist.push({ task: "Kiểm tra tình trạng lúc thu hồi", category: "Thu hồi", done: false });
 
     return dynamicChecklist;
   });
@@ -131,8 +118,27 @@ export default function OrderDetailClient({ order }: { order: Order }) {
       } catch (e) {
       }
     }
+    
+    // Filter out system log
+    text = text.replace(/Đơn hàng tự động sinh từ Hợp đồng \S+\n?/g, '');
+    text = text.replace(/cho sự kiện: .*\n?/g, '');
+    text = text.replace(/Ngày giao: .*\n?/g, '');
+    text = text.replace(/Địa điểm: .*\n?/g, '');
+    text = text.trim();
+
+    // Fallback to contract notes if order text is empty
+    if (!text && contract?.notes) {
+      let contractNotesText = contract.notes;
+      if (contract.notes.trim().startsWith("{")) {
+        try {
+          contractNotesText = JSON.parse(contract.notes).text || "";
+        } catch (e) {}
+      }
+      text = contractNotesText;
+    }
+    
     return { notesText: text, notesImages: images };
-  }, [currentOrder.notes]);
+  }, [currentOrder.notes, contract?.notes]);
 
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [tempNotes, setTempNotes] = useState("");
@@ -540,6 +546,12 @@ export default function OrderDetailClient({ order }: { order: Order }) {
       isSavingChecklist={isSavingChecklist}
       uploadingImageId={uploadingImageId}
       parsedNotes={parsedNotes}
+      isEditingNotes={isEditingNotes}
+      setIsEditingNotes={setIsEditingNotes}
+      tempNotes={tempNotes}
+      setTempNotes={setTempNotes}
+      handleSaveNotes={handleSaveNotes}
+      isSavingNotes={isSavingNotes}
     />
     </>
   );

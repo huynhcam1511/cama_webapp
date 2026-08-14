@@ -1,5 +1,5 @@
-import { createAdminClient } from "@/utils/supabase/server";
-import { requirePermission } from "@/utils/permissions";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requirePermission } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import CreateOrderClient from "./create-order-client";
 

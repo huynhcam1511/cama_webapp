@@ -163,14 +163,27 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
     return null;
   }
   
-  if (data?.contract?.notes) {
-    try {
-      const meta = typeof data.contract.notes === 'string' && data.contract.notes.startsWith('{') 
-        ? JSON.parse(data.contract.notes) 
-        : {};
-      data.contract.items = meta.items || [];
-      data.contract.garments = meta.garments || [];
-    } catch (e) {}
+  if (data?.contract) {
+    let items = Array.isArray(data.contract.services) ? data.contract.services : [];
+    let garments = Array.isArray(data.contract.garments) ? data.contract.garments : [];
+    
+    if (data.contract.notes) {
+      try {
+        const meta = typeof data.contract.notes === 'string' && data.contract.notes.startsWith('{') 
+          ? JSON.parse(data.contract.notes) 
+          : {};
+        
+        items = (meta.items && meta.items.length > 0) ? meta.items : items;
+        garments = (meta.garments && meta.garments.length > 0) ? meta.garments : garments;
+        
+        if (meta.events) {
+          data.contract.event_schedules = meta.events;
+        }
+      } catch (e) {}
+    }
+    
+    data.contract.items = items;
+    data.contract.garments = garments;
   }
   
   return data as any;

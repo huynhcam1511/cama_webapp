@@ -303,8 +303,8 @@ function normalizeContract(row: any): Contract {
     customers: row.customers,
     contract_date: meta.contract_date || row.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
     branch: meta.branch || "CAMA Haute Couture",
-    assigned_staff_name: meta.assigned_staff_name || "Lễ Tân Studio",
-    assigned_staff_names: meta.assigned_staff_names || (meta.assigned_staff_name ? [meta.assigned_staff_name] : ["Lễ Tân Studio"]),
+    assigned_staff_name: meta.assigned_staff_name || "",
+    assigned_staff_names: meta.assigned_staff_names || (meta.assigned_staff_name ? [meta.assigned_staff_name] : []),
     created_by_name: meta.created_by_name || "Admin",
     updated_by_name: meta.updated_by_name || "Admin",
     subtotal_amount: meta.subtotal_amount || calculatedSubtotal,
@@ -383,7 +383,7 @@ function normalizeContract(row: any): Contract {
         file_name: "Anh_Hop_Dong_Giay_0012492.jpg",
         file_url: "https://images.unsplash.com/photo-1450133064473-71024230f91b?w=800",
         file_type: "PAPER_CONTRACT_IMAGE",
-        uploaded_by: "Lễ Tân Studio",
+        uploaded_by: "Admin",
         created_at: row.created_at || new Date().toISOString(),
         notes: "Ảnh chụp bản hợp đồng giấy có chữ ký 2 bên",
       },
@@ -505,7 +505,36 @@ export async function getContractById(id: string): Promise<Contract | null> {
 }
 
 export async function getContractActivities(contractId: string) {
+  // Version snapshots contain complete customer, payment and contract data.
+  // Access is intentionally restricted to the project owner account.
+  const authClient = createClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (user?.email?.toLowerCase() !== "huynhkiencam151102@gmail.com") {
+    throw new Error("VERSION_HISTORY_OWNER_ONLY");
+  }
   const supabase = createAdminClient();
+  const { data: versions, error: versionError } = await supabase
+    .from("contract_versions")
+    .select("id, contract_id, action_type, actor_name, source_module, change_summary, old_data, new_data, restored_from_version_id, created_at")
+    .eq("contract_id", contractId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
+
+  if (!versionError && versions && versions.length > 0) {
+    return versions.map((version: any) => ({
+      ...version,
+      version_id: version.id,
+      is_version: true,
+      content: version.change_summary || (
+        version.action_type === "BASELINE" ? "Bản gốc khi kích hoạt lịch sử phiên bản" :
+        version.action_type === "RESTORE" ? `Phục hồi từ phiên bản #${version.restored_from_version_id}` :
+        version.action_type === "INSERT" ? "Tạo hợp đồng" :
+        version.action_type === "DELETE" ? "Xóa hợp đồng" :
+        "Cập nhật hợp đồng"
+      ),
+    }));
+  }
+
   const { data, error } = await supabase
     .from("contract_activities")
     .select("*")
@@ -522,6 +551,48 @@ export async function getContractActivities(contractId: string) {
     return [];
   }
   return data;
+}
+
+export async function restoreContractVersion(contractId: string, versionId: number) {
+  try {
+    const supabase = createAdminClient();
+    const authClient = createClient();
+    const { data: { user } } = await authClient.auth.getUser();
+    if (user?.email?.toLowerCase() !== "huynhkiencam151102@gmail.com") {
+      return { success: false, error: "Chỉ chủ sở hữu hệ thống mới được phục hồi phiên bản." };
+    }
+    const { data: actorProfile } = user
+      ? await supabase.from("users").select("full_name, email").eq("id", user.id).maybeSingle()
+      : { data: null } as any;
+    const actorName = actorProfile?.full_name || actorProfile?.email || user?.email || "Không xác định";
+
+    const { data: version, error: versionError } = await supabase
+      .from("contract_versions")
+      .select("id, contract_id")
+      .eq("id", versionId)
+      .eq("contract_id", contractId)
+      .single();
+
+    if (versionError || !version) {
+      return { success: false, error: "Phiên bản không tồn tại hoặc không thuộc hợp đồng này." };
+    }
+
+    const { error } = await supabase.rpc("restore_contract_version", {
+      p_contract_id: contractId,
+      p_version_id: versionId,
+      p_actor_name: actorName,
+      p_source_module: "CONTRACTS_UI",
+    });
+
+    if (error) throw error;
+    revalidatePath("/dashboard/contracts");
+    revalidatePath(`/dashboard/contracts/${contractId}`);
+    revalidatePath(`/dashboard/contracts/${contractId}/edit`);
+    return { success: true };
+  } catch (error: any) {
+    console.error("restoreContractVersion error:", error);
+    return { success: false, error: error.message || "Không thể phục hồi phiên bản." };
+  }
 }
 
 export async function logContractActivity(
@@ -631,8 +702,8 @@ export async function createContract(payload: {
       paper_contract_number: paperNo,
       contract_date: payload.contract_date || new Date().toISOString().split("T")[0],
       branch: payload.branch || "CAMA Haute Couture",
-      assigned_staff_name: payload.assigned_staff_names?.[0] || payload.assigned_staff_name || "Lễ Tân Studio",
-      assigned_staff_names: payload.assigned_staff_names || (payload.assigned_staff_name ? [payload.assigned_staff_name] : ["Lễ Tân Studio"]),
+      assigned_staff_name: payload.assigned_staff_names?.[0] || payload.assigned_staff_name || "",
+      assigned_staff_names: payload.assigned_staff_names || (payload.assigned_staff_name ? [payload.assigned_staff_name] : []),
       created_by_name: "Admin",
       updated_by_name: "Admin",
       subtotal_amount: payload.subtotal_amount,
@@ -1414,8 +1485,8 @@ export async function updateContract(contractId: string, payload: any) {
         }
       });
       
-      oldPayments.forEach((oPay: any) => {
-        const oTitle = oPay.title || "Đợt thanh toán";
+      oldPayments.forEach((oPay: any, idx: number) => {
+        const oTitle = oPay.title || `Lần ${idx + 1}`;
         const matchingNew = newPayments.find((n: any) => n.title === oTitle || (oPay.id && n.id && oPay.id === n.id));
         const oAmount = Number(oPay.amount || 0);
         if (!matchingNew && oAmount > 0) {
@@ -1471,6 +1542,24 @@ export async function updateContract(contractId: string, payload: any) {
       .single();
       
     if (error) throw error;
+
+    // Đồng bộ lại contract_services
+    if (payload.items && payload.items.length > 0) {
+      await supabase.from("contract_services").delete().eq("contract_id", contractId);
+      const servicesToInsert = payload.items.map((i: any, idx: number) => ({
+        contract_id: contractId,
+        service_name: i.detail || i.item_name || i.category || `Dịch vụ ${idx + 1}`,
+        quantity: Number(i.quantity) || 1,
+        price: Number(i.price || i.unit_price) || 0,
+        notes: JSON.stringify({
+          category: i.category || "",
+          notes: i.notes || "",
+          usage_events: i.usage_events || [],
+          display_order: idx + 1,
+        }),
+      }));
+      await supabase.from("contract_services").insert(servicesToInsert);
+    }
 
     // Tự động đồng bộ Đơn hàng (Order) cho phòng Vận Hành / Kho
     try {

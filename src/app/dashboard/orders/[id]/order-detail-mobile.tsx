@@ -32,10 +32,17 @@ export default function OrderDetailMobile({
   isUpdating,
   isSavingChecklist,
   uploadingImageId,
-  parsedNotes
+  parsedNotes,
+  isEditingNotes,
+  setIsEditingNotes,
+  tempNotes,
+  setTempNotes,
+  handleSaveNotes,
+  isSavingNotes
 }: any) {
   
   const [showOrderInfo, setShowOrderInfo] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Stepper logic
   const currentStepIndex = STATUS_ORDER.indexOf(currentOrder.completion_status) >= 0 
@@ -44,68 +51,117 @@ export default function OrderDetailMobile({
 
   const nextStatus = currentStepIndex < STATUS_ORDER.length - 1 ? STATUS_ORDER[currentStepIndex + 1] : null;
 
-  // Checklist phases grouping
-  const phases = [
-    { id: 'TRƯỚC FITTING', keywords: ['thử đồ', 'fitting'] },
-    { id: 'CHỈNH SỬA', keywords: ['chỉnh sửa', 'đính', 'độn'] },
-    { id: 'TRƯỚC GIAO', keywords: ['vệ sinh', 'hấp', 'đóng gói'] },
-    { id: 'THU HỒI', keywords: ['nhận lại', 'thu hồi', 'kiểm tra'] }
-  ];
-
-  const getPhase = (category: string) => {
-    const cat = category.toLowerCase();
-    for (let p of phases) {
-      if (p.keywords.some(k => cat.includes(k))) return p.id;
+  // Hard-logic: Require specific checklist items based on current status
+  const getTasksForNextStatus = () => {
+    const listWithIndex = checklist.map((c: any, originalIndex: number) => ({ ...c, originalIndex }));
+    switch(currentOrder.completion_status) {
+      case 'PENDING':
+      case 'PREPARING':
+        return listWithIndex.filter((c: any) => c.category?.toLowerCase().includes('thử đồ'));
+      case 'WAITING_FITTING':
+        return listWithIndex.filter((c: any) => {
+          const cat = c.category?.toLowerCase() || '';
+          return cat.includes('chỉnh sửa') || cat.includes('vệ sinh') || cat.includes('đóng gói');
+        });
+      case 'READY_TO_DELIVER':
+        return listWithIndex.filter((c: any) => c.category?.toLowerCase().includes('giao'));
+      case 'DELIVERED':
+      case 'WAITING_RETURN':
+        return listWithIndex.filter((c: any) => c.category?.toLowerCase().includes('thu hồi'));
+      default:
+        return [];
     }
-    return 'KHÁC';
   };
-
-  const groupedChecklist = checklist.reduce((acc: any, item: any, originalIndex: number) => {
-    const phase = getPhase(item.category || '');
-    if (!acc[phase]) acc[phase] = [];
-    acc[phase].push({ ...item, originalIndex });
-    return acc;
-  }, {});
-
-  const nextAction = checklist.find((i: any) => !i.done);
+  
+  const requiredTasks = getTasksForNextStatus();
+  const completedRequiredTasks = requiredTasks.filter((c: any) => c.done).length;
+  const totalRequiredTasks = requiredTasks.length;
+  const canProceedToNext = totalRequiredTasks === 0 || completedRequiredTasks === totalRequiredTasks;
 
   return (
     <div className="block sm:hidden bg-[#F7F8FA] min-h-screen pb-32 text-slate-800 font-sans">
       
-      {/* 1. Header */}
-      <div className="bg-white px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm border-b border-slate-100">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard/orders" className="text-slate-500 hover:text-slate-800 transition-colors">
-            <icons.ArrowLeft className="w-5 h-5" />
-          </Link>
-          <span className="font-bold text-slate-900 tracking-tight">{currentOrder.order_code}</span>
-        </div>
-        <button className="text-slate-400 p-1">
-          <icons.MoreHorizontal className="w-6 h-6" />
-        </button>
-      </div>
-
-      <div className="px-4 py-6 space-y-6">
+      <div className="px-3 py-4 space-y-4">
         
-        {/* 2. Customer & Current Status */}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-            {contract?.customer?.bride_name || 'Khách lẻ'}
-          </h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${statusInfo.color}`}>
-              <statusInfo.icon className="w-3.5 h-3.5" />
-              {statusInfo.label}
-            </span>
+        {/* 2. Customer & Event Details (Merged 3-Tier Header) */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col overflow-hidden">
+          {/* Tầng 1: Khách hàng & Status */}
+          <div className="p-3.5 pb-2.5 flex justify-between items-center">
+            <div className="flex items-center gap-2 overflow-hidden mr-2">
+              <h1 className="font-extrabold text-slate-900 text-[15px] uppercase tracking-tight truncate max-w-[150px]">
+                {contract?.customer?.bride_name || 'Khách lẻ'}
+              </h1>
+              {contract?.customer?.phone && (
+                <div className="text-[12px] font-mono text-slate-500 flex items-center gap-1 shrink-0">
+                  <icons.Phone className="w-3 h-3" /> {contract.customer.phone}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* 3. Progress Stepper */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          {/* Tầng 2: Hợp đồng & PIC */}
+          <div className="px-3.5 pb-3 flex justify-between items-center">
+             <div className="flex items-center gap-1.5 text-blue-600 font-mono text-[11px] font-bold">
+               {contract?.contract_code || currentOrder.order_code}
+             </div>
+             <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+               <icons.User className="w-3 h-3" /> PIC: <span className="text-slate-800 font-bold">{currentOrder.pic?.full_name || 'Chưa phân công'}</span>
+             </div>
+          </div>
+
+          {/* Tầng 3: Sự kiện & Timeline (Gradient nhẹ) */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-blue-100/50 p-3.5 relative overflow-hidden">
+             <div className="flex items-center justify-between mb-2">
+               <div className="flex items-center gap-1.5 text-indigo-900 font-bold text-[12px] uppercase tracking-wide">
+                 <icons.CalendarHeart className="w-3.5 h-3.5 text-indigo-500" /> {eventName || 'Sự kiện'}
+               </div>
+               <div className="flex items-center gap-1 text-indigo-700 text-[10px] font-medium max-w-[120px] truncate bg-white/50 px-2 py-0.5 rounded-md">
+                 <icons.MapPin className="w-3 h-3" /> {eventDetails?.location || 'Chưa cập nhật'}
+               </div>
+             </div>
+             <div className="flex items-center justify-between mt-2.5">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-widest mb-0.5">Giao đồ</span>
+                  <span className="text-[15px] font-black text-indigo-900 leading-none">
+                    {eventDetails?.pickup_date || currentOrder.event_date ? format(new Date(eventDetails?.pickup_date || currentOrder.event_date), "dd/MM") : '--/--'}
+                  </span>
+                </div>
+                <div className="flex-1 px-4 flex items-center justify-center">
+                   <div className="h-[2px] bg-indigo-200/50 w-full relative rounded-full">
+                      <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 bg-indigo-50 px-1">
+                        <icons.ArrowRight className="w-3 h-3 text-indigo-400" />
+                      </div>
+                   </div>
+                </div>
+                <div className="flex flex-col text-right">
+                  <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-widest mb-0.5">Trả đồ</span>
+                  <span className="text-[15px] font-black text-indigo-900 leading-none">
+                    {eventDetails?.return_date || currentOrder.return_date ? format(new Date(eventDetails?.return_date || currentOrder.return_date), "dd/MM") : '--/--'}
+                  </span>
+                </div>
+             </div>
+          </div>
+          {/* Tầng 4: Progress Stepper */}
+          <div className="bg-white p-5 pt-4">
           <div className="flex items-center justify-between relative">
             <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-100 -z-0 -translate-y-1/2"></div>
             {['Chuẩn bị', 'Fitting', 'Sẵn sàng', 'Giao', 'Hoàn tất'].map((step, idx) => {
-              let stepStatus = idx < currentStepIndex ? 'completed' : idx === currentStepIndex ? 'current' : 'pending';
+              
+              const getUiStepIndex = (status: string) => {
+                switch (status) {
+                  case 'PENDING':
+                  case 'PREPARING': return 0;
+                  case 'WAITING_FITTING': return 1;
+                  case 'READY_TO_DELIVER': return 2;
+                  case 'DELIVERED': 
+                  case 'WAITING_RETURN': return 3;
+                  case 'COMPLETED': return 4;
+                  default: return 0;
+                }
+              };
+              
+              const uiStepIndex = getUiStepIndex(currentOrder.completion_status);
+              let stepStatus = idx < uiStepIndex ? 'completed' : idx === uiStepIndex ? 'current' : 'pending';
               
               return (
                 <div key={idx} className="relative z-10 flex flex-col items-center gap-1.5 bg-white px-1">
@@ -124,46 +180,34 @@ export default function OrderDetailMobile({
             })}
           </div>
         </div>
-
-        {/* 4. Event Card */}
-        <div className="bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl p-5 text-white shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <icons.CalendarHeart className="w-24 h-24" />
-          </div>
-          <h2 className="text-xs uppercase tracking-widest font-bold text-indigo-100 mb-1 flex items-center gap-2 relative z-10">
-            <icons.CalendarDays className="w-4 h-4" /> 
-            {eventName || 'Sự kiện'}
-          </h2>
-          <div className="text-2xl font-black mb-4 relative z-10">
-            {eventDetails?.pickup_date || currentOrder.event_date ? format(new Date(eventDetails?.pickup_date || currentOrder.event_date), "dd/MM") : '--/--'}
-            <span className="text-lg font-medium mx-2 opacity-60">→</span>
-            {eventDetails?.return_date || currentOrder.return_date ? format(new Date(eventDetails?.return_date || currentOrder.return_date), "dd/MM") : '--/--'}
-          </div>
-          <div className="flex items-center gap-2 text-sm font-medium bg-black/10 w-fit px-3 py-1.5 rounded-lg relative z-10">
-            <icons.MapPin className="w-4 h-4 text-indigo-200" />
-            {eventDetails?.location || 'Chưa cập nhật địa điểm'}
-          </div>
         </div>
-
-        {/* 5. Next Action */}
-        {nextAction && (
-          <div className="bg-amber-50 border border-amber-200/50 rounded-2xl p-4 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-amber-200/50 flex items-center justify-center shrink-0 mt-0.5">
-              <icons.BellRing className="w-4 h-4 text-amber-700" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-0.5">Việc tiếp theo</p>
-              <p className="text-sm font-semibold text-amber-900">{nextAction.task}</p>
-            </div>
-          </div>
-        )}
 
         {/* 6. Products */}
         <div>
           <h2 className="text-sm font-bold text-slate-800 mb-3 px-1">Sản Phẩm & Dịch Vụ</h2>
-          <div className="space-y-3">
+          <div className={`${items.length > 0 || garments.length > 0 ? 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden divide-y divide-slate-100' : 'space-y-3'}`}>
             {items.length === 0 && garments.length === 0 && (
-              <div className="text-center py-6 text-slate-400 italic">Không có sản phẩm</div>
+              <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-5 text-center flex flex-col items-center justify-center">
+                <icons.PackageX className="w-8 h-8 text-amber-500 mb-2" />
+                <p className="text-[13px] font-bold text-amber-900 mb-1">Chưa có sản phẩm được phân bổ</p>
+                <p className="text-[11px] text-amber-700 mb-4 px-4">Đơn hàng này hiện chưa có váy/vest cụ thể nào. Bạn có muốn phân bổ sản phẩm bây giờ không?</p>
+                {contract?.id ? (
+                  <Link 
+                    href={`/dashboard/contracts/${contract.id}/edit`}
+                    className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 active:scale-95 transition-transform text-white rounded-xl font-bold text-xs shadow-sm flex items-center justify-center gap-2"
+                  >
+                    <icons.Plus className="w-4 h-4" />
+                    Phân bổ sản phẩm
+                  </Link>
+                ) : (
+                  <button 
+                    disabled 
+                    className="w-full py-2.5 bg-slate-300 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-not-allowed"
+                  >
+                    Chưa hỗ trợ cho đơn rời
+                  </button>
+                )}
+              </div>
             )}
             
             {items.map((item: any, idx: number) => {
@@ -171,15 +215,34 @@ export default function OrderDetailMobile({
               const images = notesImages[rowId] || [];
               const isUploading = uploadingImageId === rowId;
               
+              let category = item.category || "DỊCH VỤ";
+              let itemName = item.detail || item.item_name || "Dịch vụ theo hợp đồng";
+              
+              // Prevent rendering raw JSON string
+              if (typeof itemName === 'string' && itemName.trim().startsWith('{')) {
+                 try {
+                   const parsed = JSON.parse(itemName);
+                   itemName = parsed.item_name || parsed.detail || "Dịch vụ thuê";
+                   if (parsed.category) category = parsed.category;
+                 } catch (e) {}
+              }
+              
               return (
-                <div key={idx} className="bg-white rounded-2xl p-4 shadow-sm">
+                <div key={idx} className="p-4 bg-white">
                   <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="font-bold text-slate-900 text-base">{item.detail || item.item_name} <span className="text-slate-400 font-medium ml-1">· {item.quantity}</span></div>
+                    <div className="w-full">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{category}</div>
+                      <div className="font-bold text-slate-900 text-sm flex items-center justify-between">
+                         {itemName} 
+                         <span className="text-slate-500 font-bold text-xs bg-slate-100 px-2 py-0.5 rounded ml-2">×{item.quantity || 1}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                        <icons.Info className="w-3 h-3" /> Dịch vụ • Theo hợp đồng
+                      </div>
                     </div>
                   </div>
                   {item.notes && (
-                    <div className="text-sm font-medium text-slate-600 bg-slate-50 px-3 py-2 rounded-lg mb-3">
+                    <div className="text-xs font-medium text-slate-600 bg-slate-50 px-3 py-2 rounded-lg mb-3 mt-2">
                       {item.notes}
                     </div>
                   )}
@@ -209,12 +272,29 @@ export default function OrderDetailMobile({
               const images = notesImages[rowId] || [];
               const isUploading = uploadingImageId === rowId;
               
+              let category = g.category || "VÁY CƯỚI / VEST";
+              let itemName = g.product_name || 'Sản phẩm thuê';
+              if (typeof itemName === 'string' && itemName.trim().startsWith('{')) {
+                 try {
+                   const parsed = JSON.parse(itemName);
+                   itemName = parsed.product_name || "Sản phẩm thuê";
+                   if (parsed.category) category = parsed.category;
+                 } catch (e) {}
+              }
+              
               return (
-                <div key={`g-${idx}`} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100">
+                <div key={`g-${idx}`} className="p-4 bg-white">
                   <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="font-bold text-purple-900 text-base">{g.product_name} <span className="text-slate-400 font-medium ml-1">· 1</span></div>
-                      <div className="text-xs font-medium text-purple-600 mt-0.5">Mã: {g.garment_code} | Size: {g.size || 'M'}</div>
+                    <div className="w-full">
+                      <div className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1">{category}</div>
+                      <div className="font-bold text-slate-900 text-sm flex items-center justify-between">
+                         {itemName}
+                         <span className="text-slate-500 font-bold text-xs bg-slate-100 px-2 py-0.5 rounded ml-2">×1</span>
+                      </div>
+                      <div className="text-[11px] font-medium text-slate-600 mt-1.5 flex items-center gap-2">
+                         <span className="flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-0.5 rounded"><icons.Tag className="w-3 h-3"/> Mã: {g.garment_code}</span>
+                         <span className="flex items-center gap-1 bg-slate-50 text-slate-600 px-2 py-0.5 rounded"><icons.Ruler className="w-3 h-3"/> Size: {g.size || 'M'}</span>
+                      </div>
                     </div>
                   </div>
                   
@@ -239,44 +319,10 @@ export default function OrderDetailMobile({
           </div>
         </div>
 
-        {/* 7. Operational Checklist */}
-        <div>
-          <div className="flex justify-between items-end mb-3 px-1">
-            <h2 className="text-sm font-bold text-slate-800">Checklist Vận Hành</h2>
-            {isSavingChecklist && <span className="text-[10px] text-slate-400 flex items-center gap-1"><icons.Loader2 className="w-3 h-3 animate-spin"/> Đang lưu...</span>}
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            {Object.keys(groupedChecklist).map((phase, pIdx) => (
-              <div key={pIdx}>
-                <div className="bg-slate-50 px-4 py-2 border-y border-slate-100 first:border-t-0">
-                  <span className="text-[10px] font-bold text-slate-500 tracking-widest">{phase}</span>
-                </div>
-                <div>
-                  {groupedChecklist[phase].map((item: any, iIdx: number) => (
-                    <div 
-                      key={iIdx}
-                      className="flex items-center px-4 h-14 border-b border-slate-50 last:border-b-0 cursor-pointer active:bg-slate-50"
-                      onClick={() => handleToggleChecklist(item.originalIndex)}
-                    >
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mr-3 transition-colors ${item.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-white'}`}>
-                        {item.done && <icons.Check className="w-4 h-4" />}
-                      </div>
-                      <div className={`flex-1 text-sm font-medium ${item.done ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
-                        {item.task}
-                      </div>
-                      <div className="ml-2 px-2 py-1 rounded bg-slate-100 text-[10px] font-bold text-slate-400 max-w-[80px] truncate text-center">
-                        {item.category}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+
 
         {/* 8. Order Info Collapse */}
-        <details className="bg-white rounded-2xl shadow-sm group">
+        <details className="bg-white rounded-2xl shadow-sm group border border-slate-100">
           <summary className="flex items-center justify-between p-4 font-bold text-sm text-slate-800 cursor-pointer marker:hidden list-none">
             <div className="flex items-center gap-2">
               <icons.Info className="w-4 h-4 text-blue-500" />
@@ -286,8 +332,8 @@ export default function OrderDetailMobile({
           </summary>
           <div className="px-4 pb-4 pt-1 space-y-3 border-t border-slate-50 text-sm">
             <div className="flex justify-between items-center">
-              <span className="text-slate-500 font-medium">Số điện thoại</span>
-              <span className="font-bold">{contract?.customer?.phone || '---'}</span>
+              <span className="text-slate-500 font-medium">Nguồn</span>
+              <span className="font-semibold text-slate-700">{contract ? 'Tự động từ hợp đồng' : 'Tạo thủ công'}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-500 font-medium">Hợp đồng</span>
@@ -295,47 +341,157 @@ export default function OrderDetailMobile({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-500 font-medium">Ngày lập HĐ</span>
-              <span className="font-semibold">{parsedNotes.contract_date ? format(new Date(parsedNotes.contract_date), "dd/MM/yyyy") : '---'}</span>
+              <span className="font-semibold">{(parsedNotes.contract_date || contract?.created_at) ? format(new Date(parsedNotes.contract_date || contract?.created_at), "dd/MM/yyyy") : '---'}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-500 font-medium">Nhân sự</span>
-              <span className="font-semibold">{parsedNotes.assigned_staff_name || '---'}</span>
+              <span className="text-slate-500 font-medium">Người tạo</span>
+              <span className="font-semibold">{contract ? 'Hệ thống' : (currentOrder.pic?.full_name || '---')}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-500 font-medium">Ngày Cưới</span>
-              <span className="font-bold text-rose-600">{(parsedNotes.ngay_cuoi || contract?.customer?.wedding_date) ? format(new Date(parsedNotes.ngay_cuoi || contract?.customer?.wedding_date), "dd/MM/yyyy") : '---'}</span>
+              <span className={`font-bold ${(parsedNotes.ngay_cuoi || contract?.customer?.wedding_date) && new Date(parsedNotes.ngay_cuoi || contract?.customer?.wedding_date) < new Date() ? 'text-rose-600' : 'text-slate-800'}`}>
+                {(parsedNotes.ngay_cuoi || contract?.customer?.wedding_date) ? format(new Date(parsedNotes.ngay_cuoi || contract?.customer?.wedding_date), "dd/MM/yyyy") : '---'}
+              </span>
             </div>
           </div>
         </details>
 
         {/* 9. Notes */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h2 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-            <icons.FileText className="w-4 h-4 text-slate-400" /> Ghi chú chung
-          </h2>
-          <div className="text-sm text-slate-600 leading-relaxed font-medium">
-            {notesText || <span className="italic opacity-50">Không có ghi chú.</span>}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-10">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <icons.FileText className="w-4 h-4 text-slate-400" /> Ghi chú đơn hàng
+            </h2>
+            {!isEditingNotes && (
+              <button 
+                onClick={() => {
+                  setTempNotes(notesText || "");
+                  setIsEditingNotes(true);
+                }}
+                className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg"
+              >
+                + Thêm
+              </button>
+            )}
           </div>
+          
+          {isEditingNotes ? (
+            <div className="space-y-3">
+              <textarea 
+                value={tempNotes}
+                onChange={(e) => setTempNotes(e.target.value)}
+                className="w-full min-h-[100px] text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+                placeholder="Nhập ghi chú cho đơn hàng này..."
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <button 
+                  onClick={() => setIsEditingNotes(false)}
+                  disabled={isSavingNotes}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl active:scale-95 transition-transform"
+                >
+                  Hủy
+                </button>
+                <button 
+                  onClick={handleSaveNotes}
+                  disabled={isSavingNotes}
+                  className="px-4 py-2 text-xs font-bold text-white bg-blue-600 rounded-xl active:scale-95 transition-transform flex items-center gap-1.5"
+                >
+                  {isSavingNotes && <icons.Loader2 className="w-3 h-3 animate-spin" />}
+                  Lưu ghi chú
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-slate-600 leading-relaxed font-medium bg-slate-50 rounded-xl p-3 min-h-[60px]">
+              {notesText ? (
+                <p className="whitespace-pre-wrap">{notesText}</p>
+              ) : (
+                <span className="italic opacity-50 block text-center mt-1">Chưa có ghi chú nào.</span>
+              )}
+            </div>
+          )}
         </div>
 
       </div>
 
       {/* 10. Sticky Bottom Action */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-100 z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.15)] pb-8 pt-3 px-4 rounded-t-3xl">
         <button 
-          onClick={() => nextStatus && handleStatusChange(nextStatus)}
+          onClick={() => nextStatus && (requiredTasks.length > 0 ? setIsModalOpen(true) : handleStatusChange(nextStatus))}
           disabled={!nextStatus || isUpdating}
-          className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-600/20 active:scale-[0.98] transition-transform disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+          className={`w-full font-bold py-3.5 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
+            !nextStatus 
+              ? 'bg-slate-100 text-slate-400 shadow-none' 
+              : 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
+          }`}
         >
           {isUpdating ? (
             <><icons.Loader2 className="w-5 h-5 animate-spin" /> Đang cập nhật...</>
           ) : nextStatus ? (
-            <>Cập nhật tiến độ: {STATUS_LABELS[nextStatus] || nextStatus} <icons.ArrowRight className="w-4 h-4" /></>
+            <>XÁC NHẬN HOÀN TẤT {STATUS_LABELS[currentOrder.completion_status]?.toUpperCase()} <icons.CheckCircle2 className="w-4 h-4" /></>
           ) : (
-            <><icons.CheckCircle2 className="w-5 h-5" /> Đã hoàn tất</>
+            <><icons.CheckCircle2 className="w-5 h-5" /> Đã hoàn tất toàn bộ</>
           )}
         </button>
       </div>
+
+      {/* 11. Transition Modal */}
+      {isModalOpen && nextStatus && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity p-0 sm:p-4" onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white w-full sm:w-[400px] rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-extrabold text-slate-800">Xác nhận Hoàn tất</h2>
+              <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500">
+                <icons.X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <p className="text-sm text-slate-600 mb-4 font-medium leading-snug">
+              Bạn đã hoàn tất bước <strong>{STATUS_LABELS[currentOrder.completion_status]}</strong>? 
+              {requiredTasks.length > 0 && " Vui lòng đánh dấu các công việc đã thực hiện:"}
+            </p>
+
+            {requiredTasks.length > 0 && (
+              <div className="space-y-2 mb-6 overflow-y-auto pr-2">
+                {requiredTasks.map((item: any, idx: number) => (
+                  <div 
+                    key={idx}
+                    className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50 active:bg-slate-100 cursor-pointer transition-colors"
+                    onClick={() => handleToggleChecklist(item.originalIndex)}
+                  >
+                    <div className={`w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${item.done ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'border-slate-300 bg-white shadow-sm'}`}>
+                      {item.done && <icons.Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    </div>
+                    <div className={`text-sm font-medium leading-snug ${item.done ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                      {item.task}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button 
+              onClick={() => {
+                setIsModalOpen(false);
+                handleStatusChange(nextStatus);
+              }}
+              disabled={!canProceedToNext || isUpdating}
+              className={`w-full py-3.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-all mt-auto ${
+                canProceedToNext
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 active:scale-95'
+                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              {isUpdating ? (
+                <><icons.Loader2 className="w-5 h-5 animate-spin" /> Đang cập nhật...</>
+              ) : (
+                <>Xác nhận & Chuyển sang {STATUS_LABELS[nextStatus]} <icons.ArrowRight className="w-4 h-4" /></>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

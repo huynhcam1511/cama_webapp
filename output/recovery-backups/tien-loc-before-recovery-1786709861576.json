@@ -1,0 +1,204 @@
+{
+  "captured_at": "2026-08-14T12:17:41.577Z",
+  "contract": {
+    "id": "64b3c834-a5ae-49d1-9912-822d3517237a",
+    "contract_code": "CONT-000010",
+    "customer_id": "b0bba3d8-596e-43d8-a4a4-c0300070b10e",
+    "total_amount": 65000000,
+    "paid_amount": 65000000,
+    "status": "CONFIRMED",
+    "notes": "{\"userNotes\":\"NHÀ TRAI YC ...\"}",
+    "link_pdf": null,
+    "created_at": "2026-08-10T12:50:20.844956+00:00",
+    "updated_at": "2026-08-13T18:12:09.511+00:00",
+    "deleted_at": null,
+    "deleted_by": null,
+    "journey_data": {
+      "stages": [
+        {
+          "id": "stage-0",
+          "name": "Tiếp nhận & Hợp đồng (Leads & Ký kết)",
+          "tasks": [
+            {
+              "id": "task-1786559479346",
+              "text": "Tạo group zalo",
+              "status": "DONE",
+              "dueDate": "2026-08-14",
+              "dueTime": "02:15",
+              "subtasks": [],
+              "assignee_id": "04a48ca5-defc-4ce3-9505-b541dc0f5b75"
+            },
+            {
+              "id": "task-1786559498938",
+              "text": "Làm moodboard",
+              "status": "PLANNED",
+              "dueDate": "2026-08-14",
+              "dueTime": "02:20",
+              "subtasks": [
+                {
+                  "id": "subtask-1786559506714",
+                  "text": "Lựa hình trước",
+                  "status": "PLANNED",
+                  "dueDate": "2026-08-14",
+                  "dueTime": "02:30",
+                  "assignee_id": "04a48ca5-defc-4ce3-9505-b541dc0f5b75"
+                }
+              ],
+              "assignee_id": "04a48ca5-defc-4ce3-9505-b541dc0f5b75"
+            }
+          ]
+        },
+        {
+          "id": "evt-0",
+          "name": "Tiệc Cần Thơ test",
+          "tasks": [],
+          "return_date": "2026-08-17",
+          "delivery_date": "2026-08-12"
+        },
+        {
+          "id": "evt-1",
+          "name": "tiệc sài gòn test",
+          "tasks": [],
+          "return_date": "2026-08-24",
+          "delivery_date": "2026-08-20"
+        },
+        {
+          "id": "evt-2",
+          "name": "Tiệc nha trang",
+          "tasks": [],
+          "return_date": "2026-09-14",
+          "delivery_date": "2026-09-13"
+        },
+        {
+          "id": "stage-end",
+          "name": "Sau sự kiện & Thanh lý",
+          "tasks": []
+        }
+      ]
+    }
+  },
+  "related": {
+    "contract_services": {
+      "data": [
+        {
+          "id": "2188cd8e-779d-4040-90e3-2536fdcd04af",
+          "contract_id": "64b3c834-a5ae-49d1-9912-822d3517237a",
+          "service_name": "Váy cưới - 2 VÁY  ",
+          "price": 20000000,
+          "quantity": 2,
+          "notes": "{\"category\":\"Váy cưới\",\"item_type\":\"SERVICE\",\"line_discount\":0,\"surcharge\":0,\"display_order\":1}",
+          "created_at": "2026-08-10T12:50:21.11947+00:00"
+        },
+        {
+          "id": "570f04c0-c8b6-46ba-a135-4833f1178cc5",
+          "contract_id": "64b3c834-a5ae-49d1-9912-822d3517237a",
+          "service_name": "Vest chú rể - 2 VEST",
+          "price": 10000000,
+          "quantity": 2,
+          "notes": "{\"category\":\"Vest chú rể\",\"item_type\":\"SERVICE\",\"line_discount\":0,\"surcharge\":0,\"display_order\":2}",
+          "created_at": "2026-08-10T12:50:21.11947+00:00"
+        }
+      ],
+      "error": null
+    },
+    "payment_installments": {
+      "data": [
+        {
+          "id": "22667de0-8e0c-4279-b666-6ba681f15084",
+          "contract_id": "64b3c834-a5ae-49d1-9912-822d3517237a",
+          "installment_type": "DEPOSIT",
+          "amount": 30000000,
+          "payment_date": "2026-08-10T12:50:21.164+00:00",
+          "payment_method": "TRANSFER",
+          "status": "PAID",
+          "receipt_url": null,
+          "notes": "{\"receipt_code\":\"PT-2026-78302\",\"collector_name\":\"Kế Toán Studio\"}",
+          "created_at": "2026-08-10T12:50:21.222608+00:00",
+          "updated_at": "2026-08-10T12:50:21.222608+00:00"
+        }
+      ],
+      "error": null
+    },
+    "orders": {
+      "data": [
+        {
+          "id": "29d1ef1d-72d1-42d1-aa55-318035e3272d",
+          "order_code": "ORDE-000007",
+          "contract_id": "64b3c834-a5ae-49d1-9912-822d3517237a",
+          "event_date": null,
+          "return_date": null,
+          "delivery_status": "PENDING",
+          "completion_status": "PENDING",
+          "checklist": [],
+          "notes": "Đơn hàng tự động sinh từ Hợp đồng CAMA-2026-00010",
+          "service_type": "PRE-WEDDING",
+          "pic_id": null,
+          "total_value": 0,
+          "created_at": "2026-08-10T12:50:20.984153+00:00",
+          "updated_at": "2026-08-10T12:50:20.984153+00:00",
+          "deleted_at": null,
+          "deleted_by": null
+        },
+        {
+          "id": "2daeea7f-b4e8-4333-bd47-f579ec605781",
+          "order_code": "ORDE-000009",
+          "contract_id": "64b3c834-a5ae-49d1-9912-822d3517237a",
+          "event_date": "2026-08-13",
+          "return_date": "2026-08-17",
+          "delivery_status": "PENDING",
+          "completion_status": "PENDING",
+          "checklist": [],
+          "notes": "Đơn hàng tự động sinh từ Hợp đồng CONT-000010 cho sự kiện: Tiệc Cần Thơ test\nNgày giao: 2026-08-12\nĐịa điểm: 123123",
+          "service_type": "Tiệc Cần Thơ test",
+          "pic_id": null,
+          "total_value": 0,
+          "created_at": "2026-08-13T17:37:19.633301+00:00",
+          "updated_at": "2026-08-13T17:37:19.633301+00:00",
+          "deleted_at": null,
+          "deleted_by": null
+        },
+        {
+          "id": "7b973b32-a367-45e6-8aa6-36dffac01ca6",
+          "order_code": "ORDE-000010",
+          "contract_id": "64b3c834-a5ae-49d1-9912-822d3517237a",
+          "event_date": "2026-08-14",
+          "return_date": "2026-08-24",
+          "delivery_status": "PENDING",
+          "completion_status": "PENDING",
+          "checklist": [],
+          "notes": "Đơn hàng tự động sinh từ Hợp đồng CONT-000010 cho sự kiện: tiệc sài gòn test\nNgày giao: 2026-08-20\nĐịa điểm: 456456",
+          "service_type": "tiệc sài gòn test",
+          "pic_id": null,
+          "total_value": 0,
+          "created_at": "2026-08-13T17:37:19.633301+00:00",
+          "updated_at": "2026-08-13T17:37:19.633301+00:00",
+          "deleted_at": null,
+          "deleted_by": null
+        },
+        {
+          "id": "cec711cb-8fc9-451e-8263-c2656e6b2138",
+          "order_code": "ORDE-000011",
+          "contract_id": "64b3c834-a5ae-49d1-9912-822d3517237a",
+          "event_date": "2026-09-14",
+          "return_date": "2026-09-14",
+          "delivery_status": "PENDING",
+          "completion_status": "PENDING",
+          "checklist": [],
+          "notes": "Đơn hàng tự động sinh từ Hợp đồng CONT-000010 cho sự kiện: Tiệc nha trang\nNgày giao: 2026-09-13\nĐịa điểm: 1 bà trần phú",
+          "service_type": "Tiệc nha trang",
+          "pic_id": null,
+          "total_value": 0,
+          "created_at": "2026-08-13T17:37:19.633301+00:00",
+          "updated_at": "2026-08-13T17:37:19.633301+00:00",
+          "deleted_at": null,
+          "deleted_by": null
+        }
+      ],
+      "error": null
+    },
+    "audit_logs": {
+      "data": [],
+      "error": null
+    }
+  }
+}
