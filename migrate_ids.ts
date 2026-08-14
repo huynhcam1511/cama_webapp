@@ -52,22 +52,23 @@ async function migrateTable(tableName: string, codeColumn: string, prefix: strin
   let updatedCount = 0;
 
   for (const row of rows) {
-    const currentCode = row[codeColumn];
+    const r = row as any;
+    const currentCode = r[codeColumn];
     
     // Only update if it doesn't already match the exact prefix-6digits format
     // E.g., CUST-000001
     const regex = new RegExp(`^${prefix}-\\d{6}$`);
     if (!currentCode || !regex.test(currentCode)) {
       const newCode = `${prefix}-${String(counter).padStart(6, '0')}`;
-      console.log(`[${tableName}] ID ${row.id} : ${currentCode} -> ${newCode}`);
+      console.log(`[${tableName}] ID ${r.id} : ${currentCode} -> ${newCode}`);
       
       const { error: updateError } = await supabase
         .from(tableName)
         .update({ [codeColumn]: newCode })
-        .eq('id', row.id);
+        .eq('id', r.id);
         
       if (updateError) {
-        console.error(`Failed to update ${row.id}:`, updateError);
+        console.error(`Failed to update ${r.id}:`, updateError);
       } else {
         updatedCount++;
       }

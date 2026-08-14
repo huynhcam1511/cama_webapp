@@ -21,9 +21,9 @@ export async function generateSequentialCode(
   }
 
   let nextNumber = 1;
-  if (data && data[codeColumn]) {
+  if (data && (data as any)[codeColumn]) {
     // Expected format: PREFIX-000001
-    const currentCode = data[codeColumn] as string;
+    const currentCode = (data as any)[codeColumn] as string;
     const parts = currentCode.split("-");
     if (parts.length === 2) {
       const numPart = parseInt(parts[1], 10);

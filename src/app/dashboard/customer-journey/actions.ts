@@ -41,7 +41,7 @@ export async function getCustomerJourneyData() {
   }
 
   // 3. Fetch active tasks from journey_tasks table (if it exists)
-  let journeyTasks = [];
+  let journeyTasks: any[] = [];
   try {
     const { data, error } = await supabase
       .from("journey_tasks")

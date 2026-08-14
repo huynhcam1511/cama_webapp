@@ -1,6 +1,6 @@
 import BookingFormClient from "../../../booking-form-client";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getBookingById } from "../../../customers/actions";
+import { getBookingById } from "@/app/dashboard/customers/actions";
 import { notFound } from "next/navigation";
 
 export default async function EditBookingPage({ params }: { params: { id: string } }) {
