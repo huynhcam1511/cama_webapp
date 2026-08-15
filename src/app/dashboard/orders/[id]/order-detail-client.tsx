@@ -26,6 +26,7 @@ export default function OrderDetailClient({ order }: { order: Order }) {
   const router = useRouter();
   const [currentOrder, setCurrentOrder] = useState<Order>(order);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const contract = currentOrder.contract as any;
   const eventName = currentOrder.service_type;
@@ -324,10 +325,10 @@ export default function OrderDetailClient({ order }: { order: Order }) {
                                 {images.length > 0 && (
                                   <div className="flex flex-wrap gap-2">
                                     {images.map((img: string, iIdx: number) => (
-                                      <div key={iIdx} className="relative w-12 h-12 rounded border border-slate-200 overflow-hidden group bg-slate-100">
+                                      <div key={iIdx} onClick={() => setSelectedImage(img)} className="relative w-12 h-12 rounded border border-slate-200 overflow-hidden group bg-slate-100 cursor-pointer">
                                         <img src={img} alt="QC" className="w-full h-full object-cover" />
                                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                          <button onClick={() => handleDeleteImage(rowId, img)} className="p-1 text-white hover:text-rose-400">
+                                          <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="p-1 text-white hover:text-rose-400">
                                             <icons.X className="w-3.5 h-3.5" />
                                           </button>
                                         </div>
@@ -366,10 +367,10 @@ export default function OrderDetailClient({ order }: { order: Order }) {
                                 {images.length > 0 && (
                                   <div className="flex flex-wrap gap-2">
                                     {images.map((img: string, iIdx: number) => (
-                                      <div key={iIdx} className="relative w-12 h-12 rounded border border-slate-200 overflow-hidden group bg-slate-100">
+                                      <div key={iIdx} onClick={() => setSelectedImage(img)} className="relative w-12 h-12 rounded border border-slate-200 overflow-hidden group bg-slate-100 cursor-pointer">
                                         <img src={img} alt="QC" className="w-full h-full object-cover" />
                                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                          <button onClick={() => handleDeleteImage(rowId, img)} className="p-1 text-white hover:text-rose-400">
+                                          <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="p-1 text-white hover:text-rose-400">
                                             <icons.X className="w-3.5 h-3.5" />
                                           </button>
                                         </div>
@@ -552,7 +553,29 @@ export default function OrderDetailClient({ order }: { order: Order }) {
       setTempNotes={setTempNotes}
       handleSaveNotes={handleSaveNotes}
       isSavingNotes={isSavingNotes}
+      onImageClick={setSelectedImage}
     />
+
+    {/* Image Viewer Modal */}
+    {selectedImage && (
+      <div 
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+        onClick={() => setSelectedImage(null)}
+      >
+        <button 
+          onClick={() => setSelectedImage(null)}
+          className="absolute top-4 right-4 md:top-6 md:right-6 text-white hover:text-slate-300 bg-black/50 p-2 rounded-full transition-colors"
+        >
+          <icons.X className="w-6 h-6" />
+        </button>
+        <img 
+          src={selectedImage} 
+          alt="Phóng to" 
+          className="max-w-full max-h-full object-contain rounded shadow-2xl"
+          onClick={(e) => e.stopPropagation()} 
+        />
+      </div>
+    )}
     </>
   );
 }

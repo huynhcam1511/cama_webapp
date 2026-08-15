@@ -38,7 +38,8 @@ export default function OrderDetailMobile({
   tempNotes,
   setTempNotes,
   handleSaveNotes,
-  isSavingNotes
+  isSavingNotes,
+  onImageClick
 }: any) {
   
   const [showOrderInfo, setShowOrderInfo] = useState(false);
@@ -250,9 +251,9 @@ export default function OrderDetailMobile({
                   {/* Images area */}
                   <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
                     {images.map((img: string, iIdx: number) => (
-                      <div key={iIdx} className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200">
+                      <div key={iIdx} onClick={() => onImageClick && onImageClick(img)} className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer">
                          <img src={img} alt="QC" className="w-full h-full object-cover" />
-                         <button onClick={() => handleDeleteImage(rowId, img)} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
+                         <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
                            <icons.X className="w-3 h-3" />
                          </button>
                       </div>
@@ -300,9 +301,9 @@ export default function OrderDetailMobile({
                   
                   <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-purple-50">
                     {images.map((img: string, iIdx: number) => (
-                      <div key={iIdx} className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200">
+                      <div key={iIdx} onClick={() => onImageClick && onImageClick(img)} className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer">
                          <img src={img} alt="QC" className="w-full h-full object-cover" />
-                         <button onClick={() => handleDeleteImage(rowId, img)} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
+                         <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
                            <icons.X className="w-3 h-3" />
                          </button>
                       </div>
