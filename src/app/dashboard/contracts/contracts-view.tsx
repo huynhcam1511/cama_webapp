@@ -26,7 +26,9 @@ import {
   MessageCircle,
   ArrowDown,
   ArrowUp,
-  Trash2
+  Trash2,
+  X,
+  Package
 } from "lucide-react";
 
 import RecordPaymentDialog from "./record-payment-dialog";

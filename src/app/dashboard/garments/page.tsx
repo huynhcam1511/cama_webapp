@@ -5,7 +5,8 @@ import { getInventoryOverview, createGarment, updateGarmentStatus } from "./acti
 import OCRScanner from "@/components/ocr-scanner";
 import { 
   Shirt, Package, ArrowRightLeft, CalendarClock,
-  Search, Filter, MapPin, Phone, Plus, X, Image as ImageIcon, CheckCircle2
+  Search, Filter, MapPin, Phone, Plus, X, Image as ImageIcon, CheckCircle2, QrCode,
+  Camera
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 

@@ -1,11 +1,11 @@
-import { MODULE_REGISTRY } from './src/config/moduleRegistry.ts';
+import { MODULE_REGISTRY } from './src/config/moduleRegistry';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
   {
     auth: { persistSession: false }
   }
@@ -14,14 +14,14 @@ const supabase = createClient(
 async function sync() {
   console.log("Fetching current modules...");
   const { data: dbModules, error: fetchErr } = await supabase.from('modules').select('*');
-  if (fetchErr) {
+  if (fetchErr || !dbModules) {
     console.error("Fetch err:", fetchErr);
     return;
   }
 
   // 1. Ensure all Groups exist
   const groupCodes = ["DASHBOARD", "BUSINESS", "OPERATIONS", "HR", "ADMIN", "FINANCE", "MARKETING"];
-  const groupMap = {};
+  const groupMap: Record<string, string> = {};
   
   for (const g of groupCodes) {
     const groupCode = `GROUP_${g}`;

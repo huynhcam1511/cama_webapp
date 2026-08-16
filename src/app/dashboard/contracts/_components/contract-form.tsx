@@ -756,6 +756,7 @@ export default function ContractForm({
                   />
                 </div>
               </section>
+              )}
             </div>
 
             {/* CỘT PHẢI (Sản phẩm, Thanh toán, Cọc) */}
