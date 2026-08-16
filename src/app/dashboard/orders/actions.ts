@@ -25,7 +25,7 @@ export interface Order {
   checklist: OrderChecklistItem[];
   notes: string;
   service_type: string;
-  pic_id: string;
+  pic_id: string | null;
   total_value: number;
     contract: {
       contract_code: string;
@@ -38,8 +38,11 @@ export interface Order {
     };
   pic: {
     full_name: string;
+    team_id?: string;
   };
   operation_schedules?: any[];
+  qa_stages?: any[];
+  qa_incidents?: any[];
 }
 
 export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> {
@@ -196,4 +199,59 @@ export async function deleteOrder(orderId: string): Promise<void> {
     console.error("Error deleting order:", error);
     throw error;
   }
+}
+
+export async function updateOrderQAStage(orderId: string, stageData: any) {
+  const supabase = createClient();
+  const { data: order, error: orderError } = await supabase.from('orders').select('qa_stages').eq('id', orderId).single();
+  if (orderError) return { error: orderError.message };
+  
+  let stages = order.qa_stages || [];
+  const existingIndex = stages.findIndex((s: any) => s.step === stageData.step);
+  if (existingIndex > -1) {
+    stages[existingIndex] = { ...stages[existingIndex], ...stageData };
+  } else {
+    stages.push(stageData);
+  }
+  
+  const { error } = await supabase.from('orders').update({ qa_stages: stages }).eq('id', orderId);
+  if (error) return { error: error.message };
+  
+  revalidatePath('/dashboard/orders');
+  return { error: null };
+}
+
+export async function reportOrderIncident(orderId: string, contractId: string, incidentData: any) {
+  const supabase = createClient();
+  
+  const { data: order, error: orderError } = await supabase.from('orders').select('qa_incidents').eq('id', orderId).single();
+  if (orderError) return { error: orderError.message };
+  
+  let incidents = order.qa_incidents || [];
+  incidents.push(incidentData);
+  
+  const { error } = await supabase.from('orders').update({ qa_incidents: incidents }).eq('id', orderId);
+  if (error) return { error: error.message };
+  
+  if (incidentData.penalty_amount > 0 && contractId) {
+    const paymentData = {
+      contract_id: contractId,
+      amount: incidentData.penalty_amount,
+      type: "PENALTY", 
+      method: incidentData.resolution === 'DEDUCT_FROM_DEPOSIT' ? "TRỪ_CỌC" : "THU_THÊM",
+      status: "COMPLETED",
+      payment_date: new Date().toISOString(),
+      note: `Phí đền bù sự cố đơn hàng (Đơn: ${orderId}). Lý do: ${incidentData.description}`,
+      created_by: incidentData.created_by_id
+    };
+    await supabase.from('payments').insert(paymentData);
+  }
+  
+  revalidatePath('/dashboard/orders');
+  return { error: null };
+}
+export async function updateOrderPic(orderId: string, picId: string | null) {
+  const supabase = createAdminClient();
+  await supabase.from('orders').update({ pic_id: picId }).eq('id', orderId);
+  revalidatePath('/dashboard/orders');
 }

@@ -42,3 +42,10 @@ export async function createGarment(data: any) {
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
+
+export async function updateGarmentStatus(id: string, status: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('garments_inventory').update({ status }).eq('id', id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}

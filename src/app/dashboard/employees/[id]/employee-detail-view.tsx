@@ -6,6 +6,7 @@ import { ArrowLeft, Save, Loader2, User, Key, ShieldAlert, Calendar, Camera, Bri
 import Link from "next/link";
 import * as Tabs from "@radix-ui/react-tabs";
 import { saveEmployee } from "./actions";
+import { MODULE_REGISTRY, ModuleGroup } from "@/config/moduleRegistry";
 
 export default function EmployeeDetailView({
   isNew,
@@ -204,9 +205,37 @@ export default function EmployeeDetailView({
     })
   );
 
+  // Add useEffect to sync state if props change (e.g., when navigating between employees)
+  React.useEffect(() => {
+    setPermissions(
+      modules.map((m) => {
+        const existing = initialPermissions.find((p) => p.module_id === m.id);
+        return existing || {
+          module_id: m.id,
+          can_view: false,
+          can_create: false,
+          can_update: false,
+          can_delete: false,
+        };
+      })
+    );
+  }, [initialPermissions, modules]);
+
   const handlePermissionChange = (moduleId: string, field: string, value: boolean) => {
-    setPermissions((prev) =>
-      prev.map((p) => {
+    setPermissions((prev) => {
+      const exists = prev.find((p) => p.module_id === moduleId);
+      if (!exists) {
+        const newPerm: any = {
+          module_id: moduleId,
+          can_view: false, can_create: false, can_update: false, can_delete: false,
+          [field]: value
+        };
+        if ((field === "can_create" || field === "can_update" || field === "can_delete") && value) {
+          newPerm.can_view = true;
+        }
+        return [...prev, newPerm];
+      }
+      return prev.map((p) => {
         if (p.module_id === moduleId) {
           const updated = { ...p, [field]: value };
           // If turning off view, turn off others
@@ -222,8 +251,8 @@ export default function EmployeeDetailView({
           return updated;
         }
         return p;
-      })
-    );
+      });
+    });
   };
 
   const handleChange = (e: any) => {
@@ -307,11 +336,24 @@ export default function EmployeeDetailView({
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              {isNew ? "Thêm Nhân Viên Mới" : "Chi Tiết Nhân Viên & Phân Quyền"}
-            </h1>
-            <p className="text-xs text-slate-500 mt-1">Thiết lập hồ sơ và kiểm soát quyền truy cập hệ thống</p>
+          <div className="flex items-center gap-3">
+            {!isNew && (
+              formData.avatar_url ? (
+                <img src={formData.avatar_url} alt="Avatar" className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shadow-sm">
+                  <User className="w-5 h-5" />
+                </div>
+              )
+            )}
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">
+                {isNew ? "Thêm Nhân Viên Mới" : formData.full_name || "Chi Tiết Nhân Viên"}
+              </h1>
+              <p className="text-xs text-slate-500 mt-1">
+                {isNew ? "Thiết lập hồ sơ mới" : (formData.employee_code ? `Mã NV: ${formData.employee_code} • Phân quyền & Thiết lập` : "Phân quyền & Thiết lập")}
+              </p>
+            </div>
           </div>
         </div>
         <button
@@ -710,21 +752,6 @@ export default function EmployeeDetailView({
               {!isNew && <p className="text-xs text-amber-600 mt-1">Không thể thay đổi email sau khi đã tạo tài khoản.</p>}
             </div>
 
-            <div className="space-y-1.5 mt-6">
-              <label className="text-sm font-semibold text-slate-700">Vai trò hệ thống (Role)</label>
-              <select
-                name="role_id"
-                value={formData.role_id}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors"
-              >
-                <option value="">-- Chọn vai trò --</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.id}>{r.role_name}</option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-500 mt-1">Vai trò sẽ cấp sẵn một bộ quyền cơ bản cho nhân viên.</p>
-            </div>
 
             <div className="mt-8 pt-6 border-t border-slate-100 space-y-6">
               <h3 className="text-md font-bold text-slate-800">Trạng thái hoạt động</h3>
@@ -794,28 +821,56 @@ export default function EmployeeDetailView({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {modules.filter(m => !m.parent_module_id).sort((a,b) => a.sort_order - b.sort_order).map((parent) => (
-                    <React.Fragment key={parent.id}>
-                      <tr className="bg-slate-100">
-                        <td colSpan={5} className="px-4 py-2 font-bold text-slate-900 text-xs uppercase tracking-wider bg-slate-100/80">
-                          {parent.module_name}
-                        </td>
-                      </tr>
-                      {modules
-                        .filter(m => m.parent_module_id === parent.id)
-                        .sort((a,b) => a.sort_order - b.sort_order)
-                        .map((m) => {
-                          const perm = permissions.find((p) => p.module_id === m.id) || {
+                  {(["DASHBOARD", "BUSINESS", "FINANCE", "OPERATIONS", "HR", "MARKETING", "ADMIN"] as ModuleGroup[]).map(groupCode => {
+                    const groupModules = MODULE_REGISTRY.filter(m => m.group === groupCode).sort((a, b) => a.sortOrder - b.sortOrder);
+                    if (groupModules.length === 0) return null;
+                    
+                    const GROUP_LABELS: Record<ModuleGroup, string> = {
+                      DASHBOARD: "TỔNG QUAN",
+                      BUSINESS: "KINH DOANH",
+                      FINANCE: "TÀI CHÍNH",
+                      OPERATIONS: "VẬN HÀNH",
+                      HR: "NHÂN SỰ & ĐÀO TẠO",
+                      ADMIN: "QUẢN TRỊ",
+                      MARKETING: "MARKETING"
+                    };
+
+                    return (
+                      <React.Fragment key={groupCode}>
+                        <tr className="bg-slate-100">
+                          <td colSpan={5} className="px-4 py-2 font-bold text-slate-900 text-xs uppercase tracking-wider bg-slate-100/80">
+                            {GROUP_LABELS[groupCode]}
+                          </td>
+                        </tr>
+                        {groupModules.map(regMod => {
+                          const dbMod = modules.find(m => m.module_code === regMod.moduleCode);
+                          
+                          // If module doesn't exist in DB yet, show it as disabled (requires DB sync script)
+                          if (!dbMod) {
+                            return (
+                              <tr key={regMod.moduleCode} className="hover:bg-slate-50/50 opacity-50 bg-slate-50">
+                                <td className="px-4 py-3 pl-8 font-medium text-slate-700">
+                                  {regMod.label} <span className="text-[10px] text-red-500 ml-2 border border-red-200 px-1 py-0.5 rounded-sm">(Chưa đồng bộ DB)</span>
+                                </td>
+                                <td colSpan={4} className="px-4 py-3 text-center text-xs text-slate-400">
+                                  Module chưa có trong CSDL, không thể phân quyền
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          const perm = permissions.find((p) => p.module_id === dbMod.id) || {
                             can_view: false, can_create: false, can_update: false, can_delete: false
                           };
+                          
                           return (
-                            <tr key={m.id} className="hover:bg-slate-50/50">
-                              <td className="px-4 py-3 pl-8 font-medium text-slate-700">{m.module_name}</td>
+                            <tr key={regMod.moduleCode} className="hover:bg-slate-50/50">
+                              <td className="px-4 py-3 pl-8 font-medium text-slate-700">{regMod.label}</td>
                               <td className="px-4 py-3 text-center">
                                 <input
                                   type="checkbox"
                                   checked={perm.can_view}
-                                  onChange={(e) => handlePermissionChange(m.id, "can_view", e.target.checked)}
+                                  onChange={(e) => handlePermissionChange(dbMod.id, "can_view", e.target.checked)}
                                   className="w-4 h-4 rounded text-blue-600 border-slate-300"
                                 />
                               </td>
@@ -823,7 +878,7 @@ export default function EmployeeDetailView({
                                 <input
                                   type="checkbox"
                                   checked={perm.can_create}
-                                  onChange={(e) => handlePermissionChange(m.id, "can_create", e.target.checked)}
+                                  onChange={(e) => handlePermissionChange(dbMod.id, "can_create", e.target.checked)}
                                   className="w-4 h-4 rounded text-emerald-600 border-slate-300"
                                 />
                               </td>
@@ -831,7 +886,7 @@ export default function EmployeeDetailView({
                                 <input
                                   type="checkbox"
                                   checked={perm.can_update}
-                                  onChange={(e) => handlePermissionChange(m.id, "can_update", e.target.checked)}
+                                  onChange={(e) => handlePermissionChange(dbMod.id, "can_update", e.target.checked)}
                                   className="w-4 h-4 rounded text-amber-500 border-slate-300"
                                 />
                               </td>
@@ -839,36 +894,14 @@ export default function EmployeeDetailView({
                                 <input
                                   type="checkbox"
                                   checked={perm.can_delete}
-                                  onChange={(e) => handlePermissionChange(m.id, "can_delete", e.target.checked)}
+                                  onChange={(e) => handlePermissionChange(dbMod.id, "can_delete", e.target.checked)}
                                   className="w-4 h-4 rounded text-red-500 border-slate-300"
                                 />
                               </td>
                             </tr>
                           );
-                      })}
-                    </React.Fragment>
-                  ))}
-                  {/* Orphan modules if any */}
-                  {modules.filter(m => m.parent_module_id && !modules.find(p => p.id === m.parent_module_id)).map(m => {
-                    const perm = permissions.find((p) => p.module_id === m.id) || {
-                      can_view: false, can_create: false, can_update: false, can_delete: false
-                    };
-                    return (
-                      <tr key={m.id} className="hover:bg-slate-50/50">
-                        <td className="px-4 py-3 font-medium text-slate-800">{m.module_name}</td>
-                        <td className="px-4 py-3 text-center">
-                          <input type="checkbox" checked={perm.can_view} onChange={(e) => handlePermissionChange(m.id, "can_view", e.target.checked)} className="w-4 h-4 rounded text-blue-600 border-slate-300" />
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <input type="checkbox" checked={perm.can_create} onChange={(e) => handlePermissionChange(m.id, "can_create", e.target.checked)} className="w-4 h-4 rounded text-emerald-600 border-slate-300" />
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <input type="checkbox" checked={perm.can_update} onChange={(e) => handlePermissionChange(m.id, "can_update", e.target.checked)} className="w-4 h-4 rounded text-amber-500 border-slate-300" />
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <input type="checkbox" checked={perm.can_delete} onChange={(e) => handlePermissionChange(m.id, "can_delete", e.target.checked)} className="w-4 h-4 rounded text-red-500 border-slate-300" />
-                        </td>
-                      </tr>
+                        })}
+                      </React.Fragment>
                     );
                   })}
                 </tbody>

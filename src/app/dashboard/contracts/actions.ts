@@ -297,6 +297,7 @@ function normalizeContract(row: any): Contract {
 
   return {
     id: row.id,
+    contract_type: row.contract_type || "SERVICE",
     contract_code: row.contract_code || meta.contract_code || `CAMA-2026-${row.id.slice(0, 5)}`,
     paper_contract_number: meta.paper_contract_number || row.paper_contract_number || "0012492",
     customer_id: row.customer_id,
@@ -622,6 +623,7 @@ export async function logContractActivity(
 
 export async function createContract(payload: {
   customer_id: string;
+  contract_type?: "SERVICE" | "SALES";
   contract_code?: string;
   paper_contract_number?: string;
   contract_date?: string;
@@ -754,6 +756,7 @@ export async function createContract(payload: {
       .insert([
         {
           contract_code: code,
+          contract_type: payload.contract_type || "SERVICE",
           customer_id: payload.customer_id,
           total_amount: payload.total_amount,
           paid_amount: initialPaid,
@@ -1316,7 +1319,7 @@ export async function addGarmentToContractByQR(contractId: string, qrCode: strin
   // Automation 3: Khoá tài sản trong Kho (Vận hành ↔ Kho)
   try {
     await supabase.from("garments_inventory").update({
-      status: "RENTED",
+      status: currentContract.contract_type === "SALES" ? "SOLD" : "RENTED",
       // current_contract_id: contractId, // If schema supports it
     }).eq("id", garment.id);
   } catch(err) {

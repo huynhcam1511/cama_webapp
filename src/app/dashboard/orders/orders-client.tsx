@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as icons from "lucide-react";
-import { Order, OrderStatus, updateOrderStatus, updateOrderChecklist, createOrder } from "./actions";
+import { Order, OrderStatus, updateOrderStatus, updateOrderChecklist, createOrder, updateOrderPic } from "./actions";
 import { format, differenceInDays } from "date-fns";
 import { vi } from "date-fns/locale";
 import { CustomDatePicker } from "@/components/ui/date-picker";
@@ -13,6 +13,7 @@ interface Props {
   initialOrders: Order[];
   users: any[];
   contracts?: any[];
+  teams?: any[];
 }
 
 const STATUS_MAP: Record<OrderStatus, { label: string, color: string, icon: any }> = {
@@ -27,17 +28,28 @@ const STATUS_MAP: Record<OrderStatus, { label: string, color: string, icon: any 
   CANCELLED: { label: "Đã hủy", color: "bg-slate-200 text-slate-500 border-slate-300", icon: icons.XCircle },
 };
 
-export default function OrdersClient({ initialOrders, users, contracts = [] }: Props) {
+export default function OrdersClient({ initialOrders, users, contracts = [], teams = [] }: Props) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
-  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
-  const [tempFilterStatus, setTempFilterStatus] = useState("ALL");
+  const [filterTeam, setFilterTeam] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
+
+  const [isUpdatingPic, setIsUpdatingPic] = useState<string | null>(null);
 
 
   const filteredOrders = orders.filter(o => {
     if (filterStatus !== "ALL" && o.completion_status !== filterStatus) return false;
+    
+    // Filter by team
+    if (filterTeam !== "ALL") {
+      if (filterTeam === "UNASSIGNED") {
+        if (o.pic_id) return false;
+      } else {
+        if (o.pic?.team_id !== filterTeam) return false;
+      }
+    }
+    
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       if (!o.order_code?.toLowerCase().includes(q) && 
@@ -73,6 +85,21 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
       setIsDeleting(null);
     }
   };
+  const handlePicChange = async (e: React.ChangeEvent<HTMLSelectElement>, id: string) => {
+    e.stopPropagation();
+    const picId = e.target.value || null;
+    setIsUpdatingPic(id);
+    try {
+      await updateOrderPic(id, picId);
+      setOrders(orders.map(o => o.id === id ? { ...o, pic_id: picId, pic: { full_name: users.find(u => u.id === picId)?.full_name || '' } } : o));
+    } catch (error) {
+      console.error(error);
+      alert("Đã xảy ra lỗi khi cập nhật PIC");
+    } finally {
+      setIsUpdatingPic(null);
+    }
+  };
+
 
   const getLateWarning = (order: Order) => {
     if (order.completion_status === 'COMPLETED' || order.completion_status === 'ISSUE') return null;
@@ -92,66 +119,90 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
     <div className="gap-6 flex h-[calc(100vh-100px)] overflow-hidden">
       {/* Left: Main List */}
       <div className="flex-1 flex flex-col gap-4 w-full">
-        {/* Desktop Header */}
-        <div className="hidden md:flex justify-between items-center gap-4 shrink-0">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-serif">Quản Lý Đơn Hàng</h1>
-            <p className="text-slate-500 mt-1">Hệ thống tự động đồng bộ đơn hàng từ các hợp đồng đã chốt.</p>
-          </div>
-          <button 
-            onClick={() => router.push('/dashboard/orders/create')}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition-colors flex items-center gap-2 text-sm"
-          >
-            <icons.Plus className="w-4 h-4" /> Tạo Đơn Lẻ
-          </button>
-        </div>
+
 
         {/* Filters */}
-        <div className="flex gap-2 md:gap-4 bg-white p-2 md:p-3 rounded-xl border border-slate-200 shadow-sm shrink-0">
-          <div className="flex-1 relative">
-            <icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Tìm mã đơn, SĐT..." 
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 md:py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
-            />
+        <div className="flex flex-col gap-2 md:gap-3 bg-white p-2 md:p-3 rounded-xl border border-slate-200 shadow-sm shrink-0">
+          <div className="flex gap-2 w-full">
+            <div className="flex-1 relative">
+              <icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Tìm mã đơn, Hợp đồng, SĐT..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 md:py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
+              />
+            </div>
+            
+            <Link 
+              href="/dashboard/orders/create"
+              className="hidden md:flex px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition-colors items-center gap-2 text-sm shrink-0"
+            >
+              <icons.Plus className="w-4 h-4" /> Tạo Đơn Lẻ
+            </Link>
           </div>
           
-          {/* Desktop Filter */}
-          <div className="hidden md:flex gap-2">
-            <select 
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 font-medium"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              {Object.entries(STATUS_MAP).map(([k, v]) => (
-                <option key={k} value={k}>{v.label}</option>
-              ))}
-            </select>
-          </div>
+          {/* Premium Filter Pills */}
+          <div className="flex flex-col gap-3">
+            {/* Team Pills */}
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-2 px-2 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex gap-2 shrink-0 items-center">
+                <button 
+                  onClick={() => setFilterTeam('ALL')} 
+                  className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === 'ALL' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                >
+                  Tất cả tổ nhóm
+                </button>
+                {[...teams].sort((a, b) => {
+                  const order = ['Phòng suit', 'Phòng váy', 'Kho', 'Phòng stu'];
+                  const idxA = order.indexOf(a.name);
+                  const idxB = order.indexOf(b.name);
+                  return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+                }).map(t => (
+                  <button 
+                    key={t.id}
+                    onClick={() => setFilterTeam(t.id)} 
+                    className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === t.id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+                <button 
+                  onClick={() => setFilterTeam('UNASSIGNED')} 
+                  className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === 'UNASSIGNED' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                >
+                  Chưa phân công
+                </button>
+              </div>
+            </div>
 
-          {/* Mobile Filter Button */}
-          <div className="md:hidden">
-             <button 
-                onClick={() => {
-                  setTempFilterStatus(filterStatus);
-                  setIsFilterSheetOpen(true);
-                }}
-                className={`h-full px-3 border border-slate-200 rounded-lg flex items-center justify-center transition-colors ${filterStatus !== 'ALL' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-             >
-                <icons.Filter className="w-4 h-4" />
-             </button>
+            {/* Status Pills */}
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-2 px-2 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex gap-2 shrink-0 items-center">
+                <button 
+                  onClick={() => setFilterStatus('ALL')}
+                  className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-all border ${filterStatus === 'ALL' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                >
+                  Tất cả trạng thái
+                </button>
+                {Object.entries(STATUS_MAP).map(([k, v]) => {
+                  const isSelected = filterStatus === k;
+                  const colorClasses = isSelected ? v.color : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
+                  return (
+                    <button 
+                      key={k}
+                      onClick={() => setFilterStatus(k)}
+                      className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-all border ${colorClasses} flex items-center gap-1.5`}
+                    >
+                      {isSelected && <v.icon className="w-3.5 h-3.5" />}
+                      {v.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-
-          <Link 
-            href="/dashboard/orders/create"
-            className="hidden md:flex px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition-colors items-center gap-2 text-sm"
-          >
-            <icons.Plus className="w-4 h-4" /> Tạo Đơn Lẻ
-          </Link>
         </div>
 
         {/* Mobile FAB */}
@@ -161,66 +212,6 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
         >
           <icons.Plus className="w-6 h-6" />
         </Link>
-
-        {/* Mobile Filter Bottom Sheet */}
-        {isFilterSheetOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex justify-center items-end">
-            <div 
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" 
-              onClick={() => setIsFilterSheetOpen(false)}
-            />
-            <div className="relative w-full bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-8 duration-300 ease-out">
-              <div className="flex justify-between items-center p-5 border-b border-slate-100 shrink-0">
-                <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Trạng thái đơn</h3>
-                <button onClick={() => setIsFilterSheetOpen(false)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">
-                  <icons.X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              <div className="overflow-y-auto px-2 py-3 space-y-1 flex-1">
-                <label className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all ${tempFilterStatus === 'ALL' ? 'bg-slate-50/50' : 'hover:bg-slate-50/50'}`}>
-                  <span className={`font-semibold ${tempFilterStatus === 'ALL' ? 'text-slate-900' : 'text-slate-600'}`}>Tất cả trạng thái</span>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${tempFilterStatus === 'ALL' ? 'border-slate-900 bg-slate-900' : 'border-slate-300'}`}>
-                    {tempFilterStatus === 'ALL' && <icons.Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <input type="radio" name="statusFilter" className="hidden" checked={tempFilterStatus === 'ALL'} onChange={() => setTempFilterStatus('ALL')} />
-                </label>
-                
-                {Object.entries(STATUS_MAP).map(([k, v]) => {
-                  const isSelected = tempFilterStatus === k;
-                  const [bgColor] = v.color.split(' ');
-                  return (
-                    <label key={k} className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all ${isSelected ? 'bg-slate-50/50' : 'hover:bg-slate-50/50'}`}>
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${bgColor}`} />
-                        <span className={`font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-600'}`}>{v.label}</span>
-                      </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-slate-900 bg-slate-900' : 'border-slate-300'}`}>
-                        {isSelected && <icons.Check className="w-3 h-3 text-white" />}
-                      </div>
-                      <input type="radio" name="statusFilter" className="hidden" checked={isSelected} onChange={() => setTempFilterStatus(k)} />
-                    </label>
-                  );
-                })}
-              </div>
-              
-              <div className="p-5 border-t border-slate-100 grid grid-cols-2 gap-4 bg-white shrink-0 pb-safe">
-                <button 
-                  onClick={() => { setFilterStatus('ALL'); setIsFilterSheetOpen(false); }}
-                  className="px-4 py-3.5 font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors text-center"
-                >
-                  Đặt lại
-                </button>
-                <button 
-                  onClick={() => { setFilterStatus(tempFilterStatus); setIsFilterSheetOpen(false); }}
-                  className="px-4 py-3.5 font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-md transition-colors text-center"
-                >
-                  Áp dụng
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* List Container */}
         <div className="flex-1 overflow-y-auto">
@@ -284,7 +275,13 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
                           ) : <span className="text-slate-400 italic">---</span>}
                         </td>
                         <td className="px-4 py-3 align-top pt-4">
-                          <span className="font-semibold text-slate-700 text-xs">{order.pic?.full_name || '---'}</span>
+                          {order.pic?.full_name ? (
+                            <div className="font-semibold text-slate-700 text-xs truncate max-w-[150px]" title={order.pic.full_name}>
+                              {order.pic.full_name}
+                            </div>
+                          ) : (
+                            <div className="text-slate-400 text-xs italic">--- Chưa PIC ---</div>
+                          )}
                         </td>
                         <td className="px-4 py-3 align-top pt-4">
                           <div className="flex items-center gap-2 text-xs font-bold">
@@ -294,13 +291,6 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
                         </td>
                         <td className="px-4 py-3 align-top pt-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); router.push('/dashboard/orders/' + order.id); }}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                              title="Xem chi tiết"
-                            >
-                              <icons.Eye className="w-4 h-4" />
-                            </button>
                             <button 
                               onClick={(e) => { e.stopPropagation(); router.push('/dashboard/orders/' + order.id); }}
                               className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded"
@@ -369,13 +359,12 @@ export default function OrdersClient({ initialOrders, users, contracts = [] }: P
                       </div>
                       
                       {/* Right Column */}
-                      <div className="flex flex-col gap-0.5 items-end shrink-0 pl-3 border-l border-slate-200/60">
-                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                          <icons.User className="w-3 h-3" />
-                          <span className="font-bold text-slate-700">{order.pic?.full_name || 'Chưa PIC'}</span>
-                        </div>
-                        <div className="text-[9px] text-blue-600 font-bold flex items-center">
-                          Phân công <icons.ChevronRight className="w-3 h-3 ml-0.5" />
+                      <div className="flex flex-col items-end shrink-0 pl-3 border-l border-slate-200/60 justify-center">
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 w-full justify-end">
+                          <icons.User className="w-3 h-3 shrink-0" />
+                          <div className="font-bold text-slate-700 text-[10px] text-right max-w-[100px] truncate">
+                            {order.pic?.full_name || 'Chưa PIC'}
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -23,9 +23,7 @@ export default async function AppointmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Lịch Hẹn Khách</h1>
-      </div>
+
       <AppointmentsClient initialData={bookings || []} users={users || []} />
     </div>
   );

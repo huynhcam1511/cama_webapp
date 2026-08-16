@@ -123,6 +123,7 @@ export type DebtStatus = "IN_TERM" | "NEAR_DUE" | "OVERDUE" | "FULLY_COLLECTED" 
 export interface Contract {
   id: string;
   contract_code: string; // CAMA-2026-00001
+  contract_type: "SERVICE" | "SALES";
   paper_contract_number?: string; // 0012492
   customer_id: string;
   customers?: Customer;

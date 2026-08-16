@@ -1,17 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import EmployeeListView from "./employee-list-view";
+import OrgChartView from "./org-chart-view";
 import { requirePermission } from "@/lib/rbac";
 
-export default async function EmployeesPage({
-  searchParams
-}: {
-  searchParams: { tab?: string }
-}) {
+export default async function OrgChartPage() {
   await requirePermission("EMPLOYEES", "view");
 
   const supabase = createAdminClient();
-  const tab = searchParams.tab || "list";
 
   const { data: users, error } = await supabase
     .from("users")
@@ -25,12 +19,12 @@ export default async function EmployeesPage({
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Error fetching users:", error);
+    console.error("Error fetching users for org chart:", error);
   }
 
   return (
     <div className="space-y-6">
-      <EmployeeListView initialUsers={users || []} />
+      <OrgChartView users={users || []} />
     </div>
   );
 }

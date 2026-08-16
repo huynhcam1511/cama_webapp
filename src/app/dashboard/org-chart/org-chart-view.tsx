@@ -82,25 +82,32 @@ export default function OrgChartView({ users }: { users: OrgUser[] }) {
     };
   }, [activeUsers]);
 
+  // Updated UserCard: Thiết kế dạng shape nằm ngang, nhỏ gọn, ít "lậm card"
   const UserCard = ({ user, isCEO = false, isAdvisor = false }: { user: OrgUser, isCEO?: boolean, isAdvisor?: boolean }) => (
-    <div className={`relative flex flex-col items-center p-4 rounded-2xl border bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg w-52 ${isCEO ? 'border-amber-400 ring-4 ring-amber-100 z-10' : isAdvisor ? 'border-purple-300 ring-2 ring-purple-50' : 'border-slate-200 hover:border-blue-400'}`}>
-      <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold mb-3 shadow-md overflow-hidden ${isCEO ? 'bg-gradient-to-br from-amber-400 to-orange-600 ring-2 ring-white' : isAdvisor ? 'bg-gradient-to-br from-purple-400 to-indigo-500' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
+    <div className={`relative flex items-center gap-3 p-2 bg-white border-2 ${isCEO ? 'border-amber-400' : isAdvisor ? 'border-purple-400' : 'border-blue-400'} rounded-lg w-64 shadow-sm z-10`}>
+      <div className={`w-12 h-12 shrink-0 flex items-center justify-center text-white font-bold rounded-full overflow-hidden ${isCEO ? 'bg-amber-500' : isAdvisor ? 'bg-purple-500' : 'bg-blue-500'}`}>
         {user.avatar_url ? (
           <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
         ) : (
-          <span className="text-xl">{user.full_name?.substring(0, 2).toUpperCase() || 'NV'}</span>
+          <span className="text-sm">{user.full_name?.substring(0, 2).toUpperCase() || 'NV'}</span>
         )}
       </div>
-      <h4 className="text-[15px] font-bold text-slate-800 text-center leading-tight mb-1">{user.full_name}</h4>
-      <div className="text-[11px] text-slate-500 font-mono mb-3 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{user.employee_code}</div>
-      <div className={`text-xs px-3 py-1 rounded-full font-semibold shadow-sm ${isCEO ? 'bg-gradient-to-r from-amber-200 to-orange-200 text-amber-900' : isAdvisor ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700'}`}>
-        {user.positions?.position_name || "Nhân viên"}
+      <div className="flex flex-col text-left overflow-hidden">
+        <h4 className="text-[14px] font-bold text-slate-800 truncate" title={user.full_name}>{user.full_name}</h4>
+        <div className="text-[12px] text-slate-600 font-medium truncate" title={user.positions?.position_name || "Nhân viên"}>
+          {user.positions?.position_name || "Nhân viên"}
+        </div>
+        {(user.departments?.department_name || user.teams?.name) && (
+          <div className="text-[11px] text-slate-400 truncate mt-0.5">
+            {[user.departments?.department_name, user.teams?.name].filter(Boolean).join(" - ")}
+          </div>
+        )}
       </div>
     </div>
   );
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/50">
+    <div className="p-8 max-w-[1600px] mx-auto min-h-screen bg-slate-50">
       <div className="mb-12 text-center">
         <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-700 inline-flex items-center gap-3">
           <Network className="w-8 h-8 text-blue-600" />
@@ -118,18 +125,18 @@ export default function OrgChartView({ users }: { users: OrgUser[] }) {
             <div className="flex flex-col items-center relative z-20">
               <UserCard user={orgTree.director} isCEO={true} />
               {/* Line down from Director */}
-              <div className="w-1 bg-gradient-to-b from-amber-400 to-slate-300 h-16 mt-0 rounded-b-full"></div>
+              <div className="w-0.5 bg-slate-300 h-16 mt-0"></div>
             </div>
           )}
 
           {/* Advisory Board (Parallel to Director) */}
           {orgTree.advisoryBoard.length > 0 && (
             <div className="flex flex-col items-center relative z-10 pt-4">
-              <div className="bg-purple-600 text-white px-5 py-2 rounded-lg font-bold shadow-md shadow-purple-500/30 flex items-center gap-2 mb-6">
+              <div className="bg-purple-600 text-white px-5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 mb-6">
                 <Shield className="w-4 h-4" />
                 Ban Tham Vấn
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-4">
                 {orgTree.advisoryBoard.map(user => (
                   <UserCard key={user.id} user={user} isAdvisor={true} />
                 ))}
@@ -137,7 +144,7 @@ export default function OrgChartView({ users }: { users: OrgUser[] }) {
               
               {/* Connecting line to main trunk if director exists */}
               {orgTree.director && (
-                <div className="absolute top-10 -left-16 w-16 h-0.5 bg-slate-300 border-t border-dashed border-slate-400"></div>
+                <div className="absolute top-10 -left-16 w-16 h-0.5 bg-slate-300"></div>
               )}
             </div>
           )}
@@ -145,10 +152,14 @@ export default function OrgChartView({ users }: { users: OrgUser[] }) {
 
         {/* Other Board members without department */}
         {orgTree.boardOfDirectors.length > 0 && (
-          <div className="flex flex-col items-center mb-12">
-            <div className="flex justify-center gap-6 flex-wrap">
-              {orgTree.boardOfDirectors.map(user => (
-                <UserCard key={user.id} user={user} />
+          <div className="flex flex-col items-center mb-12 relative">
+            <div className="w-0.5 h-6 bg-slate-300 absolute -top-6"></div>
+            <div className="flex flex-col gap-4 items-center">
+              {orgTree.boardOfDirectors.map((user, idx) => (
+                <div key={user.id} className="relative flex flex-col items-center">
+                  {idx > 0 && <div className="w-0.5 h-4 bg-slate-300"></div>}
+                  <UserCard user={user} />
+                </div>
               ))}
             </div>
             <div className="w-0.5 h-12 bg-slate-300 mt-4"></div>
@@ -161,7 +172,7 @@ export default function OrgChartView({ users }: { users: OrgUser[] }) {
             {/* Horizontal Line connecting departments */}
             <div className="relative w-full flex justify-center h-8">
               {orgTree.departments.length > 1 && (
-                <div className="absolute top-0 border-t-2 border-slate-300 w-[calc(100%-min(100vw,24rem)/2)] max-w-5xl rounded-t-xl"></div>
+                <div className="absolute top-0 border-t-2 border-slate-300 w-[calc(100%-min(100vw,24rem)/2)] max-w-5xl"></div>
               )}
             </div>
 
@@ -172,32 +183,44 @@ export default function OrgChartView({ users }: { users: OrgUser[] }) {
                   <div className="w-0.5 h-8 bg-slate-300 absolute -top-8"></div>
                   
                   {/* Department Header */}
-                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/20 flex items-center gap-2 z-10 w-full justify-center mb-8 border border-white/20">
+                  <div className="bg-blue-600 text-white px-8 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 z-10 w-full justify-center mb-8 border border-white/20">
                     <Building2 className="w-5 h-5" />
                     {dept.name}
                   </div>
 
-                  {/* Department direct users */}
+                  {/* Department direct users (vertical tree line) */}
                   {dept.noTeamUsers.length > 0 && (
-                    <div className="flex flex-col items-center gap-5 mb-8">
-                      {dept.noTeamUsers.map(user => (
-                        <UserCard key={user.id} user={user} />
+                    <div className="flex flex-col items-center gap-4 mb-8 relative">
+                      <div className="w-0.5 h-6 bg-slate-300 absolute -top-6"></div>
+                      {dept.noTeamUsers.map((user, idx) => (
+                        <div key={user.id} className="relative flex flex-col items-center">
+                          {idx > 0 && <div className="w-0.5 h-4 bg-slate-300"></div>}
+                          <UserCard user={user} />
+                        </div>
                       ))}
                     </div>
                   )}
 
                   {/* Teams within Department */}
                   {Array.from(dept.teams.values()).length > 0 && (
-                    <div className="flex flex-col items-center w-full mt-2 gap-6">
-                      {Array.from(dept.teams.values()).map(team => (
-                        <div key={team.name} className="flex flex-col items-center bg-white/60 backdrop-blur-sm border border-slate-200/60 p-5 rounded-2xl shadow-sm w-full relative pt-8">
-                          <div className="absolute -top-3.5 bg-white text-blue-700 px-4 py-1.5 rounded-full text-sm font-bold border-2 border-blue-100 shadow-sm flex items-center gap-1.5">
+                    <div className="flex flex-col items-center w-full mt-2 gap-8 relative">
+                      <div className="w-0.5 h-6 bg-slate-300 absolute -top-6"></div>
+                      {Array.from(dept.teams.values()).map((team, idx) => (
+                        <div key={team.name} className="flex flex-col items-center w-full relative">
+                          {idx > 0 && <div className="w-0.5 h-8 bg-slate-300 absolute -top-8"></div>}
+                          
+                          <div className="text-blue-700 font-semibold text-sm mb-4 border-b-2 border-blue-200 pb-1 flex items-center gap-1.5 z-10 px-2 bg-slate-50">
                             <Users className="w-4 h-4" />
                             {team.name}
                           </div>
-                          <div className="flex flex-wrap justify-center gap-5">
-                            {team.users.map(user => (
-                              <UserCard key={user.id} user={user} />
+                          
+                          <div className="flex flex-col items-center gap-4 relative">
+                            <div className="w-0.5 h-3 bg-slate-300 absolute -top-3"></div>
+                            {team.users.map((user, uIdx) => (
+                              <div key={user.id} className="relative flex flex-col items-center">
+                                {uIdx > 0 && <div className="w-0.5 h-4 bg-slate-300"></div>}
+                                <UserCard user={user} />
+                              </div>
                             ))}
                           </div>
                         </div>

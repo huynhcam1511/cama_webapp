@@ -30,7 +30,8 @@ export type ModuleCode =
   | "SALES_DASHBOARD"
   | "OPERATION_DASHBOARD"
   | "HR_DASHBOARD"
-  | "MARKETING_DASHBOARD";
+  | "MARKETING_DASHBOARD"
+  | "ORG_CHART";
 
 export type ModuleGroup = "DASHBOARD" | "BUSINESS" | "OPERATIONS" | "HR" | "ADMIN" | "FINANCE" | "MARKETING";
 
@@ -307,6 +308,20 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "HR",
     parentCode: null,
     sortOrder: 1,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
+    moduleCode: "ORG_CHART",
+    label: "Sơ đồ tổ chức",
+    shortLabel: "Sơ đồ",
+    route: "/dashboard/org-chart",
+    icon: "Network",
+    group: "HR",
+    parentCode: null,
+    sortOrder: 2,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",

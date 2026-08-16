@@ -1,18 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import * as icons from "lucide-react";
 import { format } from "date-fns";
 import { Order, OrderStatus } from "../actions";
 
-const STATUS_ORDER: OrderStatus[] = ["PENDING", "PREPARING", "WAITING_FITTING", "READY_TO_DELIVER", "DELIVERED", "COMPLETED"];
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Chuẩn bị",
-  PREPARING: "Chuẩn bị",
-  WAITING_FITTING: "Fitting",
-  READY_TO_DELIVER: "Sẵn sàng",
-  DELIVERED: "Giao",
-  COMPLETED: "Hoàn tất"
-};
+const UI_STEPS = [
+  { id: 'FITTING', label: 'Fitting & Sửa', statuses: ['PENDING', 'PREPARING', 'WAITING_FITTING'] },
+  { id: 'GIAO_DO', label: 'Giao đồ', statuses: ['READY_TO_DELIVER', 'DELIVERED'] },
+  { id: 'THU_HOI', label: 'Thu hồi & Kiểm tra', statuses: ['WAITING_RETURN'] },
+  { id: 'XU_LY', label: 'Xử lý Kho', statuses: ['ISSUE'] },
+  { id: 'HOAN_TAT', label: 'Hoàn tất', statuses: ['COMPLETED'] }
+];
 
 export default function OrderDetailMobile({
   currentOrder,
@@ -22,7 +20,7 @@ export default function OrderDetailMobile({
   items,
   garments,
   checklist,
-  notesText,
+  notesTextObj,
   notesImages,
   statusInfo,
   handleStatusChange,
@@ -39,18 +37,34 @@ export default function OrderDetailMobile({
   setTempNotes,
   handleSaveNotes,
   isSavingNotes,
-  onImageClick
+  onImageClick,
+  users,
+  handlePicChange,
+  isUpdatingPic
 }: any) {
   
   const [showOrderInfo, setShowOrderInfo] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Incident Modal State
+  const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
+  const [incidentForm, setIncidentForm] = useState({ description: '', penalty_amount: 0, resolution: 'DEDUCT_FROM_DEPOSIT' });
+  const [isSubmittingIncident, setIsSubmittingIncident] = useState(false);
 
-  // Stepper logic
-  const currentStepIndex = STATUS_ORDER.indexOf(currentOrder.completion_status) >= 0 
-    ? STATUS_ORDER.indexOf(currentOrder.completion_status) 
-    : 0;
+  const getUiStepIndex = (status: string) => {
+    const index = UI_STEPS.findIndex(step => step.statuses.includes(status));
+    return index >= 0 ? index : 0;
+  };
+  
+  const actualStepIndex = getUiStepIndex(currentOrder.completion_status);
+  const [viewingStepIndex, setViewingStepIndex] = useState(actualStepIndex);
 
-  const nextStatus = currentStepIndex < STATUS_ORDER.length - 1 ? STATUS_ORDER[currentStepIndex + 1] : null;
+  useEffect(() => {
+    setViewingStepIndex(getUiStepIndex(currentOrder.completion_status));
+  }, [currentOrder.completion_status]);
+
+  const nextStatus = actualStepIndex < UI_STEPS.length - 1 ? UI_STEPS[actualStepIndex + 1].statuses[0] as OrderStatus : null;
+  const isReadOnly = viewingStepIndex !== actualStepIndex;
 
   // Hard-logic: Require specific checklist items based on current status
   const getTasksForNextStatus = () => {
@@ -106,7 +120,24 @@ export default function OrderDetailMobile({
                {contract?.contract_code || currentOrder.order_code}
              </div>
              <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-               <icons.User className="w-3 h-3" /> PIC: <span className="text-slate-800 font-bold">{currentOrder.pic?.full_name || 'Chưa phân công'}</span>
+               <icons.User className="w-3 h-3" /> PIC: 
+               {isUpdatingPic ? (
+                 <icons.Loader2 className="w-3 h-3 animate-spin text-blue-500" />
+               ) : (
+                 <select
+                   value={currentOrder.pic_id || ''}
+                   onChange={handlePicChange}
+                   disabled={isUpdatingPic}
+                   className="bg-transparent border-none p-0 pr-4 font-bold text-slate-800 text-[11px] focus:ring-0 cursor-pointer text-right max-w-[100px] truncate"
+                 >
+                   <option value="">Chưa phân công</option>
+                   {users?.map((u: any) => (
+                     <option key={u.id} value={u.id}>
+                       {u.full_name}
+                     </option>
+                   ))}
+                 </select>
+               )}
              </div>
           </div>
 
@@ -143,43 +174,93 @@ export default function OrderDetailMobile({
              </div>
           </div>
           {/* Tầng 4: Progress Stepper */}
-          <div className="bg-white p-5 pt-4">
-          <div className="flex items-center justify-between relative">
-            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-100 -z-0 -translate-y-1/2"></div>
-            {['Chuẩn bị', 'Fitting', 'Sẵn sàng', 'Giao', 'Hoàn tất'].map((step, idx) => {
-              
-              const getUiStepIndex = (status: string) => {
-                switch (status) {
-                  case 'PENDING':
-                  case 'PREPARING': return 0;
-                  case 'WAITING_FITTING': return 1;
-                  case 'READY_TO_DELIVER': return 2;
-                  case 'DELIVERED': 
-                  case 'WAITING_RETURN': return 3;
-                  case 'COMPLETED': return 4;
-                  default: return 0;
-                }
-              };
-              
-              const uiStepIndex = getUiStepIndex(currentOrder.completion_status);
-              let stepStatus = idx < uiStepIndex ? 'completed' : idx === uiStepIndex ? 'current' : 'pending';
-              
-              return (
-                <div key={idx} className="relative z-10 flex flex-col items-center gap-1.5 bg-white px-1">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 
-                    ${stepStatus === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : 
-                      stepStatus === 'current' ? 'bg-white border-blue-600 text-blue-600' : 
-                      'bg-white border-slate-200 text-slate-300'}`}
-                  >
-                    {stepStatus === 'completed' ? <icons.Check className="w-3.5 h-3.5" /> : idx + 1}
+          <div className="bg-white px-2 py-4">
+            <div className="flex items-start justify-between relative w-full">
+              <div className="absolute top-3 left-4 right-4 h-0.5 bg-slate-100 -z-0"></div>
+              {UI_STEPS.map((step, idx) => {
+                let stepStatus = idx < actualStepIndex ? 'completed' : idx === actualStepIndex ? 'current' : 'pending';
+                const isViewing = idx === viewingStepIndex;
+                
+                return (
+                  <div key={idx} onClick={() => setViewingStepIndex(idx)} className="relative z-10 flex flex-col items-center gap-1.5 bg-white px-0.5 cursor-pointer group flex-1 max-w-[70px]">
+                    <div className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all
+                      ${isViewing ? 'ring-4 ring-blue-100 scale-110 ' : ''}
+                      ${stepStatus === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : 
+                        stepStatus === 'current' ? 'bg-white border-blue-600 text-blue-600' : 
+                        'bg-white border-slate-200 text-slate-300'}`}
+                    >
+                      {stepStatus === 'completed' ? <icons.Check className="w-3.5 h-3.5" /> : idx + 1}
+                    </div>
+                    <span className={`text-[9px] text-center leading-tight transition-colors ${isViewing ? 'text-blue-700 font-bold' : stepStatus === 'completed' ? 'text-slate-700 font-semibold' : 'text-slate-400 font-semibold'}`}>
+                      {step.label}
+                    </span>
                   </div>
-                  <span className={`text-[10px] whitespace-nowrap font-semibold ${stepStatus === 'current' ? 'text-blue-700' : stepStatus === 'completed' ? 'text-slate-700' : 'text-slate-400'}`}>
-                    {step}
-                  </span>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
+            {isReadOnly && (
+               <div className="mt-3 text-[10px] text-center text-amber-600 bg-amber-50 py-1.5 rounded-lg border border-amber-100/50 font-medium">
+                 Đang xem ảnh của giai đoạn: <span className="font-bold">{UI_STEPS[viewingStepIndex].label}</span>
+               </div>
+            )}
           </div>
+        </div>
+
+        {/* 5. Notes (Per Stage) */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <icons.FileText className="w-4 h-4 text-slate-400" /> Ghi chú: {UI_STEPS[viewingStepIndex].label}
+            </h2>
+            {!isEditingNotes && (
+              <button 
+                onClick={() => {
+                  setTempNotes(notesTextObj[viewingStepIndex] || "");
+                  setIsEditingNotes(true);
+                }}
+                className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg"
+              >
+                + Ghi chú
+              </button>
+            )}
+          </div>
+          
+          {isEditingNotes ? (
+            <div className="space-y-3">
+              <textarea 
+                value={tempNotes}
+                onChange={(e) => setTempNotes(e.target.value)}
+                className="w-full min-h-[100px] text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+                placeholder={`Nhập ghi chú cho giai đoạn ${UI_STEPS[viewingStepIndex].label}...`}
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <button 
+                  onClick={() => setIsEditingNotes(false)}
+                  disabled={isSavingNotes}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl active:scale-95 transition-transform"
+                >
+                  Hủy
+                </button>
+                <button 
+                  onClick={handleSaveNotes}
+                  disabled={isSavingNotes}
+                  className="px-4 py-2 text-xs font-bold text-white bg-blue-600 rounded-xl active:scale-95 transition-transform flex items-center gap-1.5"
+                >
+                  {isSavingNotes && <icons.Loader2 className="w-3 h-3 animate-spin" />}
+                  Lưu
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-slate-600 leading-relaxed font-medium bg-slate-50 rounded-xl p-3 min-h-[60px]">
+              {notesTextObj[viewingStepIndex] ? (
+                <p className="whitespace-pre-wrap">{notesTextObj[viewingStepIndex]}</p>
+              ) : (
+                <span className="italic opacity-50 block text-center mt-1">Chưa có ghi chú nào cho giai đoạn này.</span>
+              )}
+            </div>
+          )}
         </div>
         </div>
 
@@ -212,14 +293,13 @@ export default function OrderDetailMobile({
             )}
             
             {items.map((item: any, idx: number) => {
-              const rowId = `item_${item.id || idx}`;
+              const rowId = `item_${item.id || idx}_step_${viewingStepIndex}`;
               const images = notesImages[rowId] || [];
               const isUploading = uploadingImageId === rowId;
               
               let category = item.category || "DỊCH VỤ";
               let itemName = item.detail || item.item_name || "Dịch vụ theo hợp đồng";
               
-              // Prevent rendering raw JSON string
               if (typeof itemName === 'string' && itemName.trim().startsWith('{')) {
                  try {
                    const parsed = JSON.parse(itemName);
@@ -253,23 +333,34 @@ export default function OrderDetailMobile({
                     {images.map((img: string, iIdx: number) => (
                       <div key={iIdx} onClick={() => onImageClick && onImageClick(img)} className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer">
                          <img src={img} alt="QC" className="w-full h-full object-cover" />
-                         <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
-                           <icons.X className="w-3 h-3" />
-                         </button>
+                         {!isReadOnly && (
+                           <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
+                             <icons.X className="w-3 h-3" />
+                           </button>
+                         )}
                       </div>
                     ))}
-                    <label className={`cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-colors ${isUploading ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-600'}`}>
-                      {isUploading ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.ImagePlus className="w-4 h-4" />}
-                      {isUploading ? "Up..." : "Thêm ảnh"}
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, rowId)} disabled={isUploading} />
-                    </label>
+                    {!isReadOnly && (
+                      <label className={`cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-colors ${isUploading ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-600'}`}>
+                        {isUploading ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.ImagePlus className="w-4 h-4" />}
+                        {isUploading ? "Up..." : "Thêm ảnh"}
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, rowId)} disabled={isUploading} />
+                      </label>
+                    )}
                   </div>
+                  
+                  {/* Sự Cố Button (Chỉ ở bước Nhận Trả) */}
+                  {!isReadOnly && viewingStepIndex === 4 && (
+                    <button onClick={() => setIsIncidentModalOpen(true)} className="mt-3 w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors">
+                      <icons.AlertTriangle className="w-4 h-4" /> Báo sự cố (Rách/Dơ bẩn)
+                    </button>
+                  )}
                 </div>
               )
             })}
 
             {garments.map((g: any, idx: number) => {
-              const rowId = `garment_${g.id || idx}`;
+              const rowId = `garment_${g.id || idx}_step_${viewingStepIndex}`;
               const images = notesImages[rowId] || [];
               const isUploading = uploadingImageId === rowId;
               
@@ -303,17 +394,28 @@ export default function OrderDetailMobile({
                     {images.map((img: string, iIdx: number) => (
                       <div key={iIdx} onClick={() => onImageClick && onImageClick(img)} className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer">
                          <img src={img} alt="QC" className="w-full h-full object-cover" />
-                         <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
-                           <icons.X className="w-3 h-3" />
-                         </button>
+                         {!isReadOnly && (
+                           <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
+                             <icons.X className="w-3 h-3" />
+                           </button>
+                         )}
                       </div>
                     ))}
-                    <label className={`cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-colors ${isUploading ? 'bg-slate-100 text-slate-400' : 'bg-purple-50 text-purple-700'}`}>
-                      {isUploading ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.ImagePlus className="w-4 h-4" />}
-                      {isUploading ? "Up..." : "Thêm ảnh"}
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, rowId)} disabled={isUploading} />
-                    </label>
+                    {!isReadOnly && (
+                      <label className={`cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-colors ${isUploading ? 'bg-slate-100 text-slate-400' : 'bg-purple-50 text-purple-700'}`}>
+                        {isUploading ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.ImagePlus className="w-4 h-4" />}
+                        {isUploading ? "Up..." : "Thêm ảnh"}
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, rowId)} disabled={isUploading} />
+                      </label>
+                    )}
                   </div>
+                  
+                  {/* Sự Cố Button */}
+                  {!isReadOnly && viewingStepIndex === 4 && (
+                    <button onClick={() => setIsIncidentModalOpen(true)} className="mt-3 w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors">
+                      <icons.AlertTriangle className="w-4 h-4" /> Báo sự cố (Rách/Dơ bẩn)
+                    </button>
+                  )}
                 </div>
               )
             })}
@@ -357,64 +459,103 @@ export default function OrderDetailMobile({
           </div>
         </details>
 
-        {/* 9. Notes */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-10">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <icons.FileText className="w-4 h-4 text-slate-400" /> Ghi chú đơn hàng
-            </h2>
-            {!isEditingNotes && (
-              <button 
-                onClick={() => {
-                  setTempNotes(notesText || "");
-                  setIsEditingNotes(true);
-                }}
-                className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg"
-              >
-                + Thêm
+      {/* Incident Modal */}
+      {isIncidentModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in">
+          <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-rose-50/50">
+              <h3 className="font-bold text-rose-700 flex items-center gap-2">
+                <icons.AlertTriangle className="w-5 h-5" />
+                Báo Cáo Sự Cố
+              </h3>
+              <button onClick={() => setIsIncidentModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 bg-white rounded-full">
+                <icons.X className="w-5 h-5" />
               </button>
-            )}
-          </div>
-          
-          {isEditingNotes ? (
-            <div className="space-y-3">
-              <textarea 
-                value={tempNotes}
-                onChange={(e) => setTempNotes(e.target.value)}
-                className="w-full min-h-[100px] text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
-                placeholder="Nhập ghi chú cho đơn hàng này..."
-                autoFocus
-              />
-              <div className="flex justify-end gap-2">
-                <button 
-                  onClick={() => setIsEditingNotes(false)}
-                  disabled={isSavingNotes}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl active:scale-95 transition-transform"
-                >
-                  Hủy
-                </button>
-                <button 
-                  onClick={handleSaveNotes}
-                  disabled={isSavingNotes}
-                  className="px-4 py-2 text-xs font-bold text-white bg-blue-600 rounded-xl active:scale-95 transition-transform flex items-center gap-1.5"
-                >
-                  {isSavingNotes && <icons.Loader2 className="w-3 h-3 animate-spin" />}
-                  Lưu ghi chú
-                </button>
+            </div>
+            <div className="p-4 overflow-y-auto space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Mô tả tình trạng (Rách, Dơ, Hư hỏng)</label>
+                <textarea 
+                  value={incidentForm.description}
+                  onChange={e => setIncidentForm({...incidentForm, description: e.target.value})}
+                  className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none min-h-[80px]"
+                  placeholder="Ví dụ: Váy bị rách phần ren dưới lai..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Số tiền đền bù (VNĐ)</label>
+                <div className="relative">
+                  <input 
+                    type="number"
+                    value={incidentForm.penalty_amount || ''}
+                    onChange={e => setIncidentForm({...incidentForm, penalty_amount: parseInt(e.target.value) || 0})}
+                    className="w-full border border-slate-200 rounded-lg p-3 pr-10 text-sm focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none font-bold text-rose-600"
+                    placeholder="0"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">VNĐ</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Phương án thu tiền</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => setIncidentForm({...incidentForm, resolution: 'DEDUCT_FROM_DEPOSIT'})}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border ${incidentForm.resolution === 'DEDUCT_FROM_DEPOSIT' ? 'bg-rose-50 border-rose-500 text-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
+                  >
+                    Khấu trừ cọc
+                  </button>
+                  <button 
+                    onClick={() => setIncidentForm({...incidentForm, resolution: 'EXTRA_CHARGE'})}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border ${incidentForm.resolution === 'EXTRA_CHARGE' ? 'bg-rose-50 border-rose-500 text-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
+                  >
+                    Thu thêm tiền mặt
+                  </button>
+                </div>
+              </div>
+              <div className="bg-amber-50 p-3 rounded-lg border border-amber-200/50">
+                <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
+                  Hệ thống sẽ tự động tạo phiếu <span className="font-bold">{incidentForm.resolution === 'DEDUCT_FROM_DEPOSIT' ? 'Khấu trừ tiền cọc' : 'Thu tiền đền bù'}</span> với giá trị <span className="font-bold text-rose-600">{incidentForm.penalty_amount.toLocaleString('vi-VN')}đ</span> vào sổ Công Nợ Kế Toán.
+                </p>
               </div>
             </div>
-          ) : (
-            <div className="text-sm text-slate-600 leading-relaxed font-medium bg-slate-50 rounded-xl p-3 min-h-[60px]">
-              {notesText ? (
-                <p className="whitespace-pre-wrap">{notesText}</p>
-              ) : (
-                <span className="italic opacity-50 block text-center mt-1">Chưa có ghi chú nào.</span>
-              )}
+            
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex gap-2">
+              <button 
+                onClick={() => setIsIncidentModalOpen(false)}
+                className="flex-1 py-3 bg-white text-slate-700 font-bold text-sm rounded-xl border border-slate-200"
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                onClick={async () => {
+                  setIsSubmittingIncident(true);
+                  try {
+                    const { reportOrderIncident } = await import('../actions');
+                    await reportOrderIncident(currentOrder.id, contract?.id, {
+                      ...incidentForm,
+                      type: 'DAMAGE',
+                      created_by_id: currentOrder.pic_id || 'system'
+                    });
+                    setIsIncidentModalOpen(false);
+                    alert("Đã ghi nhận sự cố và tạo phiếu kế toán thành công!");
+                  } catch (e) {
+                    alert("Lỗi ghi nhận sự cố.");
+                  } finally {
+                    setIsSubmittingIncident(false);
+                  }
+                }}
+                disabled={isSubmittingIncident || incidentForm.penalty_amount <= 0 || !incidentForm.description}
+                className="flex-1 py-3 bg-rose-600 text-white font-bold text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmittingIncident ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.CheckCircle className="w-4 h-4" />}
+                Xác nhận
+              </button>
             </div>
-          )}
+          </div>
         </div>
-
-      </div>
+      )}
 
       {/* 10. Sticky Bottom Action */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.15)] pb-8 pt-3 px-4 rounded-t-3xl">
@@ -430,7 +571,7 @@ export default function OrderDetailMobile({
           {isUpdating ? (
             <><icons.Loader2 className="w-5 h-5 animate-spin" /> Đang cập nhật...</>
           ) : nextStatus ? (
-            <>XÁC NHẬN HOÀN TẤT {STATUS_LABELS[currentOrder.completion_status]?.toUpperCase()} <icons.CheckCircle2 className="w-4 h-4" /></>
+            <>XÁC NHẬN HOÀN TẤT {UI_STEPS[actualStepIndex].label.toUpperCase()} <icons.CheckCircle2 className="w-4 h-4" /></>
           ) : (
             <><icons.CheckCircle2 className="w-5 h-5" /> Đã hoàn tất toàn bộ</>
           )}
@@ -449,7 +590,7 @@ export default function OrderDetailMobile({
             </div>
             
             <p className="text-sm text-slate-600 mb-4 font-medium leading-snug">
-              Bạn đã hoàn tất bước <strong>{STATUS_LABELS[currentOrder.completion_status]}</strong>? 
+              Bạn đã hoàn tất bước <strong>{UI_STEPS[actualStepIndex].label}</strong>? 
               {requiredTasks.length > 0 && " Vui lòng đánh dấu các công việc đã thực hiện:"}
             </p>
 
@@ -487,7 +628,7 @@ export default function OrderDetailMobile({
               {isUpdating ? (
                 <><icons.Loader2 className="w-5 h-5 animate-spin" /> Đang cập nhật...</>
               ) : (
-                <>Xác nhận & Chuyển sang {STATUS_LABELS[nextStatus]} <icons.ArrowRight className="w-4 h-4" /></>
+                <>Xác nhận & Chuyển sang {UI_STEPS.find(s => s.statuses.includes(nextStatus as string))?.label} <icons.ArrowRight className="w-4 h-4" /></>
               )}
             </button>
           </div>
@@ -497,3 +638,4 @@ export default function OrderDetailMobile({
     </div>
   );
 }
+

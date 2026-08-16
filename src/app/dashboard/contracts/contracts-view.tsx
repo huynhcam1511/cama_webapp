@@ -55,6 +55,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
   const [contracts] = useState<Contract[]>(initialContracts);
   const [allCustomers] = useState<any[]>(customers);
   const [searchQuery, setSearchQuery] = useState("");
+  const [contractTypeFilter, setContractTypeFilter] = useState("");
   const [contractStatusFilter, setContractStatusFilter] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
   const [debtOnlyFilter, setDebtOnlyFilter] = useState(false);
@@ -62,6 +63,8 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc'|'desc'}>({ key: 'created_at', direction: 'desc' });
   const [quickFilter, setQuickFilter] = useState('');
+  
+  const [isContractTypeModalOpen, setIsContractTypeModalOpen] = useState(false);
   
   const handleSort = (key: string) => {
     setSortConfig(prev => ({
@@ -117,6 +120,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
       c.customers?.phone?.includes(q);
 
     const matchesContractStatus = !contractStatusFilter || c.contract_status === contractStatusFilter;
+    const matchesContractType = !contractTypeFilter || c.contract_type === contractTypeFilter;
     const matchesPaymentStatus = !paymentStatusFilter || c.payment_status === paymentStatusFilter;
     const matchesDebt = !debtOnlyFilter || c.remaining_amount > 0;
     const matchesOverdue = !overdueOnlyFilter || c.debt_status === "OVERDUE" || c.payment_status === "OVERDUE";
@@ -135,7 +139,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
       matchesQuick = !c.assigned_staff_names || c.assigned_staff_names.length === 0;
     }
 
-    return matchesSearch && matchesContractStatus && matchesPaymentStatus && matchesDebt && matchesOverdue && matchesQuick;
+    return matchesSearch && matchesContractStatus && matchesContractType && matchesPaymentStatus && matchesDebt && matchesOverdue && matchesQuick;
   });
 
   // Sorting
@@ -162,6 +166,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
   const handleResetFilters = () => {
     setSearchQuery("");
+    setContractTypeFilter("");
     setContractStatusFilter("");
     setPaymentStatusFilter("");
     setDebtOnlyFilter(false);
@@ -235,8 +240,8 @@ export default function ContractsView({ initialContracts, initialStats, customer
         {/* Create Contract Button Card */}
         {canCreate && (
           <div className="flex shrink-0 lg:w-[180px]">
-            <Link
-              href={defaultCustomerId ? `/dashboard/contracts/create?newFor=${defaultCustomerId}` : "/dashboard/contracts/create"}
+            <button
+              onClick={() => setIsContractTypeModalOpen(true)}
               className="group relative overflow-hidden bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 rounded-xl transition-all duration-300 flex flex-col items-center justify-center gap-2.5 p-4 w-full h-full shadow-[0_8px_20px_rgb(245,158,11,0.25)] hover:shadow-[0_8px_25px_rgb(245,158,11,0.4)] hover:-translate-y-1 border border-amber-400/50"
             >
               {/* Decorative background elements */}
@@ -249,7 +254,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
               <span className="relative z-10 text-[13px] font-extrabold text-white tracking-wider drop-shadow-md uppercase">
                 Tạo Hợp Đồng
               </span>
-            </Link>
+            </button>
           </div>
         )}
       </div>
@@ -272,6 +277,16 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
             
             <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={contractTypeFilter}
+                onChange={(e) => setContractTypeFilter(e.target.value)}
+                className="bg-white text-slate-700 font-medium border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-500 shadow-sm"
+              >
+                <option value="">Tất cả Loại HĐ</option>
+                <option value="SERVICE">HĐ Dịch Vụ (Thuê/Chụp)</option>
+                <option value="SALES">HĐ Bán Hàng (Mua đứt)</option>
+              </select>
+
               <select
                 value={contractStatusFilter}
                 onChange={(e) => setContractStatusFilter(e.target.value)}
@@ -397,8 +412,13 @@ export default function ContractsView({ initialContracts, initialStats, customer
 <tr key={contract.id} className="hover:bg-slate-50/80 transition-colors group border-b border-slate-100">
   {/* Mã HĐ & Ngày */}
   <td className="px-4 py-3">
-    <div className="font-mono font-bold text-slate-900 flex items-center gap-1 text-xs">
+    <div className="font-mono font-bold text-slate-900 flex items-center gap-1.5 text-xs">
       <span>{contract.contract_code}</span>
+      {contract.contract_type === "SALES" ? (
+        <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-bold tracking-wider uppercase">Bán</span>
+      ) : (
+        <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] font-bold tracking-wider uppercase">Thuê</span>
+      )}
     </div>
     <div className="text-[10px] text-slate-500 mt-0.5">
       {contract.contract_date 
@@ -545,6 +565,54 @@ export default function ContractsView({ initialContracts, initialStats, customer
           contract={selectedForPrint}
           onClose={() => setSelectedForPrint(null)}
         />
+      )}
+
+      {/* Contract Type Selection Modal */}
+      {isContractTypeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-800">Chọn Loại Hợp Đồng</h3>
+              <button 
+                onClick={() => setIsContractTypeModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 bg-slate-100 p-1.5 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <Link
+                href={defaultCustomerId ? `/dashboard/contracts/create?newFor=${defaultCustomerId}&type=SERVICE` : "/dashboard/contracts/create?type=SERVICE"}
+                className="block p-5 border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50 rounded-xl transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-base mb-1">Hợp đồng Dịch vụ</h4>
+                    <p className="text-sm text-slate-500">Dùng cho dịch vụ chụp ảnh, thuê váy, thuê vest, có tính ngày trả đồ.</p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link
+                href={defaultCustomerId ? `/dashboard/contracts/create?newFor=${defaultCustomerId}&type=SALES` : "/dashboard/contracts/create?type=SALES"}
+                className="block p-5 border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-xl transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Package className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-base mb-1">Hợp đồng Bán hàng</h4>
+                    <p className="text-sm text-slate-500">Dùng cho bán đứt váy/phụ kiện hoặc đền bù. Đồ sẽ trừ tồn kho vĩnh viễn.</p>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

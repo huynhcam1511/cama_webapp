@@ -104,16 +104,16 @@ export async function getUserPermissions(userId: string) {
       });
     });
   } else {
-    // Temporary Fallback: If no permissions are set, grant default operational permissions
-    // to unblock employees since the Permissions UI is not fully implemented yet.
+    // Fallback: If no permissions are set for a module, default to false.
+    // This enforces strict RBAC permissions.
     const { MODULE_REGISTRY } = await import("@/config/moduleRegistry");
     MODULE_REGISTRY.forEach(m => {
       if (!mergedMap.has(m.moduleCode)) {
         mergedMap.set(m.moduleCode, {
-          can_view: true,
-          can_create: true, // Let them create by default to avoid business blockage
-          can_update: true,
-          can_delete: false // Restrict deletion
+          can_view: false,
+          can_create: false,
+          can_update: false,
+          can_delete: false
         });
       }
     });

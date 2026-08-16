@@ -27,9 +27,9 @@ async function run() {
     await client.connect();
     console.log("Connected successfully!");
 
-    const sql = fs.readFileSync('supabase/migrations/20260815234000_split_contracts_types.sql', 'utf8');
+    const sql = fs.readFileSync('supabase/migrations/20260815000000_add_qa_stages.sql', 'utf8');
     await client.query(sql);
-    console.log("✅ Contract types migration applied successfully!");
+    console.log("✅ QA stages migration applied successfully!");
     
     await client.query(`NOTIFY pgrst, 'reload schema';`);
     console.log("✅ PostgREST schema cache reload triggered!");

@@ -117,44 +117,27 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
   };
 
   return (
-    <div className="flex flex-col">
-      <div className="hidden md:flex bg-white border-b border-slate-200 px-6 py-3 flex-wrap items-center gap-3 shrink-0">
-        <h1 className="text-xl font-bold tracking-tight text-slate-900 font-serif">Hành Trình Khách Hàng</h1>
-        <span className="hidden sm:inline text-slate-300">|</span>
-        <p className="text-sm text-slate-500 w-full sm:w-auto mt-1 sm:mt-0">Quản lý vòng đời và checklist chăm sóc cho từng hợp đồng.</p>
+    <div className="space-y-6">
+      {/* SEARCH & FILTER BAR */}
+      <div className="flex items-center gap-3">
+         <div className="relative flex-1 max-w-md">
+           <icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+           <input 
+             type="text" 
+             value={searchTerm}
+             onChange={(e) => setSearchTerm(e.target.value)}
+             placeholder="Tìm mã HĐ, SĐT, Tên KH..." 
+             className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+           />
+         </div>
+         <button className="px-3 py-2 bg-white border border-slate-200 rounded-lg flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium shadow-sm">
+           <icons.Filter className="w-4 h-4" />
+           Lọc
+         </button>
       </div>
 
-      <div className="p-0 md:p-6 bg-slate-50">
-
-          <div className="space-y-4 md:space-y-6">
-            <div className="hidden md:flex justify-between items-center">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <icons.Route className="w-5 h-5 text-blue-500" />
-                Danh sách Hợp đồng đang theo dõi
-              </h2>
-            </div>
-
-            {/* SEARCH & FILTER BAR */}
-            <div className="flex gap-2 md:gap-4 bg-white p-2 md:p-3 rounded-xl border border-slate-200 shadow-sm shrink-0">
-               <div className="relative flex-1">
-                 <icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                 <input 
-                   type="text" 
-                   value={searchTerm}
-                   onChange={(e) => setSearchTerm(e.target.value)}
-                   placeholder="Tìm mã đơn, SĐT..." 
-                   className="w-full pl-9 pr-4 py-2 md:py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50"
-                 />
-               </div>
-               <div className="md:hidden">
-                 <button className="h-full px-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-emerald-600 transition-colors shrink-0">
-                   <icons.Filter className="w-4 h-4" />
-                 </button>
-               </div>
-            </div>
-
-            <div className="bg-transparent md:bg-white md:rounded-xl md:border md:border-slate-200 md:shadow-sm overflow-hidden">
-              <div className="overflow-x-auto hidden md:block">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto hidden md:block">
                 <table className="w-full text-left text-sm text-slate-600">
                   <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase font-bold text-slate-500">
                     <tr>
@@ -321,7 +304,6 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
                  })}
               </div>
             </div>
-          </div>
 
         {activeTab === "REMINDERS" && (
           <div className="space-y-4 max-w-4xl mx-auto">
@@ -351,7 +333,6 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
             </p>
           </div>
         )}
-      </div>
     </div>
   );
 }

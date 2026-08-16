@@ -1,29 +1,38 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getInventoryOverview, createGarment } from "./actions";
+import { getInventoryOverview, createGarment, updateGarmentStatus } from "./actions";
+import OCRScanner from "@/components/ocr-scanner";
 import { 
-  Shirt, Package, ArrowRightLeft, CalendarClock, 
-  Search, Filter, MapPin, Phone, Plus, X, Image as ImageIcon
+  Shirt, Package, ArrowRightLeft, CalendarClock,
+  Search, Filter, MapPin, Phone, Plus, X, Image as ImageIcon, CheckCircle2
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 
 export default function InventoryDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"IN_STOCK" | "BOOKED" | "RENTED" | "RETURNING">("IN_STOCK");
+  const [searchTerm, setSearchTerm] = useState("");
   
   const [garments, setGarments] = useState<any[]>([]);
   const [contractGarments, setContractGarments] = useState<any[]>([]);
   
+  // OCR Scanner State
+  const [isOCRScannerOpen, setIsOCRScannerOpen] = useState(false);
+  const [ocrTarget, setOcrTarget] = useState<"search" | "form" | null>(null);
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    qr_code: "",
     name: "",
     category: "Váy cưới",
-    size: "M",
-    color: "Trắng",
+    group_type: "VC",
+    factory_code: "",
+    style_details: "",
+    material_pattern: "",
+    size_code: "",
+    color: "",
     image_url: "",
     location_floor: "1",
     location_shelf: "A",
@@ -81,7 +90,27 @@ export default function InventoryDashboardPage() {
     setIsSubmitting(false);
   };
 
-  const inStock = garments.filter(g => g.status === "AVAILABLE" || g.status === "MAINTENANCE");
+  const handleMaintenanceComplete = async (garmentId: string) => {
+    const res = await updateGarmentStatus(garmentId, "AVAILABLE");
+    if (res.success) {
+      alert("Đã cập nhật trạng thái thành công! Đồ đã sẵn sàng cho thuê.");
+      fetchData();
+    } else {
+      alert("Lỗi: " + res.error);
+    }
+  };
+
+  const filteredGarments = garments.filter(g => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      (g.name && g.name.toLowerCase().includes(term)) ||
+      (g.factory_code && g.factory_code.toLowerCase().includes(term)) ||
+      (g.qr_code && g.qr_code.toLowerCase().includes(term))
+    );
+  });
+
+  const inStock = filteredGarments.filter(g => g.status === "AVAILABLE" || g.status === "MAINTENANCE");
   const booked = contractGarments.filter(cg => cg.reservation_status === "RESERVED");
   const rented = contractGarments.filter(cg => cg.reservation_status === "DELIVERED");
   const returning = rented.filter(cg => {
@@ -181,13 +210,27 @@ export default function InventoryDashboardPage() {
             {activeTab === "IN_STOCK" && "Danh Sách Trang Phục Tại Kho (Chế độ lưới)"}
             {activeTab !== "IN_STOCK" && "Danh Sách Chi Tiết Hợp Đồng"}
           </h2>
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm mã SP..." 
-              className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all w-64"
-            />
+          <div className="relative flex items-center gap-2">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text" 
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Tìm theo Tên, Mã Kho, Mã NSX..." 
+                className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all w-64"
+              />
+            </div>
+            <button
+              onClick={() => {
+                setOcrTarget("search");
+                setIsOCRScannerOpen(true);
+              }}
+              className="p-2 border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors shadow-sm"
+              title="Quét mác (OCR)"
+            >
+              <Camera className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -217,12 +260,26 @@ export default function InventoryDashboardPage() {
                   </div>
                   <div className="p-4">
                     <h4 className="font-bold text-slate-800 text-sm line-clamp-1" title={gar.name}>{gar.name}</h4>
-                    <p className="text-xs text-slate-500 mt-1 mb-3">{gar.category} • Size: <span className="font-bold">{gar.size}</span> • {gar.color}</p>
+                    <p className="text-xs text-slate-500 mt-1 mb-2">Mã gốc: <span className="font-bold text-slate-700">{gar.factory_code || '---'}</span></p>
+                    <p className="text-xs text-slate-500 mb-3">{gar.category} • Size: <span className="font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">{gar.size_code || gar.size}</span></p>
                     
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
                       <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
                       <span className="truncate">Lầu {gar.location_floor} - Kệ {gar.location_shelf} - {gar.location_tier}</span>
                     </div>
+
+                    {gar.status === "MAINTENANCE" && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMaintenanceComplete(gar.id);
+                        }}
+                        className="mt-3 w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 border border-emerald-200 transition-colors"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        Đã giặt xong
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -276,12 +333,13 @@ export default function InventoryDashboardPage() {
             
             <form onSubmit={handleCreate} className="p-6">
               <div className="grid grid-cols-2 gap-5">
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Mã SP (QR Code)</label>
-                  <input required value={formData.qr_code} onChange={e => setFormData({...formData, qr_code: e.target.value})} type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 outline-none transition-all" placeholder="VD: VC-099" />
+                <div className="col-span-2">
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Tên Sản Phẩm</label>
+                  <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 outline-none transition-all" placeholder="Tên váy/vest..." />
                 </div>
+                
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Danh mục</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Danh mục (Hiển thị chung)</label>
                   <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 outline-none transition-all">
                     <option value="Váy cưới">Váy cưới</option>
                     <option value="Vest">Vest</option>
@@ -289,18 +347,47 @@ export default function InventoryDashboardPage() {
                     <option value="Phụ kiện">Phụ kiện</option>
                   </select>
                 </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Tên Sản Phẩm</label>
-                  <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 outline-none transition-all" placeholder="Tên váy/vest..." />
-                </div>
                 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Size & Màu</label>
-                  <div className="flex gap-2">
-                    <input required value={formData.size} onChange={e => setFormData({...formData, size: e.target.value})} type="text" className="w-1/3 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 outline-none transition-all" placeholder="Size" />
-                    <input required value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} type="text" className="w-2/3 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 outline-none transition-all" placeholder="Màu sắc" />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-semibold text-slate-700">Mã NSX (Mác áo)</label>
+                    <button type="button" onClick={() => {
+                      setOcrTarget("form");
+                      setIsOCRScannerOpen(true);
+                    }} className="text-xs text-indigo-600 hover:text-indigo-700 font-bold flex items-center gap-1">
+                      <Camera className="w-3 h-3" /> Quét chữ
+                    </button>
                   </div>
+                  <input required value={formData.factory_code} onChange={e => setFormData({...formData, factory_code: e.target.value})} type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 outline-none transition-all" placeholder="VD: 718069" />
+                </div>
+
+                <div className="col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <h4 className="text-sm font-bold text-slate-800 mb-3">Thông số tạo SKU (Mã Vạch 16 ký tự)</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">1. Nhóm (2 KT)</label>
+                      <select value={formData.group_type} onChange={e => setFormData({...formData, group_type: e.target.value})} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:border-indigo-500 outline-none">
+                        <option value="VC">VC (Váy Cưới)</option>
+                        <option value="SU">SU (Bộ Suit)</option>
+                        <option value="JA">JA (Áo Vest)</option>
+                        <option value="QU">QU (Quần lẻ)</option>
+                        <option value="AD">AD (Áo Dài)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">2. Form/Chi tiết (4 KT)</label>
+                      <input required value={formData.style_details} onChange={e => setFormData({...formData, style_details: e.target.value.toUpperCase()})} type="text" maxLength={4} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:border-indigo-500 outline-none" placeholder="S02C, DCTV..." />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">3. Chất liệu/Màu (2 KT)</label>
+                      <input required value={formData.material_pattern} onChange={e => setFormData({...formData, material_pattern: e.target.value.toUpperCase()})} type="text" maxLength={2} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:border-indigo-500 outline-none" placeholder="KD, RD, TT..." />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">4. Size (2 KT)</label>
+                      <input required value={formData.size_code} onChange={e => setFormData({...formData, size_code: e.target.value.toUpperCase()})} type="text" maxLength={2} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:border-indigo-500 outline-none" placeholder="50, 0S, FS..." />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2 italic">* Lưu ý: Hệ thống sẽ tự động chèn 6 số ID ở giữa để tạo SKU hoàn chỉnh (VD: JA-000001-S02C-KD-50).</p>
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
@@ -338,6 +425,20 @@ export default function InventoryDashboardPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {isOCRScannerOpen && (
+        <OCRScanner 
+          onClose={() => setIsOCRScannerOpen(false)}
+          onScan={(text) => {
+            if (ocrTarget === "search") {
+              setSearchTerm(text);
+            } else if (ocrTarget === "form") {
+              setFormData({ ...formData, factory_code: text });
+            }
+            setIsOCRScannerOpen(false);
+          }}
+        />
       )}
     </div>
   );

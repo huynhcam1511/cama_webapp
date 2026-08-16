@@ -71,7 +71,6 @@ export default function EmployeeListView({ initialUsers }: { initialUsers: any[]
                 <th className="px-5 py-3.5 w-[150px]">Phòng Ban</th>
                 <th className="px-5 py-3.5 w-[150px]">Vị Trí</th>
                 <th className="px-5 py-3.5 w-[150px]">Chức Vụ</th>
-                <th className="px-5 py-3.5 w-[150px]">Vai Trò</th>
                 <th className="px-5 py-3.5 w-[150px]">Trạng Thái</th>
                 <th className="px-5 py-3.5 w-[120px] text-right">Thao Tác</th>
               </tr>
@@ -79,7 +78,7 @@ export default function EmployeeListView({ initialUsers }: { initialUsers: any[]
             <tbody className="divide-y divide-slate-100 text-slate-800">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-5 py-8 text-center text-slate-500 font-medium">
+                  <td colSpan={8} className="px-5 py-8 text-center text-slate-500 font-medium">
                     Không tìm thấy nhân viên nào
                   </td>
                 </tr>
@@ -97,15 +96,6 @@ export default function EmployeeListView({ initialUsers }: { initialUsers: any[]
                     </td>
                     <td className="px-5 py-4">
                       <span className="font-medium text-slate-700">{u.positions?.position_name || "---"}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      {u.roles?.role_name ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                          {u.roles.role_name}
-                        </span>
-                      ) : (
-                        "---"
-                      )}
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex flex-col gap-1.5 items-start">

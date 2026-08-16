@@ -50,8 +50,9 @@ export default function ContractForm({
   onSaved,
   initialData,
   isEditMode,
-  staffs = []
-}: ContractFormProps & { initialData?: any; isEditMode?: boolean }) {
+  staffs = [],
+  defaultContractType = "SERVICE"
+}: ContractFormProps & { initialData?: any; isEditMode?: boolean; defaultContractType?: "SERVICE" | "SALES" }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -462,24 +463,26 @@ export default function ContractForm({
       return;
     }
 
-    const missingEvents = activeItems.some(item => !item.usage_events || item.usage_events.length === 0);
-    if (missingEvents) {
-      setErrorMsg("LỖI BẮT BUỘC: Mỗi dịch vụ/sản phẩm phải được chọn ít nhất 1 [Sự Kiện SD] (để Vận Hành biết ngày chuẩn bị đồ)!");
-      setLoading(false);
-      return;
-    }
+    if (defaultContractType !== "SALES") {
+      const missingEvents = activeItems.some(item => !item.usage_events || item.usage_events.length === 0);
+      if (missingEvents) {
+        setErrorMsg("LỖI BẮT BUỘC: Mỗi dịch vụ/sản phẩm phải được chọn ít nhất 1 [Sự Kiện SD] (để Vận Hành biết ngày chuẩn bị đồ)!");
+        setLoading(false);
+        return;
+      }
 
-    const missingEventDates = activeItems.some(item => {
-      return item.usage_events?.some(eventName => {
-        const ev = events.find(e => e.name === eventName);
-        return ev && !ev.event_date;
+      const missingEventDates = activeItems.some(item => {
+        return item.usage_events?.some(eventName => {
+          const ev = events.find(e => e.name === eventName);
+          return ev && !ev.event_date;
+        });
       });
-    });
-    
-    if (missingEventDates) {
-      setErrorMsg("LỖI BẮT BUỘC: Sự kiện bạn đã chọn cho sản phẩm CHƯA CÓ NGÀY. Vui lòng điền ngày cho sự kiện đó ở mục [2. Chi Tiết Thực Hiện]!");
-      setLoading(false);
-      return;
+      
+      if (missingEventDates) {
+        setErrorMsg("LỖI BẮT BUỘC: Sự kiện bạn đã chọn cho sản phẩm CHƯA CÓ NGÀY. Vui lòng điền ngày cho sự kiện đó ở mục [2. Chi Tiết Thực Hiện]!");
+        setLoading(false);
+        return;
+      }
     }
 
     setLoading(true);
@@ -514,6 +517,7 @@ export default function ContractForm({
 
     const payload: any = {
       customer_id: finalCustomerId,
+      contract_type: defaultContractType,
       contract_code: contractCode,
       paper_contract_number: paperContractCode,
       items: activeItems,
@@ -670,6 +674,7 @@ export default function ContractForm({
                 </div>
               </section>
 
+              {defaultContractType !== "SALES" && (
               <section className="space-y-1.5 flex flex-col flex-1 bg-white p-4 md:p-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
                 <h3 className="text-[11px] font-bold tracking-widest text-slate-900 uppercase flex items-center gap-1.5 border-b border-slate-200 pb-2 mb-1 shrink-0">
                   <Settings2 className="w-3.5 h-3.5 text-slate-700" /> 2. Lịch Trình Sự Kiện
@@ -768,7 +773,7 @@ export default function ContractForm({
                   <table className="w-full text-xs text-left min-w-[650px]">
                     <thead className="text-[10px] text-slate-500 uppercase bg-white border-b-2 border-slate-200">
                       <tr>
-                        <th className="px-1 py-0.5 font-bold w-[12%] text-slate-600">Sự Kiện SD <span className="text-red-500">*</span></th>
+                        {defaultContractType !== "SALES" && <th className="px-1 py-0.5 font-bold w-[12%] text-slate-600">Sự Kiện SD <span className="text-red-500">*</span></th>}
                         <th className="px-1 py-0.5 font-bold w-[16%]">Nhóm Dịch Vụ <span className="text-red-500">*</span></th>
                         <th className="px-1 py-0.5 font-bold w-[14%]">Tên chi tiết</th>
                         <th className="px-1 py-0.5 font-bold w-[26%]">Ghi chú</th>
@@ -781,7 +786,7 @@ export default function ContractForm({
                     <tbody>
                       {services.map((item, idx) => (
                         <tr key={idx} className="border-b border-slate-100/50 hover:bg-slate-50/70 transition-colors group">
-                          <td className="px-1 py-1 align-top">
+                          {defaultContractType !== "SALES" && <td className="px-1 py-1 align-top">
                             <div className="relative">
                               <div 
                                 onClick={() => setOpenEventDropdown(openEventDropdown === idx ? null : idx)}
@@ -824,7 +829,7 @@ export default function ContractForm({
                                 </>
                               )}
                             </div>
-                          </td>
+                          </td>}
                           <td className="px-1 py-1 align-top">
                             <select 
                               value={item.category}
