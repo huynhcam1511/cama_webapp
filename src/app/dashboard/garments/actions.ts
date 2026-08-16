@@ -49,3 +49,34 @@ export async function updateGarmentStatus(id: string, status: string) {
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
+
+export async function liquidateInventoryItem(itemId: string, quantityToLiquidate: number, reason: string) {
+  const supabase = await createClient();
+  
+  // 1. Fetch current inventory
+  const { data: inv, error: fetchErr } = await supabase
+    .from("inventory_items")
+    .select("quantity, available_quantity, liquidated_quantity")
+    .eq("id", itemId)
+    .single();
+    
+  if (fetchErr || !inv) return { success: false, error: "Không tìm thấy sản phẩm trong kho." };
+  
+  if (inv.available_quantity < quantityToLiquidate) {
+    return { success: false, error: "Số lượng khả dụng không đủ để thanh lý." };
+  }
+  
+  // 2. Update
+  const { error: updErr } = await supabase
+    .from("inventory_items")
+    .update({
+      quantity: Math.max(0, inv.quantity - quantityToLiquidate),
+      available_quantity: Math.max(0, inv.available_quantity - quantityToLiquidate),
+      liquidated_quantity: (inv.liquidated_quantity || 0) + quantityToLiquidate,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", itemId);
+    
+  if (updErr) return { success: false, error: updErr.message };
+  return { success: true };
+}

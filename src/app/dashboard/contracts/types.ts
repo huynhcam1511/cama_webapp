@@ -81,8 +81,10 @@ export interface ContractGarment {
   size?: string;
   deliver_date?: string;
   return_date?: string;
-  reservation_status: "RESERVED" | "DELIVERED" | "RETURNED";
+  reservation_status: "RESERVED" | "DELIVERED" | "RETURNED" | "LIQUIDATED";
   fitting_notes?: string;
+  inventory_item_id?: string;
+  returned_at?: string;
 }
 
 export interface ContractDocument {

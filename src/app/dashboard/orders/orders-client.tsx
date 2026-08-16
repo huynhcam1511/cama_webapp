@@ -16,15 +16,23 @@ interface Props {
   teams?: any[];
 }
 
+const UI_STEPS = [
+  { id: 'FITTING', label: 'Fitting & Sửa', statuses: ['PENDING', 'PREPARING', 'WAITING_FITTING'] },
+  { id: 'GIAO_DO', label: 'Giao đồ', statuses: ['READY_TO_DELIVER', 'DELIVERED'] },
+  { id: 'THU_HOI', label: 'Thu hồi & Kiểm tra', statuses: ['WAITING_RETURN'] },
+  { id: 'XU_LY', label: 'Xử lý Kho', statuses: ['ISSUE'] },
+  { id: 'HOAN_TAT', label: 'Hoàn tất', statuses: ['COMPLETED'] }
+];
+
 const STATUS_MAP: Record<OrderStatus, { label: string, color: string, icon: any }> = {
-  PENDING: { label: "Chờ xử lý", color: "bg-slate-100 text-slate-700 border-slate-200", icon: icons.Inbox },
-  PREPARING: { label: "Đang chuẩn bị", color: "bg-blue-100 text-blue-700 border-blue-200", icon: icons.PackageOpen },
-  WAITING_FITTING: { label: "Chờ fitting", color: "bg-amber-100 text-amber-700 border-amber-200", icon: icons.Scissors },
-  READY_TO_DELIVER: { label: "Sẵn sàng giao", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: icons.CheckCircle },
-  DELIVERED: { label: "Đã giao", color: "bg-purple-100 text-purple-700 border-purple-200", icon: icons.Truck },
-  WAITING_RETURN: { label: "Chờ nhận lại", color: "bg-orange-100 text-orange-700 border-orange-200", icon: icons.RotateCcw },
+  PENDING: { label: "Fitting & Sửa", color: "bg-slate-100 text-slate-700 border-slate-200", icon: icons.Inbox },
+  PREPARING: { label: "Fitting & Sửa", color: "bg-blue-100 text-blue-700 border-blue-200", icon: icons.PackageOpen },
+  WAITING_FITTING: { label: "Fitting & Sửa", color: "bg-amber-100 text-amber-700 border-amber-200", icon: icons.Scissors },
+  READY_TO_DELIVER: { label: "Giao đồ", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: icons.CheckCircle },
+  DELIVERED: { label: "Giao đồ", color: "bg-purple-100 text-purple-700 border-purple-200", icon: icons.Truck },
+  WAITING_RETURN: { label: "Thu hồi & Kiểm tra", color: "bg-orange-100 text-orange-700 border-orange-200", icon: icons.RotateCcw },
   COMPLETED: { label: "Hoàn tất", color: "bg-emerald-500 text-white border-emerald-600", icon: icons.CheckCircle2 },
-  ISSUE: { label: "Sự cố", color: "bg-rose-100 text-rose-700 border-rose-200", icon: icons.AlertTriangle },
+  ISSUE: { label: "Xử lý Kho (Sự cố)", color: "bg-rose-100 text-rose-700 border-rose-200", icon: icons.AlertTriangle },
   CANCELLED: { label: "Đã hủy", color: "bg-slate-200 text-slate-500 border-slate-300", icon: icons.XCircle },
 };
 
@@ -39,7 +47,16 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
 
 
   const filteredOrders = orders.filter(o => {
-    if (filterStatus !== "ALL" && o.completion_status !== filterStatus) return false;
+    if (filterStatus !== "ALL") {
+      // Find the UI step that matches filterStatus
+      const step = UI_STEPS.find(s => s.id === filterStatus);
+      if (step) {
+        if (!step.statuses.includes(o.completion_status)) return false;
+      } else if (o.completion_status !== filterStatus) {
+        // Fallback for CANCELLED or statuses not in UI_STEPS
+        return false;
+      }
+    }
     
     // Filter by team
     if (filterTeam !== "ALL") {
@@ -186,20 +203,30 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                 >
                   Tất cả trạng thái
                 </button>
-                {Object.entries(STATUS_MAP).map(([k, v]) => {
-                  const isSelected = filterStatus === k;
-                  const colorClasses = isSelected ? v.color : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
+                {UI_STEPS.map((step) => {
+                  const isSelected = filterStatus === step.id;
+                  // Assign color based on the first status in the step
+                  const firstStatus = step.statuses[0] as OrderStatus;
+                  const colorClasses = isSelected ? STATUS_MAP[firstStatus].color : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
+                  const Icon = STATUS_MAP[firstStatus].icon;
                   return (
                     <button 
-                      key={k}
-                      onClick={() => setFilterStatus(k)}
+                      key={step.id}
+                      onClick={() => setFilterStatus(step.id)}
                       className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-all border ${colorClasses} flex items-center gap-1.5`}
                     >
-                      {isSelected && <v.icon className="w-3.5 h-3.5" />}
-                      {v.label}
+                      {isSelected && <Icon className="w-3.5 h-3.5" />}
+                      {step.label}
                     </button>
                   );
                 })}
+                <button 
+                  onClick={() => setFilterStatus('CANCELLED')}
+                  className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-all border ${filterStatus === 'CANCELLED' ? STATUS_MAP['CANCELLED'].color : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'} flex items-center gap-1.5`}
+                >
+                  {filterStatus === 'CANCELLED' && <STATUS_MAP.CANCELLED.icon className="w-3.5 h-3.5" />}
+                  Đã hủy
+                </button>
               </div>
             </div>
           </div>
@@ -399,8 +426,9 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                         const traDate = new Date(giaoDate.getTime() + 3 * 24 * 60 * 60 * 1000);
                         
                         const isCancelled = order.completion_status === 'CANCELLED';
-                        const isGiaoCompleted = ['DELIVERED', 'WAITING_RETURN', 'COMPLETED'].includes(order.completion_status);
-                        const isTraCompleted = ['COMPLETED'].includes(order.completion_status);
+                        const isIssue = order.completion_status === 'ISSUE';
+                        const isGiaoCompleted = ['DELIVERED', 'WAITING_RETURN', 'COMPLETED', 'ISSUE'].includes(order.completion_status);
+                        const isTraCompleted = ['COMPLETED', 'ISSUE'].includes(order.completion_status);
                         
                         let progressPercent = 0;
                         let statusText = '';
@@ -415,8 +443,8 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                           statusColor = 'text-slate-400';
                         } else if (isTraCompleted) {
                           progressPercent = 100;
-                          statusText = 'Hoàn tất ✓';
-                          statusColor = 'text-emerald-600';
+                          statusText = isIssue ? 'Đang xử lý sự cố' : 'Hoàn tất ✓';
+                          statusColor = isIssue ? 'text-rose-600' : 'text-emerald-600';
                         } else if (!isGiaoCompleted) {
                           progressPercent = 0;
                           if (now < giaoDate) {

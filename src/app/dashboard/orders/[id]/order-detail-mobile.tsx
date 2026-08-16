@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import * as icons from "lucide-react";
 import { format } from "date-fns";
 import { Order, OrderStatus } from "../actions";
+import { createClient } from "@/lib/supabase/client";
 
 const UI_STEPS = [
   { id: 'FITTING', label: 'Fitting & Sửa', statuses: ['PENDING', 'PREPARING', 'WAITING_FITTING'] },
@@ -46,10 +47,56 @@ export default function OrderDetailMobile({
   const [showOrderInfo, setShowOrderInfo] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
+  const totalDeposit = useMemo(() => {
+    const d1 = parseInt(parsedNotes.deposit_amount) || 0;
+    const d2 = parseInt(parsedNotes.deposit_amount_2) || 0;
+    return d1 + d2;
+  }, [parsedNotes]);
+  
   // Incident Modal State
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
-  const [incidentForm, setIncidentForm] = useState({ description: '', penalty_amount: 0, resolution: 'DEDUCT_FROM_DEPOSIT' });
+  const [incidentForm, setIncidentForm] = useState({ description: '', penalty_amount: 0, bill_image: '', resolution: 'DEDUCT_FROM_DEPOSIT' });
   const [isSubmittingIncident, setIsSubmittingIncident] = useState(false);
+  const [isUploadingBill, setIsUploadingBill] = useState(false);
+
+  const { deductAmount, extraAmount } = useMemo(() => {
+    const penalty = incidentForm.penalty_amount || 0;
+    if (penalty <= totalDeposit) {
+      return { deductAmount: penalty, extraAmount: 0 };
+    } else {
+      return { deductAmount: totalDeposit, extraAmount: penalty - totalDeposit };
+    }
+  }, [incidentForm.penalty_amount, totalDeposit]);
+
+  const handleBillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingBill(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `incident_bill_${currentOrder.id}_${Date.now()}.${fileExt}`;
+      const filePath = `qc-orders/${currentOrder.id}/${fileName}`;
+
+      const supabase = createClient();
+      const { error } = await supabase.storage
+        .from('contract_files')
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('contract_files')
+        .getPublicUrl(filePath);
+
+      setIncidentForm({...incidentForm, bill_image: publicUrl});
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi upload ảnh Bill");
+    } finally {
+      setIsUploadingBill(false);
+    }
+  };
 
   const getUiStepIndex = (status: string) => {
     const index = UI_STEPS.findIndex(step => step.statuses.includes(status));
@@ -66,7 +113,6 @@ export default function OrderDetailMobile({
   const nextStatus = actualStepIndex < UI_STEPS.length - 1 ? UI_STEPS[actualStepIndex + 1].statuses[0] as OrderStatus : null;
   const isReadOnly = viewingStepIndex !== actualStepIndex;
 
-  // Hard-logic: Require specific checklist items based on current status
   const getTasksForNextStatus = () => {
     const listWithIndex = checklist.map((c: any, originalIndex: number) => ({ ...c, originalIndex }));
     switch(currentOrder.completion_status) {
@@ -98,9 +144,7 @@ export default function OrderDetailMobile({
       
       <div className="px-3 py-4 space-y-4">
         
-        {/* 2. Customer & Event Details (Merged 3-Tier Header) */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col overflow-hidden">
-          {/* Tầng 1: Khách hàng & Status */}
           <div className="p-3.5 pb-2.5 flex justify-between items-center">
             <div className="flex items-center gap-2 overflow-hidden mr-2">
               <h1 className="font-extrabold text-slate-900 text-[15px] uppercase tracking-tight truncate max-w-[150px]">
@@ -114,7 +158,6 @@ export default function OrderDetailMobile({
             </div>
           </div>
 
-          {/* Tầng 2: Hợp đồng & PIC */}
           <div className="px-3.5 pb-3 flex justify-between items-center">
              <div className="flex items-center gap-1.5 text-blue-600 font-mono text-[11px] font-bold">
                {contract?.contract_code || currentOrder.order_code}
@@ -141,7 +184,6 @@ export default function OrderDetailMobile({
              </div>
           </div>
 
-          {/* Tầng 3: Sự kiện & Timeline (Gradient nhẹ) */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-blue-100/50 p-3.5 relative overflow-hidden">
              <div className="flex items-center justify-between mb-2">
                <div className="flex items-center gap-1.5 text-indigo-900 font-bold text-[12px] uppercase tracking-wide">
@@ -173,7 +215,6 @@ export default function OrderDetailMobile({
                 </div>
              </div>
           </div>
-          {/* Tầng 4: Progress Stepper */}
           <div className="bg-white px-2 py-4">
             <div className="flex items-start justify-between relative w-full">
               <div className="absolute top-3 left-4 right-4 h-0.5 bg-slate-100 -z-0"></div>
@@ -206,7 +247,6 @@ export default function OrderDetailMobile({
           </div>
         </div>
 
-        {/* 5. Notes (Per Stage) */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -262,211 +302,66 @@ export default function OrderDetailMobile({
             </div>
           )}
         </div>
-        </div>
+      </div>
 
-        {/* 6. Products */}
-        <div>
-          <h2 className="text-sm font-bold text-slate-800 mb-3 px-1">Sản Phẩm & Dịch Vụ</h2>
-          <div className={`${items.length > 0 || garments.length > 0 ? 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden divide-y divide-slate-100' : 'space-y-3'}`}>
-            {items.length === 0 && garments.length === 0 && (
-              <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-5 text-center flex flex-col items-center justify-center">
-                <icons.PackageX className="w-8 h-8 text-amber-500 mb-2" />
-                <p className="text-[13px] font-bold text-amber-900 mb-1">Chưa có sản phẩm được phân bổ</p>
-                <p className="text-[11px] text-amber-700 mb-4 px-4">Đơn hàng này hiện chưa có váy/vest cụ thể nào. Bạn có muốn phân bổ sản phẩm bây giờ không?</p>
-                {contract?.id ? (
-                  <Link 
-                    href={`/dashboard/contracts/${contract.id}/edit`}
-                    className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 active:scale-95 transition-transform text-white rounded-xl font-bold text-xs shadow-sm flex items-center justify-center gap-2"
-                  >
-                    <icons.Plus className="w-4 h-4" />
-                    Phân bổ sản phẩm
-                  </Link>
-                ) : (
-                  <button 
-                    disabled 
-                    className="w-full py-2.5 bg-slate-300 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-not-allowed"
-                  >
-                    Chưa hỗ trợ cho đơn rời
+      <div>
+        <h2 className="text-sm font-bold text-slate-800 mb-3 px-1">Sản Phẩm & Dịch Vụ</h2>
+        <div className={`${items.length > 0 || garments.length > 0 ? 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden divide-y divide-slate-100' : 'space-y-3'}`}>
+          {items.length === 0 && garments.length === 0 && (
+            <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-5 text-center flex flex-col items-center justify-center">
+              <icons.PackageX className="w-8 h-8 text-amber-500 mb-2" />
+              <p className="text-[13px] font-bold text-amber-900 mb-1">Chưa có sản phẩm được phân bổ</p>
+              <p className="text-[11px] text-amber-700 mb-4 px-4">Đơn hàng này hiện chưa có váy/vest cụ thể nào.</p>
+            </div>
+          )}
+          
+          {items.map((item: any, idx: number) => {
+            const rowId = `item_${item.id || idx}_step_${viewingStepIndex}`;
+            const images = notesImages[rowId] || [];
+            const isUploading = uploadingImageId === rowId;
+            return (
+              <div key={idx} className="p-4 bg-white">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="w-full">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{item.category || "DỊCH VỤ"}</div>
+                    <div className="font-bold text-slate-900 text-sm">{item.detail || item.item_name}</div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
+                  {images.map((img: string, iIdx: number) => (
+                    <div key={iIdx} onClick={() => onImageClick && onImageClick(img)} className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer">
+                        <img src={img} alt="QC" className="w-full h-full object-cover" />
+                        {!isReadOnly && (
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
+                            <icons.X className="w-3 h-3" />
+                          </button>
+                        )}
+                    </div>
+                  ))}
+                  {!isReadOnly && (
+                    <label className={`cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg ${isUploading ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-600'}`}>
+                      {isUploading ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.ImagePlus className="w-4 h-4" />}
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, rowId)} disabled={isUploading} />
+                    </label>
+                  )}
+                </div>
+                {!isReadOnly && viewingStepIndex === 2 && (
+                  <button onClick={() => setIsIncidentModalOpen(true)} className="mt-3 w-full py-2.5 bg-rose-50 text-rose-600 border border-rose-200 font-bold text-xs rounded-xl flex items-center justify-center gap-2">
+                    <icons.AlertTriangle className="w-4 h-4" /> Báo sự cố
                   </button>
                 )}
               </div>
-            )}
-            
-            {items.map((item: any, idx: number) => {
-              const rowId = `item_${item.id || idx}_step_${viewingStepIndex}`;
-              const images = notesImages[rowId] || [];
-              const isUploading = uploadingImageId === rowId;
-              
-              let category = item.category || "DỊCH VỤ";
-              let itemName = item.detail || item.item_name || "Dịch vụ theo hợp đồng";
-              
-              if (typeof itemName === 'string' && itemName.trim().startsWith('{')) {
-                 try {
-                   const parsed = JSON.parse(itemName);
-                   itemName = parsed.item_name || parsed.detail || "Dịch vụ thuê";
-                   if (parsed.category) category = parsed.category;
-                 } catch (e) {}
-              }
-              
-              return (
-                <div key={idx} className="p-4 bg-white">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="w-full">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{category}</div>
-                      <div className="font-bold text-slate-900 text-sm flex items-center justify-between">
-                         {itemName} 
-                         <span className="text-slate-500 font-bold text-xs bg-slate-100 px-2 py-0.5 rounded ml-2">×{item.quantity || 1}</span>
-                      </div>
-                      <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
-                        <icons.Info className="w-3 h-3" /> Dịch vụ • Theo hợp đồng
-                      </div>
-                    </div>
-                  </div>
-                  {item.notes && (
-                    <div className="text-xs font-medium text-slate-600 bg-slate-50 px-3 py-2 rounded-lg mb-3 mt-2">
-                      {item.notes}
-                    </div>
-                  )}
-                  
-                  {/* Images area */}
-                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
-                    {images.map((img: string, iIdx: number) => (
-                      <div key={iIdx} onClick={() => onImageClick && onImageClick(img)} className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer">
-                         <img src={img} alt="QC" className="w-full h-full object-cover" />
-                         {!isReadOnly && (
-                           <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
-                             <icons.X className="w-3 h-3" />
-                           </button>
-                         )}
-                      </div>
-                    ))}
-                    {!isReadOnly && (
-                      <label className={`cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-colors ${isUploading ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-600'}`}>
-                        {isUploading ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.ImagePlus className="w-4 h-4" />}
-                        {isUploading ? "Up..." : "Thêm ảnh"}
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, rowId)} disabled={isUploading} />
-                      </label>
-                    )}
-                  </div>
-                  
-                  {/* Sự Cố Button (Chỉ ở bước Nhận Trả) */}
-                  {!isReadOnly && viewingStepIndex === 4 && (
-                    <button onClick={() => setIsIncidentModalOpen(true)} className="mt-3 w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors">
-                      <icons.AlertTriangle className="w-4 h-4" /> Báo sự cố (Rách/Dơ bẩn)
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-
-            {garments.map((g: any, idx: number) => {
-              const rowId = `garment_${g.id || idx}_step_${viewingStepIndex}`;
-              const images = notesImages[rowId] || [];
-              const isUploading = uploadingImageId === rowId;
-              
-              let category = g.category || "VÁY CƯỚI / VEST";
-              let itemName = g.product_name || 'Sản phẩm thuê';
-              if (typeof itemName === 'string' && itemName.trim().startsWith('{')) {
-                 try {
-                   const parsed = JSON.parse(itemName);
-                   itemName = parsed.product_name || "Sản phẩm thuê";
-                   if (parsed.category) category = parsed.category;
-                 } catch (e) {}
-              }
-              
-              return (
-                <div key={`g-${idx}`} className="p-4 bg-white">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="w-full">
-                      <div className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1">{category}</div>
-                      <div className="font-bold text-slate-900 text-sm flex items-center justify-between">
-                         {itemName}
-                         <span className="text-slate-500 font-bold text-xs bg-slate-100 px-2 py-0.5 rounded ml-2">×1</span>
-                      </div>
-                      <div className="text-[11px] font-medium text-slate-600 mt-1.5 flex items-center gap-2">
-                         <span className="flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-0.5 rounded"><icons.Tag className="w-3 h-3"/> Mã: {g.garment_code}</span>
-                         <span className="flex items-center gap-1 bg-slate-50 text-slate-600 px-2 py-0.5 rounded"><icons.Ruler className="w-3 h-3"/> Size: {g.size || 'M'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-purple-50">
-                    {images.map((img: string, iIdx: number) => (
-                      <div key={iIdx} onClick={() => onImageClick && onImageClick(img)} className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer">
-                         <img src={img} alt="QC" className="w-full h-full object-cover" />
-                         {!isReadOnly && (
-                           <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
-                             <icons.X className="w-3 h-3" />
-                           </button>
-                         )}
-                      </div>
-                    ))}
-                    {!isReadOnly && (
-                      <label className={`cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-colors ${isUploading ? 'bg-slate-100 text-slate-400' : 'bg-purple-50 text-purple-700'}`}>
-                        {isUploading ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.ImagePlus className="w-4 h-4" />}
-                        {isUploading ? "Up..." : "Thêm ảnh"}
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, rowId)} disabled={isUploading} />
-                      </label>
-                    )}
-                  </div>
-                  
-                  {/* Sự Cố Button */}
-                  {!isReadOnly && viewingStepIndex === 4 && (
-                    <button onClick={() => setIsIncidentModalOpen(true)} className="mt-3 w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors">
-                      <icons.AlertTriangle className="w-4 h-4" /> Báo sự cố (Rách/Dơ bẩn)
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+            )
+          })}
         </div>
+      </div>
 
-
-
-        {/* 8. Order Info Collapse */}
-        <details className="bg-white rounded-2xl shadow-sm group border border-slate-100">
-          <summary className="flex items-center justify-between p-4 font-bold text-sm text-slate-800 cursor-pointer marker:hidden list-none">
-            <div className="flex items-center gap-2">
-              <icons.Info className="w-4 h-4 text-blue-500" />
-              Thông tin đơn hàng
-            </div>
-            <icons.ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" />
-          </summary>
-          <div className="px-4 pb-4 pt-1 space-y-3 border-t border-slate-50 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 font-medium">Nguồn</span>
-              <span className="font-semibold text-slate-700">{contract ? 'Tự động từ hợp đồng' : 'Tạo thủ công'}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 font-medium">Hợp đồng</span>
-              <span className="font-bold text-blue-600">{contract?.contract_code || '---'}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 font-medium">Ngày lập HĐ</span>
-              <span className="font-semibold">{(parsedNotes.contract_date || contract?.created_at) ? format(new Date(parsedNotes.contract_date || contract?.created_at), "dd/MM/yyyy") : '---'}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 font-medium">Người tạo</span>
-              <span className="font-semibold">{contract ? 'Hệ thống' : (currentOrder.pic?.full_name || '---')}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 font-medium">Ngày Cưới</span>
-              <span className={`font-bold ${(parsedNotes.ngay_cuoi || contract?.customer?.wedding_date) && new Date(parsedNotes.ngay_cuoi || contract?.customer?.wedding_date) < new Date() ? 'text-rose-600' : 'text-slate-800'}`}>
-                {(parsedNotes.ngay_cuoi || contract?.customer?.wedding_date) ? format(new Date(parsedNotes.ngay_cuoi || contract?.customer?.wedding_date), "dd/MM/yyyy") : '---'}
-              </span>
-            </div>
-          </div>
-        </details>
-
-      {/* Incident Modal */}
       {isIncidentModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4">
           <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-rose-50/50">
               <h3 className="font-bold text-rose-700 flex items-center gap-2">
-                <icons.AlertTriangle className="w-5 h-5" />
-                Báo Cáo Sự Cố
+                <icons.AlertTriangle className="w-5 h-5" /> Báo Cáo Sự Cố
               </h3>
               <button onClick={() => setIsIncidentModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 bg-white rounded-full">
                 <icons.X className="w-5 h-5" />
@@ -474,12 +369,11 @@ export default function OrderDetailMobile({
             </div>
             <div className="p-4 overflow-y-auto space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Mô tả tình trạng (Rách, Dơ, Hư hỏng)</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Mô tả tình trạng</label>
                 <textarea 
                   value={incidentForm.description}
                   onChange={e => setIncidentForm({...incidentForm, description: e.target.value})}
                   className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none min-h-[80px]"
-                  placeholder="Ví dụ: Váy bị rách phần ren dưới lai..."
                 />
               </div>
               
@@ -490,44 +384,49 @@ export default function OrderDetailMobile({
                     type="number"
                     value={incidentForm.penalty_amount || ''}
                     onChange={e => setIncidentForm({...incidentForm, penalty_amount: parseInt(e.target.value) || 0})}
-                    className="w-full border border-slate-200 rounded-lg p-3 pr-10 text-sm focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none font-bold text-rose-600"
-                    placeholder="0"
+                    className="w-full border border-slate-200 rounded-lg p-3 pr-10 text-sm font-bold text-rose-600"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">VNĐ</span>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Phương án thu tiền</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button 
-                    onClick={() => setIncidentForm({...incidentForm, resolution: 'DEDUCT_FROM_DEPOSIT'})}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold border ${incidentForm.resolution === 'DEDUCT_FROM_DEPOSIT' ? 'bg-rose-50 border-rose-500 text-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
-                  >
-                    Khấu trừ cọc
-                  </button>
-                  <button 
-                    onClick={() => setIncidentForm({...incidentForm, resolution: 'EXTRA_CHARGE'})}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold border ${incidentForm.resolution === 'EXTRA_CHARGE' ? 'bg-rose-50 border-rose-500 text-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
-                  >
-                    Thu thêm tiền mặt
-                  </button>
+              <div className="bg-amber-50 p-3 rounded-lg border border-amber-200/50 space-y-2">
+                <div className="flex justify-between items-center text-[12px]">
+                  <span className="text-amber-800 font-medium">Tiền cọc hiện giữ:</span>
+                  <span className="font-bold text-amber-900">{totalDeposit.toLocaleString('vi-VN')}đ</span>
                 </div>
+                <div className="flex justify-between items-center text-[12px] border-t border-amber-200/50 pt-2">
+                  <span className="text-amber-800 font-medium">Khấu trừ cọc:</span>
+                  <span className="font-bold text-rose-600">-{deductAmount.toLocaleString('vi-VN')}đ</span>
+                </div>
+                {extraAmount > 0 && (
+                  <div className="flex justify-between items-center text-[12px] border-t border-amber-200/50 pt-2">
+                    <span className="text-amber-800 font-bold">Thu thêm tiền mặt:</span>
+                    <span className="font-bold text-rose-600">+{extraAmount.toLocaleString('vi-VN')}đ</span>
+                  </div>
+                )}
               </div>
-              <div className="bg-amber-50 p-3 rounded-lg border border-amber-200/50">
-                <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
-                  Hệ thống sẽ tự động tạo phiếu <span className="font-bold">{incidentForm.resolution === 'DEDUCT_FROM_DEPOSIT' ? 'Khấu trừ tiền cọc' : 'Thu tiền đền bù'}</span> với giá trị <span className="font-bold text-rose-600">{incidentForm.penalty_amount.toLocaleString('vi-VN')}đ</span> vào sổ Công Nợ Kế Toán.
-                </p>
-              </div>
+
+              {extraAmount > 0 && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Upload Bill Thu Thêm</label>
+                  {incidentForm.bill_image ? (
+                    <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-200">
+                      <img src={incidentForm.bill_image} alt="Bill" className="w-full h-full object-cover" />
+                      <button onClick={() => setIncidentForm({...incidentForm, bill_image: ''})} className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full"><icons.X className="w-3 h-3" /></button>
+                    </div>
+                  ) : (
+                    <label className={`cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-3 text-xs font-bold rounded-lg border border-dashed w-full ${isUploadingBill ? 'bg-slate-50' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
+                      {isUploadingBill ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.Upload className="w-4 h-4" />}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleBillUpload} disabled={isUploadingBill} />
+                    </label>
+                  )}
+                </div>
+              )}
             </div>
             
             <div className="p-4 border-t border-slate-100 bg-slate-50 flex gap-2">
-              <button 
-                onClick={() => setIsIncidentModalOpen(false)}
-                className="flex-1 py-3 bg-white text-slate-700 font-bold text-sm rounded-xl border border-slate-200"
-              >
-                Hủy bỏ
-              </button>
+              <button onClick={() => setIsIncidentModalOpen(false)} className="flex-1 py-3 bg-white text-slate-700 font-bold text-sm rounded-xl border border-slate-200">Hủy</button>
               <button 
                 onClick={async () => {
                   setIsSubmittingIncident(true);
@@ -535,13 +434,15 @@ export default function OrderDetailMobile({
                     const { reportOrderIncident } = await import('../actions');
                     await reportOrderIncident(currentOrder.id, contract?.id, {
                       ...incidentForm,
+                      deductAmount,
+                      extraAmount,
                       type: 'DAMAGE',
                       created_by_id: currentOrder.pic_id || 'system'
                     });
                     setIsIncidentModalOpen(false);
-                    alert("Đã ghi nhận sự cố và tạo phiếu kế toán thành công!");
+                    alert("Đã ghi nhận sự cố!");
                   } catch (e) {
-                    alert("Lỗi ghi nhận sự cố.");
+                    alert("Lỗi ghi nhận.");
                   } finally {
                     setIsSubmittingIncident(false);
                   }

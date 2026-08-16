@@ -1,24 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as icons from "lucide-react";
 import { format } from "date-fns";
 import { Order, OrderStatus, updateOrderStatus, saveOrderNotesAndImages } from "../actions";
-import { useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import OrderDetailMobile from "./order-detail-mobile";
 
 const STATUS_MAP: Record<OrderStatus, { label: string, color: string, icon: any }> = {
-  PENDING: { label: "Chờ xử lý", color: "bg-slate-100 text-slate-700 border-slate-200", icon: icons.Inbox },
-  PREPARING: { label: "Đang chuẩn bị", color: "bg-blue-100 text-blue-700 border-blue-200", icon: icons.PackageOpen },
-  WAITING_FITTING: { label: "Chờ fitting", color: "bg-amber-100 text-amber-700 border-amber-200", icon: icons.Scissors },
-  READY_TO_DELIVER: { label: "Sẵn sàng giao", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: icons.CheckCircle },
-  DELIVERED: { label: "Đã giao", color: "bg-purple-100 text-purple-700 border-purple-200", icon: icons.Truck },
-  WAITING_RETURN: { label: "Chờ nhận lại", color: "bg-orange-100 text-orange-700 border-orange-200", icon: icons.RotateCcw },
+  PENDING: { label: "Fitting & Sửa", color: "bg-slate-100 text-slate-700 border-slate-200", icon: icons.Inbox },
+  PREPARING: { label: "Fitting & Sửa", color: "bg-blue-100 text-blue-700 border-blue-200", icon: icons.PackageOpen },
+  WAITING_FITTING: { label: "Fitting & Sửa", color: "bg-amber-100 text-amber-700 border-amber-200", icon: icons.Scissors },
+  READY_TO_DELIVER: { label: "Giao đồ", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: icons.CheckCircle },
+  DELIVERED: { label: "Giao đồ", color: "bg-purple-100 text-purple-700 border-purple-200", icon: icons.Truck },
+  WAITING_RETURN: { label: "Thu hồi & Kiểm tra", color: "bg-orange-100 text-orange-700 border-orange-200", icon: icons.RotateCcw },
   COMPLETED: { label: "Hoàn tất", color: "bg-emerald-500 text-white border-emerald-600", icon: icons.CheckCircle2 },
-  ISSUE: { label: "Sự cố", color: "bg-rose-100 text-rose-700 border-rose-200", icon: icons.AlertTriangle },
+  ISSUE: { label: "Xử lý Kho (Sự cố)", color: "bg-rose-100 text-rose-700 border-rose-200", icon: icons.AlertTriangle },
   CANCELLED: { label: "Đã hủy", color: "bg-slate-200 text-slate-500 border-slate-300", icon: icons.XCircle },
 };
 
@@ -46,12 +45,19 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
   
   const actualStepIndex = getUiStepIndex(currentOrder.completion_status);
   const [viewingStepIndex, setViewingStepIndex] = useState(actualStepIndex);
-  const isReadOnly = viewingStepIndex !== actualStepIndex;
+  
+  useEffect(() => {
+    setCurrentOrder(order);
+    setViewingStepIndex(getUiStepIndex(order.completion_status));
+  }, [order]);
+  
+  const isReadOnly = viewingStepIndex !== getUiStepIndex(currentOrder.completion_status);
   
   // Incident Modal State
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
-  const [incidentForm, setIncidentForm] = useState({ description: '', penalty_amount: 0, resolution: 'DEDUCT_FROM_DEPOSIT' });
+  const [incidentForm, setIncidentForm] = useState({ description: '', penalty_amount: 0, bill_image: '' });
   const [isSubmittingIncident, setIsSubmittingIncident] = useState(false);
+  const [isUploadingBill, setIsUploadingBill] = useState(false);
   
   const items = useMemo(() => {
     return (contract?.items || []).filter((item: any) => {
@@ -178,6 +184,31 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
     return { notesTextObj: textObj, notesImages: images };
   }, [currentOrder.notes]);
 
+  const parsedNotes = useMemo(() => {
+    let p: any = {};
+    if (contract?.notes) {
+      try {
+        p = typeof contract.notes === 'string' && contract.notes.startsWith('{') ? JSON.parse(contract.notes) : contract.notes;
+      } catch(e) {}
+    }
+    return p;
+  }, [contract]);
+
+  const totalDeposit = useMemo(() => {
+    const d1 = parseInt(parsedNotes.deposit_amount) || 0;
+    const d2 = parseInt(parsedNotes.deposit_amount_2) || 0;
+    return d1 + d2;
+  }, [parsedNotes]);
+
+  const { deductAmount, extraAmount } = useMemo(() => {
+    const penalty = incidentForm.penalty_amount || 0;
+    if (penalty <= totalDeposit) {
+      return { deductAmount: penalty, extraAmount: 0 };
+    } else {
+      return { deductAmount: totalDeposit, extraAmount: penalty - totalDeposit };
+    }
+  }, [incidentForm.penalty_amount, totalDeposit]);
+
   const [isUpdatingPic, setIsUpdatingPic] = useState(false);
   const handlePicChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const picId = e.target.value || null;
@@ -260,12 +291,41 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
     }
   };
 
-  const handleDeleteImage = async (itemId: string, urlToRemove: string) => {
+  const handleBillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingBill(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `incident_bill_${order.id}_${Date.now()}.${fileExt}`;
+      const filePath = `qc-orders/${order.id}/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from('contract_files')
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('contract_files')
+        .getPublicUrl(filePath);
+
+      setIncidentForm({...incidentForm, bill_image: publicUrl});
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi upload ảnh Bill");
+    } finally {
+      setIsUploadingBill(false);
+    }
+  };
+
+  const handleDeleteImage = async (itemId: string, imageUrl: string) => {
     if (!confirm("Xóa ảnh QC này?")) return;
     
     const updatedImages = { ...notesImages };
     if (updatedImages[itemId]) {
-      updatedImages[itemId] = updatedImages[itemId].filter(img => img !== urlToRemove);
+      updatedImages[itemId] = updatedImages[itemId].filter(img => img !== imageUrl);
     }
 
     try {
@@ -281,14 +341,7 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
 
   const statusInfo = STATUS_MAP[currentOrder.completion_status] || STATUS_MAP.PENDING;
   
-  const parsedNotes = useMemo(() => {
-    if (!contract?.notes) return {};
-    try {
-      return typeof contract.notes === 'string' ? JSON.parse(contract.notes) : contract.notes;
-    } catch(e) {
-      return {};
-    }
-  }, [contract]);
+
 
   return (
     <>
@@ -464,7 +517,7 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                               )}
                               
                               {/* Desktop Incident Button */}
-                              {!isReadOnly && viewingStepIndex === 4 && (
+                              {!isReadOnly && viewingStepIndex === 2 && (
                                 <div className="mt-3">
                                   <button onClick={() => setIsIncidentModalOpen(true)} className="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-[11px] rounded flex items-center gap-1.5 transition-colors">
                                     <icons.AlertTriangle className="w-3.5 h-3.5" /> Báo sự cố (Rách/Dơ)
@@ -519,7 +572,7 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                               </div>
                               
                               {/* Desktop Incident Button */}
-                              {!isReadOnly && viewingStepIndex === 4 && (
+                              {!isReadOnly && viewingStepIndex === 2 && (
                                 <div className="mt-3">
                                   <button onClick={() => setIsIncidentModalOpen(true)} className="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-[11px] rounded flex items-center gap-1.5 transition-colors">
                                     <icons.AlertTriangle className="w-3.5 h-3.5" /> Báo sự cố (Rách/Dơ)
@@ -796,28 +849,45 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Phương án thu tiền</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => setIncidentForm({...incidentForm, resolution: 'DEDUCT_FROM_DEPOSIT'})}
-                  className={`py-2 px-3 rounded-lg text-xs font-bold border ${incidentForm.resolution === 'DEDUCT_FROM_DEPOSIT' ? 'bg-rose-50 border-rose-500 text-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
-                >
-                  Khấu trừ cọc
-                </button>
-                <button 
-                  onClick={() => setIncidentForm({...incidentForm, resolution: 'EXTRA_CHARGE'})}
-                  className={`py-2 px-3 rounded-lg text-xs font-bold border ${incidentForm.resolution === 'EXTRA_CHARGE' ? 'bg-rose-50 border-rose-500 text-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
-                >
-                  Thu thêm tiền mặt
-                </button>
+            <div className="bg-amber-50 p-3 rounded-lg border border-amber-200/50 space-y-2">
+              <div className="flex justify-between items-center text-[12px]">
+                <span className="text-amber-800 font-medium">Tiền cọc hiện giữ:</span>
+                <span className="font-bold text-amber-900">{totalDeposit.toLocaleString('vi-VN')}đ</span>
               </div>
+              <div className="flex justify-between items-center text-[12px] border-t border-amber-200/50 pt-2">
+                <span className="text-amber-800 font-medium">Khấu trừ cọc:</span>
+                <span className="font-bold text-rose-600">-{deductAmount.toLocaleString('vi-VN')}đ</span>
+              </div>
+              {extraAmount > 0 && (
+                <div className="flex justify-between items-center text-[12px] border-t border-amber-200/50 pt-2">
+                  <span className="text-amber-800 font-bold">Thu thêm tiền mặt:</span>
+                  <span className="font-bold text-rose-600">+{extraAmount.toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
             </div>
-            <div className="bg-amber-50 p-3 rounded-lg border border-amber-200/50">
-              <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
-                Hệ thống sẽ tự động tạo phiếu <span className="font-bold">{incidentForm.resolution === 'DEDUCT_FROM_DEPOSIT' ? 'Khấu trừ tiền cọc' : 'Thu tiền đền bù'}</span> với giá trị <span className="font-bold text-rose-600">{incidentForm.penalty_amount.toLocaleString('vi-VN')}đ</span> vào sổ Công Nợ Kế Toán.
-              </p>
-            </div>
+
+            {extraAmount > 0 && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Upload Bill Thanh Toán Thu Thêm</label>
+                {incidentForm.bill_image ? (
+                  <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-200">
+                    <img src={incidentForm.bill_image} alt="Bill" className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => setIncidentForm({...incidentForm, bill_image: ''})} 
+                      className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full"
+                    >
+                      <icons.X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className={`cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-3 text-xs font-bold rounded-lg border border-dashed transition-colors w-full ${isUploadingBill ? 'bg-slate-50 border-slate-300 text-slate-400' : 'bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100'}`}>
+                    {isUploadingBill ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.Upload className="w-4 h-4" />}
+                    {isUploadingBill ? "Đang upload..." : "Tải ảnh Bill lên"}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleBillUpload} disabled={isUploadingBill} />
+                  </label>
+                )}
+              </div>
+            )}
           </div>
           
           <div className="p-4 border-t border-slate-100 bg-slate-50 flex gap-2">
@@ -834,6 +904,8 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                   const { reportOrderIncident } = await import('../actions');
                   await reportOrderIncident(currentOrder.id, contract?.id, {
                     ...incidentForm,
+                    deductAmount,
+                    extraAmount,
                     type: 'DAMAGE',
                     created_by_id: currentOrder.pic_id || 'system'
                   });

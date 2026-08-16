@@ -1645,3 +1645,332 @@ export async function updateContract(contractId: string, payload: any) {
     return { error: err.message };
   }
 }
+
+export async function checkInventoryAvailability(
+  inventoryItemId: string,
+  startDate: string,
+  endDate: string
+) {
+  const supabase = createAdminClient();
+  try {
+    // 1. Get the inventory item details
+    const { data: item, error: itemErr } = await supabase
+      .from("inventory_items")
+      .select("factory_code, size, available_quantity")
+      .eq("id", inventoryItemId)
+      .single();
+    
+    if (itemErr || !item) return { error: "Không tìm thấy sản phẩm trong kho." };
+    if (item.available_quantity <= 0) return { error: "Sản phẩm đã hết hàng trong kho (available_quantity = 0)." };
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    start.setDate(start.getDate() - 1); // 1 day before (prepare buffer)
+    end.setDate(end.getDate() + 1);     // 1 day after (wash buffer)
+    
+    const { data: contracts, error: ctErr } = await supabase
+      .from("contracts")
+      .select("id, contract_code, notes, customer_name")
+      .not("status", "eq", "CANCELLED");
+
+    if (ctErr) return { error: ctErr.message };
+
+    let overlapCount = 0;
+    const overlapDetails: string[] = [];
+
+    for (const ct of contracts || []) {
+      // Safely parse metadata without throwing
+      let meta: any = {};
+      try {
+        if (typeof ct.notes === "string" && ct.notes.startsWith("{")) {
+          meta = JSON.parse(ct.notes);
+        }
+      } catch (e) {}
+      
+      const garments = Array.isArray(meta.garments) ? meta.garments : [];
+      
+      for (const g of garments) {
+        if (g.inventory_item_id === inventoryItemId) {
+          if (g.pickup_date && g.return_date) {
+            const gStart = new Date(g.pickup_date);
+            const gEnd = new Date(g.return_date);
+            gStart.setDate(gStart.getDate() - 1);
+            gEnd.setDate(gEnd.getDate() + 1);
+
+            if (start <= gEnd && end >= gStart) {
+              overlapCount++;
+              overlapDetails.push(`${ct.customer_name || ct.contract_code} (${g.pickup_date} - ${g.return_date})`);
+            }
+          }
+        }
+      }
+    }
+
+    if (overlapCount >= item.available_quantity) {
+      return { 
+        isAvailable: false, 
+        message: `Cảnh báo: Sản phẩm này đang bị kẹt lịch với ${overlapCount} hợp đồng khác trong khoảng thời gian này (bao gồm 1 ngày chuẩn bị và 1 ngày giặt). Chi tiết: ${overlapDetails.join(", ")}` 
+      };
+    }
+
+    return { isAvailable: true };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
+
+export async function checkInventoryAvailabilityAndSearch(
+  factoryCode: string,
+  size: string,
+  startDate: string,
+  endDate: string
+) {
+  const supabase = createAdminClient();
+  try {
+    let query = supabase.from("inventory_items").select("*").eq("factory_code", factoryCode);
+    if (size) query = query.eq("size", size);
+    
+    const { data: items, error: findErr } = await query;
+    if (findErr) return { error: findErr.message };
+    if (!items || items.length === 0) return { error: "Không tìm thấy mã sản phẩm này trong kho." };
+    if (items.length > 1) return { error: "Có nhiều size cho mã này. Vui lòng nhập cụ thể Size." };
+    
+    const item = items[0];
+    const availRes = await checkInventoryAvailability(item.id, startDate, endDate);
+    
+    return {
+      item,
+      isAvailable: availRes.isAvailable,
+      message: availRes.message,
+      error: availRes.error
+    };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
+
+export async function addGarmentToContract(
+  contractId: string, 
+  inventoryItemId: string,
+  startDate: string,
+  endDate: string,
+  itemData: any
+) {
+  const supabase = createAdminClient();
+  const currentContract = await getContractById(contractId);
+  if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại." };
+
+  const existingGarment = currentContract.garments.find((g) => g.inventory_item_id === inventoryItemId);
+  if (existingGarment) {
+    return { success: false, error: "Sản phẩm này đã được thêm vào hợp đồng rồi!" };
+  }
+
+  const newContractGarment: ContractGarment = {
+    id: `gar-${Date.now()}`,
+    garment_code: itemData.factory_code,
+    product_name: `${itemData.type || "Trang phục"} ${itemData.factory_code}`,
+    product_type: itemData.type || "Váy Cưới / Vest",
+    size: itemData.size,
+    deliver_date: startDate,
+    return_date: endDate,
+    reservation_status: "RESERVED",
+    fitting_notes: "",
+    inventory_item_id: inventoryItemId,
+  };
+
+  const newActivity: ContractActivity = {
+    id: `act-${Date.now()}`,
+    actor_name: "Nhân viên Kho",
+    action_type: "UPDATE_CONTRACT",
+    content: `Thêm trang phục: ${newContractGarment.product_name} (${newContractGarment.garment_code} - Size ${newContractGarment.size}) từ ${startDate} đến ${endDate}`,
+    created_at: new Date().toISOString(),
+  };
+
+  const metaData = {
+    ...parseMetadata(currentContract.notes || null),
+    garments: [...currentContract.garments, newContractGarment],
+    activities: [newActivity, ...currentContract.activities],
+  };
+
+  await supabase
+    .from("contracts")
+    .update({ notes: stringifyMetadata(metaData), updated_at: new Date().toISOString() })
+    .eq("id", contractId);
+
+  revalidatePath(`/dashboard/contracts/${contractId}`);
+  return { success: true, garment: newContractGarment };
+}
+
+export async function markGarmentReturned(contractCode: string, factoryCode: string) {
+  const supabase = createAdminClient();
+  try {
+    // Find contract by code
+    const { data: ct, error: ctErr } = await supabase
+      .from("contracts")
+      .select("id, contract_code, notes")
+      .eq("contract_code", contractCode.trim().toUpperCase())
+      .single();
+
+    if (ctErr || !ct) {
+      return { success: false, error: "Không tìm thấy Hợp đồng này." };
+    }
+
+    let meta = parseMetadata(ct.notes);
+    let garments = Array.isArray(meta.garments) ? meta.garments : [];
+    
+    let found = false;
+    garments = garments.map((g: any) => {
+      // Find matching garment by factory_code (garment_code)
+      if (g.garment_code?.toUpperCase() === factoryCode.trim().toUpperCase() && g.reservation_status !== "RETURNED") {
+        g.reservation_status = "RETURNED";
+        g.returned_at = new Date().toISOString();
+        found = true;
+      }
+      return g;
+    });
+
+    if (!found) {
+      return { success: false, error: "Không tìm thấy trang phục này trong hợp đồng hoặc trang phục đã được trả trước đó." };
+    }
+
+    const newActivity: ContractActivity = {
+      id: `act-${Date.now()}`,
+      actor_name: "Nhân viên Vận hành",
+      action_type: "UPDATE_CONTRACT",
+      content: `Xác nhận khách trả đồ cho trang phục: ${factoryCode}`,
+      created_at: new Date().toISOString(),
+    };
+
+    meta.garments = garments;
+    meta.activities = [newActivity, ...(Array.isArray(meta.activities) ? meta.activities : [])];
+
+    await supabase
+      .from("contracts")
+      .update({ notes: stringifyMetadata(meta), updated_at: new Date().toISOString() })
+      .eq("id", ct.id);
+
+    revalidatePath(`/dashboard/contracts/${ct.id}`);
+    revalidatePath(`/dashboard/orders`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function reportGarmentIncident(
+  contractId: string,
+  garmentCode: string,
+  compensationAmount: number,
+  reason: string
+) {
+  const supabase = createAdminClient();
+  try {
+    const { data: ct, error: ctErr } = await supabase
+      .from("contracts")
+      .select("id, contract_code, total_amount, paid_amount, notes")
+      .eq("id", contractId)
+      .single();
+
+    if (ctErr || !ct) return { success: false, error: "Không tìm thấy hợp đồng." };
+
+    let meta = parseMetadata(ct.notes);
+    let garments = Array.isArray(meta.garments) ? meta.garments : [];
+    
+    let foundGarment: any = null;
+    garments = garments.map((g: any) => {
+      if (g.garment_code?.toUpperCase() === garmentCode.trim().toUpperCase() && g.reservation_status !== "LIQUIDATED") {
+        g.reservation_status = "LIQUIDATED";
+        g.returned_at = new Date().toISOString();
+        foundGarment = g;
+      }
+      return g;
+    });
+
+    if (!foundGarment) {
+      return { success: false, error: "Không tìm thấy trang phục này trong hợp đồng hoặc đã thanh lý." };
+    }
+
+    // 1. Create Compensation Payment Installment
+    if (compensationAmount > 0) {
+      const { error: pmtErr } = await supabase.from("payment_installments").insert([{
+        contract_id: contractId,
+        installment_type: "COMPENSATION",
+        amount: compensationAmount,
+        status: "PENDING",
+        notes: `Đền bù sự cố: ${reason}`,
+      }]);
+      if (pmtErr) return { success: false, error: "Lỗi tạo hóa đơn đền bù: " + pmtErr.message };
+
+      // Update total_amount of contract to include compensation
+      await supabase.from("contracts").update({
+        total_amount: Number(ct.total_amount) + compensationAmount,
+      }).eq("id", contractId);
+    }
+
+    // 2. Decrement Inventory
+    if (foundGarment.inventory_item_id) {
+      const { data: inv, error: invErr } = await supabase
+        .from("inventory_items")
+        .select("quantity, available_quantity, liquidated_quantity")
+        .eq("id", foundGarment.inventory_item_id)
+        .single();
+      
+      if (inv && !invErr) {
+        await supabase.from("inventory_items").update({
+          quantity: Math.max(0, inv.quantity - 1),
+          available_quantity: Math.max(0, inv.available_quantity - 1),
+          liquidated_quantity: (inv.liquidated_quantity || 0) + 1,
+          updated_at: new Date().toISOString()
+        }).eq("id", foundGarment.inventory_item_id);
+      }
+    }
+
+    // 3. Update Contract Activities
+    const newActivity: ContractActivity = {
+      id: `act-${Date.now()}`,
+      actor_name: "Nhân viên Vận hành",
+      action_type: "UPDATE_CONTRACT",
+      content: `Báo cáo sự cố trang phục ${garmentCode}. Lý do: ${reason}. Phạt đền bù: ${new Intl.NumberFormat('vi-VN').format(compensationAmount)}đ`,
+      created_at: new Date().toISOString(),
+    };
+
+    meta.garments = garments;
+    meta.activities = [newActivity, ...(Array.isArray(meta.activities) ? meta.activities : [])];
+
+    await supabase
+      .from("contracts")
+      .update({ notes: stringifyMetadata(meta), updated_at: new Date().toISOString() })
+      .eq("id", contractId);
+
+    revalidatePath(`/dashboard/contracts/${contractId}`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function reportIncidentFromScanner(
+  contractCode: string,
+  factoryCode: string,
+  compensationAmount: number,
+  reason: string
+) {
+  const supabase = createAdminClient();
+  try {
+    const { data: ct, error: ctErr } = await supabase
+      .from("contracts")
+      .select("id")
+      .eq("contract_code", contractCode.trim().toUpperCase())
+      .single();
+
+    if (ctErr || !ct) {
+      return { success: false, error: "Không tìm thấy Hợp đồng này." };
+    }
+
+    return await reportGarmentIncident(ct.id, factoryCode, compensationAmount, reason);
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+

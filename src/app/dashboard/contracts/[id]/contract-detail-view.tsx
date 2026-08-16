@@ -18,6 +18,9 @@ import {
 } from "../actions";
 import { Contract } from "../types";
 import QRScanner from "@/components/qr-scanner";
+import InventoryPickerModal from "../_components/inventory-picker-modal";
+
+import IncidentReportModal from "../_components/incident-report-modal";
 
 interface ContractDetailViewProps {
   contract: Contract;
@@ -35,6 +38,7 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [incidentGarment, setIncidentGarment] = useState<any | null>(null);
   const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
   const [isAddDocOpen, setIsAddDocOpen] = useState(false);
 
@@ -325,9 +329,18 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
                             <Clock className="w-3.5 h-3.5" /> Giữ từ: <strong>{gar.deliver_date}</strong> ➔ <strong>{gar.return_date}</strong>
                           </div>
                         </div>
-                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1.5 rounded-md border border-amber-100 uppercase tracking-wider">
-                          {gar.reservation_status}
-                        </span>
+                        <div className="flex flex-col items-end gap-2">
+                          <span className={`text-[10px] font-bold px-2.5 py-1.5 rounded-md border uppercase tracking-wider ${
+                            gar.reservation_status === 'LIQUIDATED' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                          }`}>
+                            {gar.reservation_status}
+                          </span>
+                          {gar.reservation_status !== 'LIQUIDATED' && (
+                            <button onClick={() => setIncidentGarment(gar)} className="text-[10px] bg-white border border-red-200 text-red-600 hover:bg-red-50 px-2 py-1 rounded-md font-bold transition-colors">
+                              ⚠️ Báo Sự cố
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -477,22 +490,29 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
       <CancelContractDialog isOpen={isCancelOpen} onClose={() => setIsCancelOpen(false)} contract={contract} onSaved={handleSaved} />
       {isPrintOpen && <PrintableContract contract={contract} onClose={() => setIsPrintOpen(false)} />}
       {isScannerOpen && (
-        <QRScanner 
+        <InventoryPickerModal 
+          isOpen={isScannerOpen}
           onClose={() => setIsScannerOpen(false)}
-          onScanSuccess={async (qrCode) => {
+          contractId={contract.id}
+          onSaved={() => {
             setIsScannerOpen(false);
-            try {
-              const res = await addGarmentToContractByQR(contract.id, qrCode);
-              if (res.success) alert("✅ Thêm trang phục thành công:\n" + res.garment?.name);
-              else alert("❌ Lỗi: " + res.error);
-            } catch (err) {
-              alert("❌ Lỗi hệ thống khi thêm trang phục.");
-            }
+            router.refresh();
           }}
         />
       )}
       {isEditOpen && (
         <EditContractDialog isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} customers={contract.customers ? [contract.customers] : []} contract={contract} onSaved={() => { setIsEditOpen(false); router.refresh(); }} />
+      )}
+      {incidentGarment && (
+        <IncidentReportModal
+          contractId={contract.id}
+          garment={incidentGarment}
+          onClose={() => setIncidentGarment(null)}
+          onSuccess={() => {
+            setIncidentGarment(null);
+            router.refresh();
+          }}
+        />
       )}
     </div>
   );

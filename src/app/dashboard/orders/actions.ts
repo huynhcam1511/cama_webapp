@@ -224,7 +224,7 @@ export async function updateOrderQAStage(orderId: string, stageData: any) {
 export async function reportOrderIncident(orderId: string, contractId: string, incidentData: any) {
   const supabase = createClient();
   
-  const { data: order, error: orderError } = await supabase.from('orders').select('qa_incidents').eq('id', orderId).single();
+  const { data: order, error: orderError } = await supabase.from('orders').select('qa_incidents, order_code').eq('id', orderId).single();
   if (orderError) return { error: orderError.message };
   
   let incidents = order.qa_incidents || [];
@@ -233,18 +233,57 @@ export async function reportOrderIncident(orderId: string, contractId: string, i
   const { error } = await supabase.from('orders').update({ qa_incidents: incidents }).eq('id', orderId);
   if (error) return { error: error.message };
   
-  if (incidentData.penalty_amount > 0 && contractId) {
-    const paymentData = {
-      contract_id: contractId,
-      amount: incidentData.penalty_amount,
-      type: "PENALTY", 
-      method: incidentData.resolution === 'DEDUCT_FROM_DEPOSIT' ? "TRỪ_CỌC" : "THU_THÊM",
-      status: "COMPLETED",
-      payment_date: new Date().toISOString(),
-      note: `Phí đền bù sự cố đơn hàng (Đơn: ${orderId}). Lý do: ${incidentData.description}`,
-      created_by: incidentData.created_by_id
-    };
-    await supabase.from('payments').insert(paymentData);
+  if (contractId) {
+    if (incidentData.deductAmount > 0) {
+      await supabase.from('payments').insert({
+        contract_id: contractId,
+        amount: incidentData.deductAmount,
+        type: "PENALTY", 
+        method: "TRỪ_CỌC",
+        status: "COMPLETED",
+        payment_date: new Date().toISOString(),
+        note: `Khấu trừ cọc đền bù sự cố (Đơn: ${order.order_code || orderId}). Lý do: ${incidentData.description}`,
+        created_by: incidentData.created_by_id
+      });
+    }
+
+    if (incidentData.extraAmount > 0) {
+      await supabase.from('payments').insert({
+        contract_id: contractId,
+        amount: incidentData.extraAmount,
+        type: "PENALTY", 
+        method: "CHUYỂN_KHOẢN",
+        status: "COMPLETED",
+        payment_date: new Date().toISOString(),
+        note: `Thu thêm tiền mặt đền bù (Đơn: ${order.order_code || orderId}). Lý do: ${incidentData.description}`,
+        created_by: incidentData.created_by_id,
+        image_url: incidentData.bill_image || null
+      });
+    }
+
+    const totalPenalty = incidentData.penalty_amount || 0;
+    if (totalPenalty > 0) {
+      const { data: contractData } = await supabase.from('contracts').select('notes').eq('id', contractId).single();
+      if (contractData) {
+        let pNotes: any = {};
+        if (contractData.notes) {
+          try {
+            pNotes = typeof contractData.notes === 'string' && contractData.notes.startsWith('{') ? JSON.parse(contractData.notes) : contractData.notes;
+          } catch(e) {}
+        }
+        
+        let history = pNotes.history || [];
+        history.push({
+          timestamp: new Date().toISOString(),
+          action: "Báo cáo sự cố",
+          actor_id: incidentData.created_by_id,
+          details: `Ghi nhận sự cố đền bù ${totalPenalty.toLocaleString('vi-VN')}đ (Đơn ${order.order_code || orderId}). Khấu trừ: ${incidentData.deductAmount?.toLocaleString('vi-VN')}đ, Thu thêm: ${incidentData.extraAmount?.toLocaleString('vi-VN')}đ. Lý do: ${incidentData.description}`
+        });
+
+        pNotes.history = history;
+        await supabase.from('contracts').update({ notes: JSON.stringify(pNotes) }).eq('id', contractId);
+      }
+    }
   }
   
   revalidatePath('/dashboard/orders');
