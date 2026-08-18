@@ -821,7 +821,7 @@ export default function EmployeeDetailView({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {(["DASHBOARD", "BUSINESS", "FINANCE", "OPERATIONS", "HR", "MARKETING", "ADMIN"] as ModuleGroup[]).map(groupCode => {
+                  {(["DASHBOARD", "BUSINESS", "FINANCE", "OPERATIONS", "INVENTORY_GROUP", "HR", "MARKETING", "ADMIN"] as ModuleGroup[]).map(groupCode => {
                     const groupModules = MODULE_REGISTRY.filter(m => m.group === groupCode).sort((a, b) => a.sortOrder - b.sortOrder);
                     if (groupModules.length === 0) return null;
                     
@@ -830,6 +830,7 @@ export default function EmployeeDetailView({
                       BUSINESS: "KINH DOANH",
                       FINANCE: "TÀI CHÍNH",
                       OPERATIONS: "VẬN HÀNH",
+                      INVENTORY_GROUP: "KHO TÀI SẢN",
                       HR: "NHÂN SỰ & ĐÀO TẠO",
                       ADMIN: "QUẢN TRỊ",
                       MARKETING: "MARKETING"
