@@ -5,7 +5,7 @@ import { Camera, X, Loader2, CheckCircle2 } from "lucide-react";
 import Tesseract from "tesseract.js";
 
 interface OCRScannerProps {
-  onScan: (text: string) => void;
+  onScan: (text: string, image?: string) => void;
   onClose: () => void;
 }
 
@@ -19,7 +19,7 @@ export default function OCRScanner({ onScan, onClose }: OCRScannerProps) {
   // Khởi động Camera
   useEffect(() => {
     let currentStream: MediaStream | null = null;
-    
+
     const startCamera = async () => {
       try {
         currentStream = await navigator.mediaDevices.getUserMedia({
@@ -44,68 +44,69 @@ export default function OCRScanner({ onScan, onClose }: OCRScannerProps) {
     };
   }, []);
 
+  const captureImage = () => {
+    if (!videoRef.current) return null;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Crop hình vuông
+    const cropSize = Math.min(canvas.width, canvas.height) * 0.8;
+    const cropX = (canvas.width - cropSize) / 2;
+    const cropY = (canvas.height - cropSize) / 2;
+
+    const cropCanvas = document.createElement('canvas');
+    cropCanvas.width = cropSize;
+    cropCanvas.height = cropSize;
+    const cropCtx = cropCanvas.getContext('2d');
+    if (!cropCtx) return null;
+
+    cropCtx.drawImage(canvas, cropX, cropY, cropSize, cropSize, 0, 0, cropSize, cropSize);
+    return cropCanvas.toDataURL('image/jpeg', 0.8);
+  };
+
   const handleCapture = useCallback(async () => {
-    if (!videoRef.current || !stream) return;
-    
+    if (!stream) return;
     setIsScanning(true);
     setError(null);
-    
-    try {
-      // 1. Chụp hình từ Video
-      const video = videoRef.current;
-      const canvas = document.createElement('canvas');
-      
-      // Kích thước thật của video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error("Canvas context failed");
-      
-      // Vẽ frame hiện tại lên canvas
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Crop vùng ở giữa (nơi có khung ngắm)
-      // Khung ngắm ở UI đang chiếm khoảng 80% chiều rộng và 30% chiều cao, nằm ở trung tâm
-      const cropWidth = canvas.width * 0.8;
-      const cropHeight = canvas.height * 0.3;
-      const cropX = (canvas.width - cropWidth) / 2;
-      const cropY = (canvas.height - cropHeight) / 2;
-      
-      const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = cropWidth;
-      cropCanvas.height = cropHeight;
-      const cropCtx = cropCanvas.getContext('2d');
-      if (!cropCtx) throw new Error("Crop canvas failed");
-      
-      cropCtx.drawImage(canvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-      
-      const imageData = cropCanvas.toDataURL('image/jpeg');
 
-      // 2. Chạy OCR bằng Tesseract (nhận diện số và chữ in hoa phổ biến)
-      const { data: { text } } = await Tesseract.recognize(
-        imageData,
-        'eng', // Tiếng Anh/Số là đủ để quét mác
-        { logger: m => console.log(m) }
-      );
-      
-      // 3. Xử lý chuỗi kết quả (Lọc bỏ các ký tự rác, chia thành mảng)
+    try {
+      const imageData = captureImage();
+      if (!imageData) throw new Error("Không thể chụp ảnh");
+
+      // Nhận diện OCR, chỉ lấy tiếng Anh và số để tránh lỗi tiếng Trung
+      const worker = await Tesseract.createWorker('eng');
+      await worker.setParameters({
+        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-',
+      });
+      const { data: { text } } = await worker.recognize(imageData);
+      await worker.terminate();
+
       const words = text
         .split(/[\s\n]+/)
         .map(w => w.replace(/[^A-Za-z0-9-]/g, '').trim())
-        .filter(w => w.length >= 3); // Bỏ qua các chuỗi quá ngắn
-      
+        .filter(w => w.length >= 3);
+
       const uniqueWords = Array.from(new Set(words));
-      
+
       if (uniqueWords.length > 0) {
         if (uniqueWords.length === 1) {
-          onScan(uniqueWords[0]);
+          onScan(uniqueWords[0], imageData);
         } else {
+          // Lưu lại imageData để pass khi user chọn
+          (window as any)._lastOcrImage = imageData;
           setRecognizedOptions(uniqueWords);
         }
       } else {
-        setError("Không nhận diện được mã hợp lệ (cần ít nhất 3 ký tự). Vui lòng thử lại và giữ chắc tay.");
+        // Fallback: Nếu không nhận diện được, cho phép dùng ảnh luôn
+        (window as any)._lastOcrImage = imageData;
+        setError("Không nhận diện được mã số. Bạn có muốn lưu luôn ảnh mác này không?");
       }
-      
+
     } catch (err) {
       console.error("OCR Error:", err);
       setError("Có lỗi xảy ra khi quét. Vui lòng thử lại.");
@@ -114,17 +115,22 @@ export default function OCRScanner({ onScan, onClose }: OCRScannerProps) {
     }
   }, [stream, onScan]);
 
+  const handleUseImageOnly = () => {
+    const img = (window as any)._lastOcrImage || captureImage();
+    if (img) onScan("", img);
+  };
+
   return (
     <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center animate-in fade-in duration-200">
       <div className="absolute top-4 right-4 z-10">
-        <button 
+        <button
           onClick={onClose}
           className="p-3 bg-white/20 hover:bg-white/30 rounded-full text-white backdrop-blur-md transition-colors"
         >
           <X className="w-6 h-6" />
         </button>
       </div>
-      
+
       <div className="text-center text-white mb-6 z-10">
         <h3 className="text-xl font-bold mb-2">Quét Mác Áo (OCR)</h3>
         {recognizedOptions.length > 0 ? (
@@ -161,7 +167,7 @@ export default function OCRScanner({ onScan, onClose }: OCRScannerProps) {
               <X className="w-8 h-8" />
             </div>
             <p className="text-rose-400 font-medium">{error}</p>
-            <button 
+            <button
               onClick={() => setError(null)}
               className="mt-6 px-6 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
             >
@@ -170,26 +176,26 @@ export default function OCRScanner({ onScan, onClose }: OCRScannerProps) {
           </div>
         ) : (
           <>
-            <video 
+            <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
               className="w-full h-full object-cover"
             />
-            
+
             {/* Overlay Overlay */}
             <div className="absolute inset-0 bg-black/40 pointer-events-none"></div>
-            
+
             {/* Viewfinder Cutout */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-[80%] h-[30%] border-2 border-yellow-400/80 rounded-xl relative shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] bg-transparent">
+              <div className="w-[80%] aspect-square border-2 border-yellow-400/80 rounded-xl relative shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] bg-transparent">
                 {/* Corner markers */}
                 <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-yellow-400 rounded-tl-xl -mt-1 -ml-1"></div>
                 <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-yellow-400 rounded-tr-xl -mt-1 -mr-1"></div>
                 <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-yellow-400 rounded-bl-xl -mb-1 -ml-1"></div>
                 <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-yellow-400 rounded-br-xl -mb-1 -mr-1"></div>
-                
+
                 {isScanning && (
                   <div className="absolute inset-0 bg-blue-500/20 backdrop-blur-sm flex flex-col items-center justify-center text-blue-100 rounded-xl">
                     <Loader2 className="w-8 h-8 animate-spin mb-2" />
@@ -205,7 +211,7 @@ export default function OCRScanner({ onScan, onClose }: OCRScannerProps) {
 
       {!error && recognizedOptions.length === 0 && (
         <div className="mt-8 z-10 w-full max-w-md px-6">
-          <button 
+          <button
             disabled={isScanning}
             onClick={handleCapture}
             className="w-full py-4 bg-yellow-400 hover:bg-yellow-500 text-yellow-950 font-black rounded-2xl shadow-[0_0_40px_rgba(250,204,21,0.3)] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:scale-95 text-lg"
@@ -221,6 +227,14 @@ export default function OCRScanner({ onScan, onClose }: OCRScannerProps) {
                 Chụp & Quét Chữ
               </>
             )}
+          </button>
+
+          <button
+            disabled={isScanning}
+            onClick={handleUseImageOnly}
+            className="w-full mt-4 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-all disabled:opacity-50"
+          >
+            Chỉ lưu ảnh (Bỏ qua nhận diện)
           </button>
         </div>
       )}

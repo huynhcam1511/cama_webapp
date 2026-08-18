@@ -55,12 +55,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     BUSINESS: "KINH DOANH",
     FINANCE: "TÀI CHÍNH",
     OPERATIONS: "VẬN HÀNH",
+    INVENTORY_GROUP: "KHO TÀI SẢN",
     HR: "Nhân Sự & Đào Tạo",
     ADMIN: "Quản Trị Hệ Thống",
     MARKETING: "Marketing & Nội Dung"
   };
 
-  const SIDEBAR_GROUP_ORDER: ModuleGroup[] = ["DASHBOARD", "BUSINESS", "FINANCE", "OPERATIONS", "HR", "MARKETING", "ADMIN"];
+  const SIDEBAR_GROUP_ORDER: ModuleGroup[] = ["DASHBOARD", "BUSINESS", "FINANCE", "OPERATIONS", "INVENTORY_GROUP", "HR", "MARKETING", "ADMIN"];
 
   const handleLogout = async () => {
     const supabase = createClient();
