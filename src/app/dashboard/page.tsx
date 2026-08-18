@@ -41,9 +41,10 @@ const GROUP_LABELS: Record<ModuleGroup, string> = {
   BUSINESS: "KINH DOANH",
   FINANCE: "TÀI CHÍNH",
   OPERATIONS: "VẬN HÀNH",
-  HR: "NHÂN SỰ",
-  ADMIN: "QUẢN TRỊ",
-  MARKETING: "MARKETING",
+  INVENTORY_GROUP: "KHO TÀI SẢN",
+  HR: "Nhân Sự & Đào Tạo",
+  ADMIN: "Quản Trị Hệ Thống",
+  MARKETING: "Marketing & Nội Dung"
 };
 
 export default function DashboardHome() {

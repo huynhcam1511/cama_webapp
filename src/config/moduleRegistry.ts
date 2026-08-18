@@ -1,15 +1,18 @@
-export type ModuleCode = 
-  | "DASHBOARD" 
-  | "STUDIO_CONTRACTS" 
-  | "CUSTOMERS" 
+export type ModuleCode =
+  | "DASHBOARD"
+  | "STUDIO_CONTRACTS"
+  | "CUSTOMERS"
   | "CUSTOMER_JOURNEY"
   | "APPOINTMENTS"
   | "SCHEDULES_GROUP"
   | "STAFF_SCHEDULE"
   | "OPERATION_SCHEDULE"
   | "POLICIES"
-  | "INVENTORY" 
-  | "EMPLOYEES" 
+  | "GARMENT_CATALOG"
+  | "INVENTORY_LOCATIONS"
+  | "INVENTORY_INBOUND"
+  | "INVENTORY_OUTBOUND"
+  | "EMPLOYEES"
   | "KPI_PERFORMANCE"
   | "PAYROLL"
   | "SYSTEM_SETTINGS"
@@ -33,7 +36,7 @@ export type ModuleCode =
   | "MARKETING_DASHBOARD"
   | "ORG_CHART";
 
-export type ModuleGroup = "DASHBOARD" | "BUSINESS" | "OPERATIONS" | "HR" | "ADMIN" | "FINANCE" | "MARKETING";
+export type ModuleGroup = "DASHBOARD" | "BUSINESS" | "OPERATIONS" | "INVENTORY_GROUP" | "HR" | "ADMIN" | "FINANCE" | "MARKETING";
 
 export interface ModuleConfig {
   moduleCode: ModuleCode;
@@ -241,15 +244,58 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     isActive: true
   },
 
+  // KHO VÀ TÀI SẢN
   {
-    moduleCode: "INVENTORY",
-    label: "Kho váy & trang phục",
-    shortLabel: "Kho Váy - Vest",
-    route: "/dashboard/garments",
-    icon: "Shirt",
-    group: "OPERATIONS",
+    moduleCode: "INVENTORY_LOCATIONS",
+    label: "Sơ đồ Không gian Kho",
+    shortLabel: "Sơ đồ Kho",
+    route: "/dashboard/inventory/locations",
+    icon: "Layers",
+    group: "INVENTORY_GROUP",
     parentCode: null,
-    sortOrder: 3,
+    sortOrder: 1,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true,
+  },
+  {
+    moduleCode: "GARMENT_CATALOG",
+    label: "Nhập kho & Sản phẩm",
+    shortLabel: "Nhập kho",
+    route: "/dashboard/inventory/catalog",
+    icon: "Shirt",
+    group: "INVENTORY_GROUP",
+    parentCode: null,
+    sortOrder: 2,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true,
+  },
+  {
+    moduleCode: "INVENTORY_INBOUND",
+    label: "Nhập kho (Phiếu nhập)",
+    shortLabel: "Nhập kho",
+    route: "/dashboard/inventory/inbound",
+    icon: "PackagePlus",
+    group: "INVENTORY_GROUP",
+    parentCode: null,
+    sortOrder: 1,
+    showInSidebar: false,
+    showOnDashboard: false,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
+    moduleCode: "INVENTORY_OUTBOUND",
+    label: "Xuất kho & Thanh lý",
+    shortLabel: "Xuất kho",
+    route: "/dashboard/inventory/outbound",
+    icon: "PackageMinus",
+    group: "INVENTORY_GROUP",
+    parentCode: null,
+    sortOrder: 2,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",
@@ -493,8 +539,8 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     shortLabel: "Quét Mã QR",
     route: "/dashboard/garments/scan",
     icon: "ScanLine",
-    group: "OPERATIONS",
-    parentCode: "INVENTORY",
+    group: "INVENTORY_GROUP",
+    parentCode: "GARMENT_CATALOG",
     sortOrder: 2,
     showInSidebar: false,
     showOnDashboard: true,
