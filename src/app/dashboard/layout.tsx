@@ -206,31 +206,28 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Top Navbar */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-2 sm:px-6 lg:px-8 shrink-0 print:hidden">
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Logic: Root page shows Burger Menu (on Mobile). Detail page shows Back button. */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors shrink-0"
+              title="Menu"
+              aria-label="Mở menu"
+            >
+              <icons.Menu className="w-5 h-5" />
+            </button>
+            {/* Detail pages retain a back action in addition to the mobile menu. */}
             {(() => {
               const pathSegments = pathname.split('/').filter(Boolean);
               // Path /dashboard/[module] has length 2
               const isRootPage = pathSegments.length <= 2;
+              if (isRootPage) return null;
               return (
-                <>
-                  {isRootPage ? (
-                    <button 
-                      onClick={() => setIsMobileMenuOpen(true)}
-                      className="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors shrink-0"
-                      title="Menu"
-                    >
-                      <icons.Menu className="w-5 h-5" />
-                    </button>
-                  ) : (
-                    <Link 
-                      href={"/" + pathSegments.slice(0, -1).join("/")}
-                      className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors shrink-0"
-                      title="Quay lại"
-                    >
-                      <icons.ArrowLeft className="w-5 h-5" />
-                    </Link>
-                  )}
-                </>
+                <Link
+                  href={"/" + pathSegments.slice(0, -1).join("/")}
+                  className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors shrink-0"
+                  title="Quay lại"
+                >
+                  <icons.ArrowLeft className="w-5 h-5" />
+                </Link>
               );
             })()}
             <div className="hidden sm:flex items-center gap-2 text-sm text-slate-500 ml-2">

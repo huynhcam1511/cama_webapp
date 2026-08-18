@@ -2,8 +2,10 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requirePermission } from "@/lib/rbac";
 
 export async function getInventoryCatalog() {
+  await requirePermission("GARMENT_CATALOG", "view");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("garment_models")
@@ -15,6 +17,7 @@ export async function getInventoryCatalog() {
 }
 
 export async function getInventoryIntakeHistory() {
+  await requirePermission("GARMENT_CATALOG", "view");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("inventory_intake_sessions")
@@ -31,6 +34,7 @@ export async function getInventoryIntakeHistory() {
 }
 
 export async function getInventoryFormOptions() {
+  await requirePermission("GARMENT_CATALOG", "view");
   const supabase = await createClient();
   const [masterResult, locationResult] = await Promise.all([
     supabase.from("master_data").select("type,code,name,parent_code,sort_order").eq("is_active", true).order("sort_order"),
@@ -48,6 +52,7 @@ export async function getInventoryFormOptions() {
 }
 
 export async function completeInventoryDeclaration(payload: Record<string, unknown>) {
+  await requirePermission("GARMENT_CATALOG", "create");
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { success: false, error: "Phiên đăng nhập đã hết hạn." };
@@ -58,6 +63,7 @@ export async function completeInventoryDeclaration(payload: Record<string, unkno
 }
 
 export async function uploadGarmentImage(formData: FormData) {
+  await requirePermission("GARMENT_CATALOG", "create");
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { success: false, error: "Phiên đăng nhập đã hết hạn." };

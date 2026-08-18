@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Clock3, Eye, History, ImageIcon, Loader2, MapPin, PackageCheck, Plus, Search, Shirt, X } from "lucide-react";
+import { Clock3, Eye, History, ImageIcon, Loader2, MapPin, PackageCheck, Plus, Search, X } from "lucide-react";
 import { getInventoryCatalog, getInventoryIntakeHistory } from "./actions";
 
 const dateTime = (value: string) => new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "medium", hour12: false }).format(new Date(value));
@@ -39,13 +39,12 @@ export default function InventoryCatalogPage() {
 
   return (
     <div className="p-4 md:p-7 max-w-7xl mx-auto space-y-5">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div><h1 className="text-2xl font-black text-slate-900 flex gap-2 items-center"><Shirt className="text-indigo-600" /> Sản phẩm hiện có</h1><p className="text-slate-500 text-sm mt-1">Tồn thực tế tại cửa hàng và toàn bộ lịch sử khai báo.</p></div>
+      <div className="flex justify-end">
         <Link href="/dashboard/inventory/catalog/new" className="px-5 py-3 bg-indigo-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"><Plus /> Khai báo sản phẩm</Link>
       </div>
 
       <div className="flex gap-2 border-b border-slate-200">
-        <button onClick={() => setTab("stock")} className={`tab ${tab === "stock" ? "active" : ""}`}><PackageCheck /> Tồn hiện tại <span>{models.reduce((sum, x) => sum + (x.instances?.length || 0), 0)}</span></button>
+        <button onClick={() => setTab("stock")} className={`tab ${tab === "stock" ? "active" : ""}`}><PackageCheck /> Danh sách <span>{models.reduce((sum, x) => sum + (x.instances?.length || 0), 0)}</span></button>
         <button onClick={() => setTab("history")} className={`tab ${tab === "history" ? "active" : ""}`}><History /> Lịch sử nhập <span>{history.length}</span></button>
       </div>
 

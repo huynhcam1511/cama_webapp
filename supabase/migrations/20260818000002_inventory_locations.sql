@@ -18,15 +18,19 @@ ALTER TABLE inventory_locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 
 -- Allow read access to all authenticated users
+DROP POLICY IF EXISTS "Allow read access to all authenticated users for inventory_locations" ON inventory_locations;
 CREATE POLICY "Allow read access to all authenticated users for inventory_locations" ON inventory_locations
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Allow read access to all authenticated users for app_settings" ON app_settings;
 CREATE POLICY "Allow read access to all authenticated users for app_settings" ON app_settings
     FOR SELECT TO authenticated USING (true);
 
 -- Allow insert/update access to all authenticated users
+DROP POLICY IF EXISTS "Allow write access to all authenticated users for inventory_locations" ON inventory_locations;
 CREATE POLICY "Allow write access to all authenticated users for inventory_locations" ON inventory_locations
-    FOR ALL TO authenticated USING (true);
+    FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Allow write access to all authenticated users for app_settings" ON app_settings;
 CREATE POLICY "Allow write access to all authenticated users for app_settings" ON app_settings
-    FOR ALL TO authenticated USING (true);
+    FOR ALL TO authenticated USING (true) WITH CHECK (true);
