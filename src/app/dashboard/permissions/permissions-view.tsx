@@ -143,6 +143,7 @@ export default function PermissionsView({ roles, modules }: PermissionsViewProps
       case "BUSINESS": return "Kinh Doanh";
       case "FINANCE": return "Tài Chính";
       case "OPERATIONS": return "Vận Hành";
+      case "INVENTORY_GROUP": return "Kho & Tài Sản";
       case "HR": return "Nhân Sự";
       case "ADMIN": return "Quản Trị";
       case "MARKETING": return "Marketing";
