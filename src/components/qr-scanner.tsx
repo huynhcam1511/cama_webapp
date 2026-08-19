@@ -7,9 +7,16 @@ import { X, QrCode } from "lucide-react";
 interface QRScannerProps {
   onScanSuccess: (decodedText: string) => void;
   onClose: () => void;
+  title?: string;
+  instruction?: string;
 }
 
-export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
+export default function QRScanner({
+  onScanSuccess,
+  onClose,
+  title = "Quét Mã QR Sản Phẩm",
+  instruction = "Đưa mã QR trên tem sản phẩm vào khung hình để quét.",
+}: QRScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string>("");
 
@@ -70,7 +77,7 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
           <h3 className="font-bold flex items-center gap-2">
-            <QrCode className="w-5 h-5 text-blue-400" /> Quét Mã QR Sản Phẩm
+            <QrCode className="w-5 h-5 text-blue-400" /> {title}
           </h3>
           <button 
             onClick={onClose} 
@@ -90,7 +97,7 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
           </div>
           
           <p className="text-sm text-slate-500 mt-6 text-center font-medium">
-            Đưa mã QR trên tem sản phẩm vào khung hình để quét.<br/>
+            {instruction}<br/>
             Hệ thống sẽ tự động nhận diện.
           </p>
 
