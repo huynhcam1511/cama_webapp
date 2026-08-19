@@ -67,6 +67,8 @@ export default function InventoryDeclarationPage() {
   const [locationScannerOpen, setLocationScannerOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [locationLocked, setLocationLocked] = useState(false);
+  const [missingFactoryCode, setMissingFactoryCode] = useState(false);
+  const [generatedFactoryCode, setGeneratedFactoryCode] = useState("");
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [tagPreview, setTagPreview] = useState("");
   const imageInputs = useRef<Array<HTMLInputElement | null>>([]);
@@ -127,19 +129,16 @@ export default function InventoryDeclarationPage() {
   const colors = options("COLOR", form.group_type, FALLBACK_COLORS);
   const sizeChoices = (line: SizeLine) => {
     const rows = master.filter(x => x.type === "SIZE" && x.parent_code === `${form.group_type}:${line.size_system}`);
-    if (rows.length) return rows.map(x => x.code);
+    const masterSizes = rows.map(x => x.code);
     if (form.group_type === "GI") return ["38", "39", "40", "41", "42", "43", "44", "45"];
     if (form.group_type === "CV" || form.group_type === "PK") return ["FREE"];
-    if (line.size_system === "CN") return form.group_type === "QU" ? ["28", "30", "32", "34", "36"] : ["44", "46", "48", "50", "52", "54", "56"];
-    return ["XS", "S", "M", "L", "XL", "2XL", "3XL", "FREE"];
+    const defaults = form.group_type === "QU"
+      ? ["28", "30", "32", "34", "36", "38", "40"]
+      : ["XS", "S", "M", "L", "XL", "2XL", "3XL", "44", "46", "48", "50", "52", "54", "56", "58", "60"];
+    return Array.from(new Set([...masterSizes, ...defaults]));
   };
-  const allSizeChoices = (line: SizeLine) => Array.from(new Set([
-    ...sizeChoices({ ...line, size_system: "VN" }),
-    ...sizeChoices({ ...line, size_system: "CN" }),
-  ]));
-  const previewSku = form.group_type === "SU"
-    ? `${form.factory_code || "MÃ-MÁC"}-${form.button_style || "XC"}-${form.pattern_code || "HT"}${form.color_code || "XX"}`
-    : `${form.group_type}-${form.style_details || "XXXX"}-${form.material_pattern || "XX"}-${form.color_code || "XX"}`;
+  const effectiveFactoryCode = missingFactoryCode ? generatedFactoryCode : form.factory_code;
+  const previewSku = [form.group_type || "NHÓM", effectiveFactoryCode || "MÃ-MÁC", ...(form.group_type === "SU" ? [form.suit_product_type || "LOẠI"] : []), form.color_code || "MÀU"].join("-");
 
   const uploadFile = async (file: File) => {
     const body = new FormData();
@@ -213,6 +212,7 @@ export default function InventoryDeclarationPage() {
 
   const resetForNext = () => {
     setForm(prev => ({ ...prev, style_details: "", material_pattern: "", color_code: "", color_name: "", name: "", factory_code: "", suit_product_type: "", button_style: "", pattern_code: "", imageUrls: [], tag_image_url: "", supplier: "", notes: "", fit_note: "" }));
+    setMissingFactoryCode(false); setGeneratedFactoryCode("");
     setImagePreviews([]); setTagPreview("");
     setSizeLines([newLine()]);
   };
@@ -221,14 +221,14 @@ export default function InventoryDeclarationPage() {
     event.preventDefault(); setMessage("");
     if (!form.location_floor || !form.location_shelf) return setMessage("Vui lòng chọn Lầu/Tầng và Kệ/Sào.");
     if (shelfHasTiers && !form.location_tier) return setMessage("Kệ/Sào này có chia ngăn. Vui lòng chọn Ngăn/Móc.");
-    if (!form.factory_code || !form.color_code) return setMessage("Vui lòng nhập mã trên mác/NSX và chọn màu sắc.");
+    if (!effectiveFactoryCode || !form.color_code) return setMessage("Vui lòng nhập mã mẫu trên mác hoặc chọn không tìm thấy mã, sau đó chọn màu sắc.");
     if (form.group_type === "SU" && !form.suit_product_type) return setMessage("Vui lòng chọn loại đồ.");
     if (!form.imageUrls.length || !form.tag_image_url) return setMessage("Vui lòng thêm ảnh sản phẩm và ảnh mác/NSX để đối soát.");
     if (!sizeLines.length || sizeLines.some(x => !x.size_code || x.quantity < 1)) return setMessage("Mỗi dòng size phải có size và số lượng hợp lệ.");
     setSaving(true);
     const result = await completeInventoryDeclaration({
-      intake_type: "INITIAL_AUDIT", ...form, category: GROUPS.find(x => x.code === form.group_type)?.name,
-      name: form.name || (form.group_type === "SU" ? `${SUIT_PRODUCT_TYPES.find(([code]) => code === form.suit_product_type)?.[1] || "Suit"} ${form.factory_code}` : `${GROUPS.find(x => x.code === form.group_type)?.name || "Sản phẩm"} ${form.factory_code}`),
+      intake_type: "INITIAL_AUDIT", ...form, factory_code: effectiveFactoryCode, category: GROUPS.find(x => x.code === form.group_type)?.name,
+      name: form.name || (form.group_type === "SU" ? `${SUIT_PRODUCT_TYPES.find(([code]) => code === form.suit_product_type)?.[1] || "Suit"} ${effectiveFactoryCode}` : `${GROUPS.find(x => x.code === form.group_type)?.name || "Sản phẩm"} ${effectiveFactoryCode}`),
       image_url: form.imageUrls[0] || "", additional_images: form.imageUrls.slice(1), size_lines: sizeLines,
     });
     setSaving(false);
@@ -264,7 +264,7 @@ export default function InventoryDeclarationPage() {
           <div className="bg-indigo-50/60 border border-indigo-100 p-3 md:p-4 rounded-xl md:rounded-2xl space-y-3">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
               <label className="label">Nhóm<select value={form.group_type} onChange={e => setForm({ ...form, group_type: e.target.value, style_details: "", material_pattern: "", color_code: "", color_name: "", suit_product_type: "", button_style: "", pattern_code: "" })} className="field"><option value="">Chọn nhóm...</option>{allowedGroups.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
-              <label className="label">Mã trên mác/NSX<input required value={form.factory_code} onChange={e => setForm({ ...form, factory_code: e.target.value.toUpperCase() })} className="field" placeholder="VD: J1158-4" /></label>
+              <div className="label">Mã mẫu trên mác<input required={!missingFactoryCode} disabled={missingFactoryCode} value={missingFactoryCode ? generatedFactoryCode : form.factory_code} onChange={e => setForm({ ...form, factory_code: e.target.value.toUpperCase() })} className="field disabled:bg-slate-100 disabled:text-slate-500" placeholder="VD: J1158-4" /><p className="mt-1 text-[10px] leading-snug font-medium text-slate-400">Tìm ART NO., STYLE NUMBER, CODE, TYPE OF GOODS hoặc MODEL.</p><label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-slate-600"><input type="checkbox" checked={missingFactoryCode} onChange={e => { const checked = e.target.checked; setMissingFactoryCode(checked); if (checked && !generatedFactoryCode) setGeneratedFactoryCode(`AUTO-${crypto.randomUUID().slice(0, 6).toUpperCase()}`); }} className="accent-indigo-600" /> Không tìm thấy mã trên mác</label></div>
               {form.group_type === "SU" &&
                 <label className="label">Loại đồ<select required value={form.suit_product_type} onChange={e => setForm({ ...form, suit_product_type: e.target.value })} className="field"><option value="">Chọn loại...</option>{SUIT_PRODUCT_TYPES.map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
               }
@@ -289,7 +289,7 @@ export default function InventoryDeclarationPage() {
           <div className="overflow-hidden border border-slate-200 rounded-xl bg-white">
             <div className="grid grid-cols-[minmax(0,1fr)_100px_38px] gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase"><span>Size</span><span>Số lượng</span><span /></div>
             {sizeLines.map((line, index) => <div key={line.id} className={`grid grid-cols-[minmax(0,1fr)_100px_38px] gap-2 items-center px-3 py-2 ${index > 0 ? "border-t border-slate-100" : ""}`}>
-              <select aria-label="Size" required value={line.size_code} onChange={e => updateLine(line.id, { size_code: e.target.value, size_system: /^\d+$/.test(e.target.value) ? "CN" : "VN" })} className="field !mt-0"><option value="">Chọn size...</option>{allSizeChoices(line).map(x => <option key={x}>{x}</option>)}</select>
+              <select aria-label="Size" required value={line.size_code} onChange={e => updateLine(line.id, { size_code: e.target.value })} className="field !mt-0"><option value="">Chọn size...</option>{sizeChoices(line).map(x => <option key={x}>{x}</option>)}</select>
               <input aria-label="Số lượng" required min={1} inputMode="numeric" type="number" value={line.quantity} onChange={e => updateLine(line.id, { quantity: Number(e.target.value) })} className="field !mt-0 text-center font-bold" />
               <button type="button" aria-label="Xóa size" disabled={sizeLines.length === 1} onClick={() => setSizeLines(lines => lines.filter(x => x.id !== line.id))} className="h-10 flex items-center justify-center text-rose-500 disabled:opacity-20"><Trash2 size={18} /></button>
             </div>)}
