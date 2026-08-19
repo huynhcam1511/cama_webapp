@@ -144,10 +144,10 @@ BEGIN
   IF jsonb_array_length(COALESCE(payload->'size_lines', '[]'::jsonb)) = 0 THEN RAISE EXCEPTION 'Cần ít nhất một dòng size'; END IF;
 
   IF payload->>'group_type' = 'SU' THEN
-    v_base_sku := upper(concat_ws('-', payload->>'group_type', payload->>'factory_code',
-      payload->>'suit_product_type', payload->>'color_code'));
+    v_base_sku := upper(concat_ws('-', payload->>'group_type', payload->>'suit_product_type',
+      payload->>'color_code', payload->>'factory_code'));
   ELSE
-    v_base_sku := upper(concat_ws('-', payload->>'group_type', payload->>'factory_code', payload->>'color_code'));
+    v_base_sku := upper(concat_ws('-', payload->>'group_type', payload->>'color_code', payload->>'factory_code'));
   END IF;
 
   INSERT INTO public.garment_models (

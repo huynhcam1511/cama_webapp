@@ -61,6 +61,7 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
   
   const items = useMemo(() => {
     return (contract?.items || []).filter((item: any) => {
+      if (item.inventory_selection) return false;
       if (item.usage_events && Array.isArray(item.usage_events) && item.usage_events.length > 0) {
         return item.usage_events.includes(eventName);
       }

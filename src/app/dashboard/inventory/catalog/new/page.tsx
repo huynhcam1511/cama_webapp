@@ -138,7 +138,7 @@ export default function InventoryDeclarationPage() {
     return Array.from(new Set([...masterSizes, ...defaults]));
   };
   const effectiveFactoryCode = missingFactoryCode ? generatedFactoryCode : form.factory_code;
-  const previewSku = [form.group_type || "NHÓM", effectiveFactoryCode || "MÃ-MÁC", ...(form.group_type === "SU" ? [form.suit_product_type || "LOẠI"] : []), form.color_code || "MÀU"].join("-");
+  const previewSku = [form.group_type || "NHÓM", ...(form.group_type === "SU" ? [form.suit_product_type || "LOẠI"] : []), form.color_code || "MÀU", effectiveFactoryCode || "MÃ"].join("-");
 
   const uploadFile = async (file: File) => {
     const body = new FormData();
@@ -262,13 +262,13 @@ export default function InventoryDeclarationPage() {
         <section>
           <h2 className="font-black text-base md:text-lg text-slate-800 mb-3">1. Nhận diện nhanh</h2>
           <div className="bg-indigo-50/60 border border-indigo-100 p-3 md:p-4 rounded-xl md:rounded-2xl space-y-3">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <label className="label">Nhóm<select value={form.group_type} onChange={e => setForm({ ...form, group_type: e.target.value, style_details: "", material_pattern: "", color_code: "", color_name: "", suit_product_type: "", button_style: "", pattern_code: "" })} className="field"><option value="">Chọn nhóm...</option>{allowedGroups.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
-              <div className="label">Mã mẫu trên mác<input required={!missingFactoryCode} disabled={missingFactoryCode} value={missingFactoryCode ? generatedFactoryCode : form.factory_code} onChange={e => setForm({ ...form, factory_code: e.target.value.toUpperCase() })} className="field disabled:bg-slate-100 disabled:text-slate-500" placeholder="VD: J1158-4" /><p className="mt-1 text-[10px] leading-snug font-medium text-slate-400">Tìm ART NO., STYLE NUMBER, CODE, TYPE OF GOODS hoặc MODEL.</p><label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-slate-600"><input type="checkbox" checked={missingFactoryCode} onChange={e => { const checked = e.target.checked; setMissingFactoryCode(checked); if (checked && !generatedFactoryCode) setGeneratedFactoryCode(`AUTO-${crypto.randomUUID().slice(0, 6).toUpperCase()}`); }} className="accent-indigo-600" /> Không tìm thấy mã trên mác</label></div>
               {form.group_type === "SU" &&
                 <label className="label">Loại đồ<select required value={form.suit_product_type} onChange={e => setForm({ ...form, suit_product_type: e.target.value })} className="field"><option value="">Chọn loại...</option>{SUIT_PRODUCT_TYPES.map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
               }
-              <label className="label">Màu sắc<select required value={form.color_code} onChange={e => { const c = colors.find(x => x.code === e.target.value); setForm({ ...form, color_code: e.target.value, color_name: c?.name || "" }); }} className="field"><option value="">Chọn màu...</option>{colors.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
+              <label className="label sm:col-span-2 lg:col-span-1">Màu sắc<select required value={form.color_code} onChange={e => { const c = colors.find(x => x.code === e.target.value); setForm({ ...form, color_code: e.target.value, color_name: c?.name || "" }); }} className="field"><option value="">Chọn màu...</option>{colors.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
+              <div className="sm:col-span-2 lg:col-span-2 rounded-xl border border-slate-200 bg-white p-3"><div className="flex items-center justify-between gap-2"><label className="label !text-slate-700">Mã mẫu trên mác</label><button type="button" onClick={() => { const checked = !missingFactoryCode; setMissingFactoryCode(checked); if (checked && !generatedFactoryCode) setGeneratedFactoryCode(`AUTO-${crypto.randomUUID().slice(0, 6).toUpperCase()}`); }} className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors ${missingFactoryCode ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500"}`}>{missingFactoryCode ? "Đang dùng mã tự sinh" : "Không có mã"}</button></div><input required={!missingFactoryCode} disabled={missingFactoryCode} value={missingFactoryCode ? generatedFactoryCode : form.factory_code} onChange={e => setForm({ ...form, factory_code: e.target.value.toUpperCase() })} className="field disabled:bg-slate-100 disabled:text-slate-500" placeholder="Ví dụ: J1158-4" /><p className="mt-1.5 text-[10px] font-medium text-slate-400">Tìm: ART NO. / STYLE NUMBER / CODE / TYPE OF GOODS / MODEL</p></div>
             </div>
             <div className="bg-white border border-indigo-200 rounded-xl px-4 py-3"><span className="text-xs text-slate-500 block">MÃ MẪU DỰ KIẾN</span><strong className="font-mono text-indigo-700 text-lg">{previewSku}</strong></div>
           </div>

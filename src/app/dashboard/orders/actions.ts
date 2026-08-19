@@ -178,6 +178,15 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
         
         items = (meta.items && meta.items.length > 0) ? meta.items : items;
         garments = (meta.garments && meta.garments.length > 0) ? meta.garments : garments;
+
+        // Đơn hàng chỉ nhận các mã áo đã được liên kết với đúng dòng sản phẩm
+        // của sự kiện này. Những lần bấm chọn thử trước đây không còn xuất hiện.
+        const eventItems = (items || []).filter((item: any) => {
+          const usageEvents = Array.isArray(item.usage_events) ? item.usage_events : [];
+          return usageEvents.length === 0 || usageEvents.includes(data.service_type);
+        });
+        const linkedCodes = new Set<string>(eventItems.flatMap((item: any) => item.inventory_selection?.codes || []));
+        garments = (garments || []).filter((garment: any) => !garment.model_id || linkedCodes.has(garment.garment_code));
         
         if (meta.events) {
           data.contract.event_schedules = meta.events;

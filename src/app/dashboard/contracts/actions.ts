@@ -748,7 +748,8 @@ export async function createContract(payload: {
           ]
         : [],
       activities: initialActivities,
-      userNotes: payload.notes || "",
+      ...parsedNotes,
+      userNotes: parsedNotes.userNotes || "",
     };
 
     const { data: contract, error } = await supabase
@@ -1381,6 +1382,20 @@ export async function updateContract(contractId: string, payload: any) {
       activities: currentNotesObj.activities || [],
       updated_at: new Date().toISOString()
     };
+
+    // Đồng bộ nguồn sự thật: chỉ giữ các bản ghi áo của luồng kho mới khi mã áo
+    // vẫn còn được liên kết từ một dòng hợp đồng. Điều này dọn các lần chọn thử
+    // từng bị giữ sớm trước khi người dùng bấm Lưu.
+    if (Array.isArray(payload.items)) {
+      const linkedCodes = new Set<string>(payload.items.flatMap((item: any) => item.inventory_selection?.codes || []));
+      const currentGarments = Array.isArray(currentNotesObj.garments) ? currentNotesObj.garments : [];
+      const orphanedWorkflowGarments = currentGarments.filter((garment: any) => garment.model_id && !linkedCodes.has(garment.garment_code));
+      meta.garments = currentGarments.filter((garment: any) => !garment.model_id || linkedCodes.has(garment.garment_code));
+      const orphanedInstanceIds = orphanedWorkflowGarments.map((garment: any) => garment.garment_instance_id).filter(Boolean);
+      if (orphanedInstanceIds.length > 0) {
+        await supabase.from("garments_inventory").update({ status: "AVAILABLE", updated_at: new Date().toISOString() }).in("id", orphanedInstanceIds).eq("status", "RESERVED_SALE");
+      }
+    }
     let changes: string[] = buildContractChanges(current, currentNotesObj, payload, meta);
     
     try {
@@ -1717,6 +1732,179 @@ export async function checkInventoryAvailability(
   } catch (err: any) {
     return { error: err.message };
   }
+}
+
+export async function searchContractInventory(
+  search: string,
+  startDate: string,
+  endDate: string,
+  fulfillmentType: "RENTAL" | "SALE",
+  ignoreContractId?: string,
+) {
+  await requirePermission("STUDIO_CONTRACTS", "view");
+  const supabase = createAdminClient();
+  const [{ data: models, error }, { data: contracts }] = await Promise.all([
+    supabase.from("garment_models").select("*, instances:garments_inventory(id,qr_code,size_code,status,location_floor,location_shelf,location_tier,created_at)").order("updated_at", { ascending: false }),
+    supabase.from("contracts").select("id,notes").is("deleted_at", null).not("status", "eq", "CANCELLED"),
+  ]);
+  if (error) return { success: false, error: error.message, models: [] };
+
+  const blocked = new Set<string>();
+  const requestedStart = startDate ? new Date(startDate) : null;
+  const requestedEnd = endDate ? new Date(endDate) : null;
+  if (requestedStart) requestedStart.setDate(requestedStart.getDate() - 1);
+  if (requestedEnd) requestedEnd.setDate(requestedEnd.getDate() + 1);
+
+  for (const contract of contracts || []) {
+    if (ignoreContractId && contract.id === ignoreContractId) continue;
+    const meta = parseMetadata(contract.notes);
+    for (const garment of Array.isArray(meta.garments) ? meta.garments : []) {
+      if (!garment.garment_instance_id || ["RETURNED", "CANCELLED", "LIQUIDATED"].includes(garment.reservation_status)) continue;
+      if (garment.fulfillment_type === "SALE" || fulfillmentType === "SALE") {
+        blocked.add(garment.garment_instance_id);
+        continue;
+      }
+      if (!requestedStart || !requestedEnd || !garment.deliver_date || !garment.return_date) continue;
+      const occupiedStart = new Date(garment.deliver_date);
+      const occupiedEnd = new Date(garment.return_date);
+      occupiedStart.setDate(occupiedStart.getDate() - 1);
+      occupiedEnd.setDate(occupiedEnd.getDate() + 1);
+      if (requestedStart <= occupiedEnd && requestedEnd >= occupiedStart) blocked.add(garment.garment_instance_id);
+    }
+  }
+
+  const needle = search.trim().toLowerCase();
+  const result = await Promise.all((models || []).map(async (model: any) => {
+    const location = [model.default_location_floor, model.default_location_shelf, model.default_location_tier].filter(Boolean).join(" › ");
+    if (needle && ![model.name, model.base_sku, model.factory_code, model.color_name, model.color_code, location].some(value => value?.toLowerCase().includes(needle))) return null;
+    const sorted = [...(model.instances || [])].sort((a: any, b: any) => String(a.created_at || a.id).localeCompare(String(b.created_at || b.id)));
+    const available = sorted.filter((instance: any) => instance.status === "AVAILABLE" && !blocked.has(instance.id));
+    const sizes = available.reduce((acc: Record<string, number>, instance: any) => {
+      const key = instance.size_code || "FREE";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+    const available_instance_ids = available.reduce((acc: Record<string, string[]>, instance: any) => {
+      const key = instance.size_code || "FREE";
+      (acc[key] ||= []).push(instance.id);
+      return acc;
+    }, {});
+    let imageUrl = model.image_url || "";
+    if (imageUrl && !imageUrl.startsWith("http")) {
+      const { data: signed } = await supabase.storage.from("garment-images").createSignedUrl(imageUrl, 3600);
+      imageUrl = signed?.signedUrl || "";
+    }
+    return { id: model.id, name: model.name, base_sku: model.base_sku, factory_code: model.factory_code, color_name: model.color_name, color_code: model.color_code, image_url: imageUrl, location, sizes, available_instance_ids };
+  }));
+  return { success: true, models: result.filter((model: any) => model && Object.keys(model.sizes).length > 0) };
+}
+
+export async function reserveContractInventory(payload: {
+  contractId: string;
+  modelId: string;
+  sizeCode: string;
+  quantity: number;
+  startDate?: string;
+  endDate?: string;
+  fulfillmentType: "RENTAL" | "SALE";
+}) {
+  await requirePermission("STUDIO_CONTRACTS", "update");
+  const supabase = createAdminClient();
+  const currentContract = await getContractById(payload.contractId);
+  if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại." };
+  if (payload.fulfillmentType === "RENTAL" && (!payload.startDate || !payload.endDate)) return { success: false, error: "Vui lòng chọn ngày lấy và ngày trả." };
+
+  const currentMeta = parseMetadata(currentContract.notes || null);
+  const alreadyReserved = (Array.isArray(currentMeta.garments) ? currentMeta.garments : []).filter((garment: any) =>
+    garment.model_id === payload.modelId &&
+    garment.size === payload.sizeCode &&
+    !["RETURNED", "CANCELLED", "LIQUIDATED"].includes(garment.reservation_status) &&
+    (payload.fulfillmentType === "SALE" || (garment.deliver_date === payload.startDate && garment.return_date === payload.endDate))
+  ).slice(0, payload.quantity);
+
+  // Chọn lại đúng món mà chính hợp đồng này đã giữ trước đó: nối lại vào dòng
+  // thay vì trừ thêm một chiếc nữa.
+  if (alreadyReserved.length === payload.quantity) {
+    let linked = false;
+    if (Array.isArray(currentMeta.items)) {
+      currentMeta.items = currentMeta.items.map((item: any) => {
+        const selection = item?.inventory_selection;
+        if (linked || selection?.modelId !== payload.modelId || selection?.size !== payload.sizeCode) return item;
+        linked = true;
+        return {
+          ...item,
+          inventory_selection: {
+            ...selection,
+            codes: alreadyReserved.map((garment: any) => garment.garment_code),
+            startDate: payload.startDate,
+            endDate: payload.endDate,
+            status: "RESERVED",
+          },
+        };
+      });
+    }
+    const { error: relinkError } = await supabase.from("contracts").update({ notes: stringifyMetadata(currentMeta), updated_at: new Date().toISOString() }).eq("id", payload.contractId);
+    if (relinkError) return { success: false, error: relinkError.message };
+    return { success: true, garments: alreadyReserved };
+  }
+
+  const searchResult = await searchContractInventory("", payload.startDate || "", payload.endDate || "", payload.fulfillmentType);
+  if (!searchResult.success) return searchResult;
+  const availableModel: any = searchResult.models.find((model: any) => model.id === payload.modelId);
+  if (!availableModel || (availableModel.sizes[payload.sizeCode] || 0) < payload.quantity) return { success: false, error: "Số lượng khả dụng vừa thay đổi. Vui lòng chọn lại." };
+
+  const { data: model, error } = await supabase.from("garment_models").select("*, instances:garments_inventory(id,qr_code,size_code,status,created_at)").eq("id", payload.modelId).single();
+  if (error || !model) return { success: false, error: "Không tìm thấy sản phẩm trong kho." };
+
+  const availableIds = new Set<string>(availableModel.available_instance_ids[payload.sizeCode] || []);
+  const allInstances = [...(model.instances || [])].sort((a: any, b: any) => String(a.created_at || a.id).localeCompare(String(b.created_at || b.id)));
+  const selected = allInstances.filter((instance: any) => instance.status === "AVAILABLE" && instance.size_code === payload.sizeCode && availableIds.has(instance.id)).slice(0, payload.quantity);
+  if (selected.length < payload.quantity) return { success: false, error: "Không còn đủ sản phẩm khả dụng. Vui lòng tải lại." };
+
+  const meta = currentMeta;
+  const garments = Array.isArray(meta.garments) ? meta.garments : [];
+  const additions = selected.map((instance: any) => {
+    const sequence = allInstances.findIndex((item: any) => item.id === instance.id) + 1;
+    return {
+      id: `gar-${crypto.randomUUID()}`,
+      garment_instance_id: instance.id,
+      model_id: model.id,
+      garment_code: `${model.base_sku}-${payload.sizeCode}-${String(sequence).padStart(3, "0")}`,
+      product_name: model.name,
+      product_type: model.category || model.group_type,
+      size: payload.sizeCode,
+      deliver_date: payload.startDate || null,
+      return_date: payload.endDate || null,
+      reservation_status: "RESERVED",
+      fulfillment_type: payload.fulfillmentType,
+      fitting_notes: "",
+    };
+  });
+  meta.garments = [...garments, ...additions];
+  if (Array.isArray(meta.items)) {
+    let linked = false;
+    meta.items = meta.items.map((item: any) => {
+      const selection = item?.inventory_selection;
+      if (linked || selection?.modelId !== payload.modelId || selection?.size !== payload.sizeCode || selection?.status === "RESERVED") return item;
+      linked = true;
+      return {
+        ...item,
+        inventory_selection: {
+          ...selection,
+          codes: additions.map((garment: any) => garment.garment_code),
+          startDate: payload.startDate,
+          endDate: payload.endDate,
+          status: "RESERVED",
+        },
+      };
+    });
+  }
+  meta.activities = [{ id: `act-${Date.now()}`, actor_name: "Nhân viên Hợp đồng", action_type: "UPDATE_CONTRACT", content: `Giữ ${payload.quantity} sản phẩm ${model.name}, size ${payload.sizeCode} (${payload.fulfillmentType === "SALE" ? "mua bán" : "cho thuê"})`, created_at: new Date().toISOString() }, ...(Array.isArray(meta.activities) ? meta.activities : [])];
+  const { error: updateError } = await supabase.from("contracts").update({ notes: stringifyMetadata(meta), updated_at: new Date().toISOString() }).eq("id", payload.contractId);
+  if (updateError) return { success: false, error: updateError.message };
+  if (payload.fulfillmentType === "SALE") await supabase.from("garments_inventory").update({ status: "RESERVED_SALE", updated_at: new Date().toISOString() }).in("id", selected.map((item: any) => item.id));
+  revalidatePath(`/dashboard/contracts/${payload.contractId}`);
+  return { success: true, garments: additions };
 }
 
 export async function checkInventoryAvailabilityAndSearch(

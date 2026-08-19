@@ -26,6 +26,7 @@ export default async function EditContractPage({ params }: { params: { id: strin
         staffs={staffs}
         initialData={contract}
         isEditMode={true} 
+        defaultContractType={contract.contract_type}
       />
     </div>
   );

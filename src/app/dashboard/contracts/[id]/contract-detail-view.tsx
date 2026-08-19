@@ -306,7 +306,7 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
                   <p className="text-xs text-slate-500 mt-1">Danh sách trang phục thực tế khách sẽ mặc/thuê</p>
                 </div>
                 <button onClick={() => setIsScannerOpen(true)} className="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-100 flex items-center gap-1.5 text-slate-700 shadow-sm transition-colors">
-                  <ScanLine className="w-4 h-4" /> Thêm nhanh bằng mã
+                  <ScanLine className="w-4 h-4" /> Chọn sản phẩm từ kho
                 </button>
               </div>
               <div className="p-5">
@@ -494,6 +494,7 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
           isOpen={isScannerOpen}
           onClose={() => setIsScannerOpen(false)}
           contractId={contract.id}
+          contractType={contract.contract_type}
           onSaved={() => {
             setIsScannerOpen(false);
             router.refresh();

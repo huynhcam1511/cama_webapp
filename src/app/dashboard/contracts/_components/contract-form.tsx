@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, FileText, Plus, Trash2, Save, Loader2, DollarSign, User, Calendar, Briefcase, Settings2, Phone, Printer, Image as ImageIcon, UploadCloud, Clock } from "lucide-react";
-import { createContract, updateContract, ContractFormData, ServiceItem, InstallmentItem } from "../actions";
+import { X, FileText, Plus, Trash2, Save, Loader2, DollarSign, User, Calendar, Briefcase, Settings2, Phone, Printer, Image as ImageIcon, UploadCloud, Clock, PackageSearch } from "lucide-react";
+import { createContract, updateContract, reserveContractInventory, ContractFormData, ServiceItem, InstallmentItem } from "../actions";
 import { createCustomer } from "../../customers/actions";
 import { createClient } from "@/lib/supabase/client";
 import { PrintableContract } from "../printable-contract";
 import { ContractAuditDrawer } from "./contract-audit-drawer";
 import { ContractStatus, ExecutionStatus, DebtStatus } from "../types";
 import { useLayoutScale } from "@/hooks/use-layout-scale";
+import InventoryPickerModal from "./inventory-picker-modal";
 
 interface ContractFormProps {
   isOpen?: boolean;
@@ -39,6 +40,44 @@ const SERVICE_CATEGORIES = [
   "Phụ thu / Phụ phí",
   "Khác"
 ];
+
+const INVENTORY_CATEGORIES = new Set([
+  "Váy cưới",
+  "Vest chú rể",
+  "Áo dài Cô Dâu",
+  "Áo dài Chú Rể",
+  "Áo dài bưng quả",
+]);
+
+type InventorySelection = {
+  modelId: string;
+  name: string;
+  baseSku: string;
+  imageUrl?: string | null;
+  location?: string | null;
+  size: string;
+  quantity: number;
+  codes: string[];
+  startDate?: string;
+  endDate?: string;
+  status: "PENDING" | "RESERVED";
+};
+
+type ServiceRow = {
+  category: string;
+  detail: string;
+  quantity: number;
+  price: number;
+  notes: string;
+  usage_events: string[];
+  inventory_selection?: InventorySelection;
+};
+
+const shortDate = (value?: string) => {
+  if (!value) return "";
+  const [year, month, day] = value.split("-");
+  return day && month ? `${day}/${month}` : value;
+};
 
 import { useRouter } from "next/navigation";
 
@@ -94,7 +133,7 @@ export default function ContractForm({
   const [assignedStaffInput, setAssignedStaffInput] = useState("");
 
   // 3. Bảng Dịch Vụ (Hợp nhất) - 8 dòng cố định
-  const [services, setServices] = useState<{category: string, detail: string, quantity: number, price: number, notes: string, usage_events: string[]}[]>(
+  const [services, setServices] = useState<ServiceRow[]>(
     Array(10).fill(null).map((_, i) => i === 0 
       ? { category: "Váy cưới", detail: "", quantity: 1, price: 0, notes: "", usage_events: [] }
       : { category: "", detail: "", quantity: 1, price: 0, notes: "", usage_events: [] }
@@ -146,6 +185,8 @@ export default function ContractForm({
   
   const [uploadingInstallmentIndex, setUploadingInstallmentIndex] = useState<number | null>(null);
   const [openEventDropdown, setOpenEventDropdown] = useState<number | null>(null);
+  const [inventoryPickerRow, setInventoryPickerRow] = useState<number | null>(null);
+  const [pendingInventory, setPendingInventory] = useState<Record<number, { modelId: string; size: string; quantity: number; startDate?: string; endDate?: string }>>({});
 
   // Auto-fill logic when phone changes
   useEffect(() => {
@@ -194,6 +235,12 @@ export default function ContractForm({
         console.error("Error parsing initialData.notes:", e);
         parsedNotes = { userNotes: initialData.notes };
       }
+      // Tương thích hợp đồng cũ từng lưu toàn bộ metadata lồng trong userNotes.
+      if (!parsedNotes.events && typeof parsedNotes.userNotes === "string" && parsedNotes.userNotes.trim().startsWith("{")) {
+        try {
+          parsedNotes = { ...parsedNotes, ...JSON.parse(parsedNotes.userNotes) };
+        } catch (_) {}
+      }
       
       setInquiryDate(parsedNotes.ngay_hoi || "");
       setWeddingDate(parsedNotes.ngay_cuoi || "");
@@ -217,7 +264,25 @@ export default function ContractForm({
       setPaymentDueDate(parsedNotes.han_thanh_toan || "");
       setAssignedStaffInput(initialData.assigned_staff_name || parsedNotes.assigned_staff_name || parsedNotes.nguoi_phu_trach || "");
       setGeneralNotes(parsedNotes.userNotes || "");
-      const sourceEvents = (initialData.events && Array.isArray(initialData.events) && initialData.events.length > 0) ? initialData.events : parsedNotes.events;
+      let sourceEvents = (initialData.events && Array.isArray(initialData.events) && initialData.events.length > 0) ? initialData.events : parsedNotes.events;
+      // Một số hợp đồng cũ chỉ còn lịch ở đơn hàng vận hành. Khôi phục để form sửa
+      // không hiển thị trống và không vô tình ghi đè lịch đã có.
+      if ((!Array.isArray(sourceEvents) || sourceEvents.length === 0) && Array.isArray(initialData.orders)) {
+        sourceEvents = initialData.orders
+          .filter((order: any) => order.service_type || order.event_date || order.return_date)
+          .map((order: any) => {
+            const note = String(order.notes || "");
+            const pickupMatch = note.match(/Ngày giao:\s*([^\n]+)/i);
+            const locationMatch = note.match(/Địa điểm:\s*([^\n]+)/i);
+            return {
+              name: order.service_type || "Sự kiện",
+              event_date: order.event_date || "",
+              pickup_date: pickupMatch?.[1] && pickupMatch[1] !== "Không có" ? pickupMatch[1].trim() : "",
+              return_date: order.return_date || "",
+              location: locationMatch?.[1] && locationMatch[1] !== "Không có" ? locationMatch[1].trim() : "",
+            };
+          });
+      }
       if (sourceEvents && Array.isArray(sourceEvents) && sourceEvents.length > 0) {
         const loadedEvents = [...sourceEvents];
         while (loadedEvents.length < 3) loadedEvents.push({name: "", event_date: "", pickup_date: "", return_date: "", location: ""});
@@ -270,7 +335,8 @@ export default function ContractForm({
           quantity: item.quantity || 1,
           price: item.unit_price || item.price || 0,
           notes: item.notes || "",
-          usage_events: item.usage_events || []
+          usage_events: item.usage_events || [],
+          inventory_selection: item.inventory_selection,
         }));
         while (loadedServices.length < 10) {
           loadedServices.push({ category: "", detail: "", quantity: 1, price: 0, notes: "", usage_events: [] });
@@ -454,11 +520,19 @@ export default function ContractForm({
       amount: (Number(s.price) || 0) * (Number(s.quantity) || 1),
       notes: s.notes,
       usage_events: s.usage_events,
+      inventory_selection: s.inventory_selection,
       display_order: idx + 1
     }));
 
     if (activeItems.length === 0) {
       setErrorMsg("LỖI: Vui lòng nhập ít nhất 1 dịch vụ/sản phẩm!");
+      setLoading(false);
+      return;
+    }
+
+    const missingInventorySelection = services.some((service) => INVENTORY_CATEGORIES.has(service.category) && !service.inventory_selection && !isEditMode);
+    if (missingInventorySelection) {
+      setErrorMsg("Vui lòng chọn sản phẩm từ kho cho các dòng trang phục.");
       setLoading(false);
       return;
     }
@@ -588,9 +662,26 @@ export default function ContractForm({
       setLoading(false);
   
       if (res.success) {
+        const targetId = isEditMode && initialData?.id ? initialData.id : ((res as any).data?.id || (res as any).contractId);
+        if (targetId && Object.keys(pendingInventory).length > 0) {
+          const reservations = await Promise.all(Object.values(pendingInventory).map((selection) => reserveContractInventory({
+            contractId: targetId,
+            modelId: selection.modelId,
+            sizeCode: selection.size,
+            quantity: selection.quantity,
+            startDate: selection.startDate,
+            endDate: selection.endDate,
+            fulfillmentType: defaultContractType === "SALES" ? "SALE" : "RENTAL",
+          })));
+          const failedReservation = reservations.find((reservation) => !reservation.success);
+          if (failedReservation) {
+            setErrorMsg(`Hợp đồng đã được tạo nhưng có sản phẩm chưa giữ được: ${failedReservation.error || "Vui lòng chọn lại trong hợp đồng."}`);
+            router.push(`/dashboard/contracts/${targetId}/edit`);
+            return;
+          }
+        }
         onSaved?.();
         if (shouldViewPdf) {
-          const targetId = isEditMode && initialData?.id ? initialData.id : ((res as any).data?.id || (res as any).contractId);
           if (targetId) {
             router.push(`/dashboard/contracts/${targetId}`);
           } else {
@@ -776,7 +867,7 @@ export default function ContractForm({
                       <tr>
                         {defaultContractType !== "SALES" && <th className="px-1 py-0.5 font-bold w-[12%] text-slate-600">Sự Kiện SD <span className="text-red-500">*</span></th>}
                         <th className="px-1 py-0.5 font-bold w-[16%]">Nhóm Dịch Vụ <span className="text-red-500">*</span></th>
-                        <th className="px-1 py-0.5 font-bold w-[14%]">Tên chi tiết</th>
+                        <th className="px-1 py-0.5 font-bold w-[14%]">Chi tiết / Sản phẩm kho</th>
                         <th className="px-1 py-0.5 font-bold w-[26%]">Ghi chú</th>
                         <th className="px-0.5 py-0.5 font-bold w-[5%] text-center">SL</th>
                         <th className="px-1 py-0.5 font-bold w-[8%] text-right">Đơn Giá</th>
@@ -786,7 +877,7 @@ export default function ContractForm({
                     </thead>
                     <tbody>
                       {services.map((item, idx) => (
-                        <tr key={idx} className="border-b border-slate-100/50 hover:bg-slate-50/70 transition-colors group">
+                        <tr key={idx} className="h-[62px] border-b border-slate-100/50 hover:bg-slate-50/70 transition-colors group">
                           {defaultContractType !== "SALES" && <td className="px-1 py-1 align-top">
                             <div className="relative">
                               <div 
@@ -836,8 +927,21 @@ export default function ContractForm({
                               value={item.category}
                               onChange={(e) => {
                                 const updated = [...services];
+                                const wasInventory = INVENTORY_CATEGORIES.has(updated[idx].category);
+                                const willBeInventory = INVENTORY_CATEGORIES.has(e.target.value);
                                 updated[idx].category = e.target.value;
+                                if (wasInventory !== willBeInventory) {
+                                  updated[idx].detail = "";
+                                  updated[idx].inventory_selection = undefined;
+                                }
                                 setServices(updated);
+                                if (wasInventory && !willBeInventory) {
+                                  setPendingInventory((current) => {
+                                    const next = { ...current };
+                                    delete next[idx];
+                                    return next;
+                                  });
+                                }
                               }}
                               className="w-full bg-white border border-slate-200 rounded px-1 py-1 text-[11px] font-medium outline-none focus:border-amber-500 text-slate-700"
                             >
@@ -846,17 +950,63 @@ export default function ContractForm({
                             </select>
                           </td>
                           <td className="px-1 py-1 align-top">
-                            <input 
-                              type="text" 
-                              placeholder="VD: Soiree đuôi cá..."
-                              value={item.detail} 
-                              onChange={(e) => {
-                                const updated = [...services];
-                                updated[idx].detail = e.target.value;
-                                setServices(updated);
-                              }} 
-                              className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-1 py-1 text-[11px] outline-none text-slate-800" 
-                            />
+                            {INVENTORY_CATEGORIES.has(item.category) ? (
+                              <button
+                                type="button"
+                                onClick={() => setInventoryPickerRow(idx)}
+                                className={`h-14 w-full overflow-hidden rounded-lg border p-1.5 text-left transition-colors ${item.inventory_selection ? "border-indigo-200 bg-indigo-50 hover:bg-indigo-100" : "border-dashed border-slate-300 bg-white hover:border-indigo-300 hover:bg-indigo-50/50"}`}
+                                title={item.inventory_selection ? "Đổi sản phẩm đã chọn" : "Chọn sản phẩm thực tế từ kho"}
+                              >
+                                {item.inventory_selection ? (
+                                  <span className="flex h-full min-w-0 gap-1.5">
+                                    <span className="h-full w-9 shrink-0 overflow-hidden rounded-md bg-white">
+                                      {item.inventory_selection.imageUrl ? (
+                                        <img src={item.inventory_selection.imageUrl} alt="" className="h-full w-full object-cover" />
+                                      ) : (
+                                        <PackageSearch className="m-2 h-5 w-5 text-slate-300" />
+                                      )}
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                      <span className="flex items-start justify-between gap-1">
+                                        <span className="block truncate text-[10px] font-bold text-slate-900">{item.inventory_selection.name}</span>
+                                        <span className="shrink-0 text-[8px] font-bold text-indigo-600">Đổi</span>
+                                      </span>
+                                      <span className="block truncate text-[8px] font-semibold text-indigo-600">
+                                        {item.inventory_selection.baseSku} · Size {item.inventory_selection.size} · SL {item.inventory_selection.quantity}
+                                      </span>
+                                      <span className="block truncate text-[8px] text-slate-500">
+                                        {item.inventory_selection.startDate && item.inventory_selection.endDate
+                                          ? `${shortDate(item.inventory_selection.startDate)} → ${shortDate(item.inventory_selection.endDate)}`
+                                          : item.inventory_selection.location || "Chưa có vị trí"}
+                                      </span>
+                                    </span>
+                                  </span>
+                                ) : item.detail ? (
+                                  <span className="flex h-full flex-col justify-center">
+                                    <span className="block truncate text-[10px] font-semibold text-slate-600">{item.detail}</span>
+                                    <span className="mt-0.5 flex items-center gap-1 text-[8px] font-bold text-amber-600">
+                                      <PackageSearch className="h-3 w-3" /> Chưa liên kết kho — Chọn ngay
+                                    </span>
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-600">
+                                    <PackageSearch className="h-3.5 w-3.5" /> Chọn sản phẩm từ kho...
+                                  </span>
+                                )}
+                              </button>
+                            ) : (
+                              <input
+                                type="text"
+                                placeholder="Nhập tên dịch vụ chi tiết..."
+                                value={item.detail}
+                                onChange={(e) => {
+                                  const updated = [...services];
+                                  updated[idx].detail = e.target.value;
+                                  setServices(updated);
+                                }}
+                                className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-1 py-1 text-[11px] outline-none text-slate-800"
+                              />
+                            )}
                           </td>
                           <td className="px-1 py-1 align-top">
                             <input 
@@ -1370,6 +1520,61 @@ export default function ContractForm({
         isOpen={isAuditDrawerOpen} 
         onClose={() => setIsAuditDrawerOpen(false)} 
       />
+      {inventoryPickerRow !== null && (
+        <InventoryPickerModal
+          isOpen={true}
+          onClose={() => setInventoryPickerRow(null)}
+          contractId={initialData?.id || ""}
+          contractType={defaultContractType}
+          browseOnly={true}
+          initialStartDate={(() => {
+            const eventName = services[inventoryPickerRow]?.usage_events?.[0];
+            const selectedEvent = events.find((event) => event.name === eventName);
+            return selectedEvent?.pickup_date || selectedEvent?.event_date || "";
+          })()}
+          initialEndDate={(() => {
+            const eventName = services[inventoryPickerRow]?.usage_events?.[0];
+            const selectedEvent = events.find((event) => event.name === eventName);
+            return selectedEvent?.return_date || selectedEvent?.event_date || "";
+          })()}
+          onSelected={(selection) => {
+            setServices((current) => current.map((service, index) => {
+              if (index !== inventoryPickerRow) return service;
+              const codes = selection.codes.join(", ");
+              return {
+                ...service,
+                detail: `${selection.name} · Size ${selection.size}`,
+                quantity: selection.quantity,
+                notes: codes ? `${service.notes ? `${service.notes} · ` : ""}Mã kho: ${codes}` : service.notes,
+                inventory_selection: {
+                  modelId: selection.modelId,
+                  name: selection.name,
+                  baseSku: selection.baseSku,
+                  imageUrl: selection.imageUrl,
+                  location: selection.location,
+                  size: selection.size,
+                  quantity: selection.quantity,
+                  codes: selection.codes,
+                  startDate: selection.startDate,
+                  endDate: selection.endDate,
+                  status: "PENDING",
+                },
+              };
+            }));
+            setPendingInventory((current) => ({
+              ...current,
+              [inventoryPickerRow]: {
+                modelId: selection.modelId,
+                size: selection.size,
+                quantity: selection.quantity,
+                startDate: selection.startDate,
+                endDate: selection.endDate,
+              },
+            }));
+          }}
+          onSaved={() => setInventoryPickerRow(null)}
+        />
+      )}
     </div>
   );
 }
