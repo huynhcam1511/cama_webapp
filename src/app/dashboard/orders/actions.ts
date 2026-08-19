@@ -68,8 +68,17 @@ export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> 
     console.error("Error fetching orders:", error);
     return [];
   }
-  console.log("getOrders returned length:", data?.length);
-  return data as any;
+  const normalized = (data || []).map((order: any) => {
+    try {
+      const meta = typeof order.contract?.notes === "string" ? JSON.parse(order.contract.notes) : (order.contract?.notes || {});
+      const event = Array.isArray(meta.events) ? meta.events.find((item: any) => item.name === order.service_type) : null;
+      if (event) {
+        return { ...order, event_date: event.pickup_date || null, return_date: event.return_date || null };
+      }
+    } catch (_) {}
+    return order;
+  });
+  return normalized as any;
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
@@ -186,7 +195,18 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
           return usageEvents.length === 0 || usageEvents.includes(data.service_type);
         });
         const linkedCodes = new Set<string>(eventItems.flatMap((item: any) => item.inventory_selection?.codes || []));
-        garments = (garments || []).filter((garment: any) => !garment.model_id || linkedCodes.has(garment.garment_code));
+        garments = (garments || [])
+          .filter((garment: any) => !garment.model_id || linkedCodes.has(garment.garment_code))
+          .map((garment: any) => {
+            const linkedItem = eventItems.find((item: any) => item.inventory_selection?.codes?.includes(garment.garment_code));
+            const selection = linkedItem?.inventory_selection;
+            return {
+              ...garment,
+              product_image_url: selection?.imageUrl || garment.product_image_url || null,
+              product_base_sku: selection?.baseSku || null,
+              product_location: selection?.location || null,
+            };
+          });
         
         if (meta.events) {
           data.contract.event_schedules = meta.events;

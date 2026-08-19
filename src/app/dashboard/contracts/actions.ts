@@ -778,7 +778,12 @@ export async function createContract(payload: {
       const events = parsedNotes?.events || [];
       
       if (events.length > 0) {
-        // Prepare orders to insert
+        const { data: triggerOrders } = await supabase
+          .from("orders")
+          .select("id, service_type, notes")
+          .eq("contract_id", contract.id)
+          .order("created_at", { ascending: true });
+        let reusableOrders = triggerOrders || [];
         const ordersToInsert: any[] = [];
         
         // Find the latest code to sequence locally
@@ -799,18 +804,29 @@ export async function createContract(payload: {
         }
 
         for (const ev of events) {
+          const eventId = ev.id || `event-${events.indexOf(ev) + 1}`;
+          const matchedOrder = reusableOrders.find((order: any) => order.service_type === ev.name)
+            || reusableOrders.find((order: any) => order.service_type === "Tự động từ HĐ");
+          const orderData = {
+            service_type: ev.name || "Dịch vụ cưới",
+            event_date: ev.pickup_date || null,
+            return_date: ev.return_date || null,
+            notes: `[EVENT_ID:${eventId}] Đơn hàng tự động sinh từ Hợp đồng ${code} cho sự kiện: ${ev.name}\nNgày diễn ra: ${ev.event_date || "Không có"}\nNgày giao: ${ev.pickup_date || "Không có"}\nĐịa điểm: ${ev.location || "Không có"}`,
+            checklist: [],
+          };
+          if (matchedOrder) {
+            await supabase.from("orders").update(orderData).eq("id", matchedOrder.id);
+            reusableOrders = reusableOrders.filter((order: any) => order.id !== matchedOrder.id);
+            continue;
+          }
           const newCode = `ORDE-${String(nextNumber).padStart(6, '0')}`;
           nextNumber++;
           
           ordersToInsert.push({
             order_code: newCode,
             contract_id: contract.id,
-            service_type: ev.name || "Dịch vụ cưới",
-            event_date: ev.event_date || null,
-            return_date: ev.return_date || null,
             completion_status: "PENDING",
-            notes: `Đơn hàng tự động sinh từ Hợp đồng ${code} cho sự kiện: ${ev.name}\nNgày giao: ${ev.pickup_date || "Không có"}\nĐịa điểm: ${ev.location || "Không có"}`,
-            checklist: [],
+            ...orderData,
           });
         }
         
@@ -1586,7 +1602,7 @@ export async function updateContract(contractId: string, payload: any) {
         // Fetch existing orders for this contract
         const { data: existingOrders } = await supabase
           .from("orders")
-          .select("id, order_code, service_type")
+          .select("id, order_code, service_type, notes, completion_status, created_at")
           .eq("contract_id", contractId);
         
         let existingOrdersArray = existingOrders || [];
@@ -1611,14 +1627,19 @@ export async function updateContract(contractId: string, payload: any) {
         const ordersToInsert: any[] = [];
         
         for (const ev of newEvents) {
-          // Attempt to find an existing order for this event by matching the event name
-          const matchedOrder = existingOrdersArray.find((o: any) => o.service_type === ev.name);
+          const eventId = ev.id || `event-${newEvents.indexOf(ev) + 1}`;
+          const marker = `[EVENT_ID:${eventId}]`;
+          const matchedOrder = existingOrdersArray.find((o: any) => String(o.notes || "").includes(marker))
+            || existingOrdersArray.find((o: any) => o.service_type === ev.name)
+            || existingOrdersArray.find((o: any) => o.service_type === "Tự động từ HĐ");
+          const syncedNotes = `${marker} Đơn hàng tự động sinh từ Hợp đồng ${current.contract_code} cho sự kiện: ${ev.name}\nNgày diễn ra: ${ev.event_date || "Không có"}\nNgày giao: ${ev.pickup_date || "Không có"}\nĐịa điểm: ${ev.location || "Không có"}`;
           
           if (matchedOrder) {
-            // Update existing without overwriting notes
             await supabase.from("orders").update({
-              event_date: ev.event_date || null,
-              return_date: ev.return_date || null
+              service_type: ev.name || "Dịch vụ cưới",
+              event_date: ev.pickup_date || null,
+              return_date: ev.return_date || null,
+              notes: matchedOrder.service_type === "Tự động từ HĐ" || String(matchedOrder.notes || "").includes("Đơn hàng tự động sinh từ Hợp đồng") ? syncedNotes : matchedOrder.notes,
             }).eq("id", matchedOrder.id);
             // Remove from array so we know what's left (optional: to handle deletions later)
             existingOrdersArray = existingOrdersArray.filter((o: any) => o.id !== matchedOrder.id);
@@ -1631,10 +1652,10 @@ export async function updateContract(contractId: string, payload: any) {
               order_code: newCode,
               contract_id: contractId,
               service_type: ev.name || "Dịch vụ cưới",
-              event_date: ev.event_date || null,
+              event_date: ev.pickup_date || null,
               return_date: ev.return_date || null,
               completion_status: "PENDING",
-              notes: `Đơn hàng tự động sinh từ Hợp đồng ${current.contract_code} cho sự kiện: ${ev.name}\nNgày giao: ${ev.pickup_date || "Không có"}\nĐịa điểm: ${ev.location || "Không có"}`,
+              notes: syncedNotes,
               checklist: [],
             });
           }
@@ -1643,17 +1664,22 @@ export async function updateContract(contractId: string, payload: any) {
         if (ordersToInsert.length > 0) {
           await supabase.from("orders").insert(ordersToInsert);
         }
-        
-        // (Optional) Could delete leftover existingOrdersArray here if we want strict sync
-        // if (existingOrdersArray.length > 0) {
-        //   await supabase.from("orders").delete().in("id", existingOrdersArray.map(o => o.id));
-        // }
+
+        const obsoleteAutoOrderIds = existingOrdersArray
+          .filter((order: any) => order.service_type === "Tự động từ HĐ" || String(order.notes || "").includes("Đơn hàng tự động sinh từ Hợp đồng"))
+          .map((order: any) => order.id);
+        if (obsoleteAutoOrderIds.length > 0) {
+          await supabase.from("orders").update({ completion_status: "CANCELLED", updated_at: new Date().toISOString() }).in("id", obsoleteAutoOrderIds);
+        }
       }
     } catch (orderSyncErr) {
       console.error("Automation Error (Order Sync):", orderSyncErr);
     }
     revalidatePath("/dashboard/contracts");
     revalidatePath(`/dashboard/contracts/${contractId}`);
+    revalidatePath("/dashboard/orders");
+    const { data: refreshedOrders } = await supabase.from("orders").select("id").eq("contract_id", contractId);
+    for (const order of refreshedOrders || []) revalidatePath(`/dashboard/orders/${order.id}`);
     return { success: true, contractId };
   } catch (err: any) {
     console.error("updateContract error:", err);
@@ -1845,6 +1871,9 @@ export async function reserveContractInventory(payload: {
     }
     const { error: relinkError } = await supabase.from("contracts").update({ notes: stringifyMetadata(currentMeta), updated_at: new Date().toISOString() }).eq("id", payload.contractId);
     if (relinkError) return { success: false, error: relinkError.message };
+    revalidatePath("/dashboard/orders");
+    const { data: relinkedOrders } = await supabase.from("orders").select("id").eq("contract_id", payload.contractId);
+    for (const order of relinkedOrders || []) revalidatePath(`/dashboard/orders/${order.id}`);
     return { success: true, garments: alreadyReserved };
   }
 
@@ -1904,6 +1933,9 @@ export async function reserveContractInventory(payload: {
   if (updateError) return { success: false, error: updateError.message };
   if (payload.fulfillmentType === "SALE") await supabase.from("garments_inventory").update({ status: "RESERVED_SALE", updated_at: new Date().toISOString() }).in("id", selected.map((item: any) => item.id));
   revalidatePath(`/dashboard/contracts/${payload.contractId}`);
+  revalidatePath("/dashboard/orders");
+  const { data: linkedOrders } = await supabase.from("orders").select("id").eq("contract_id", payload.contractId);
+  for (const order of linkedOrders || []) revalidatePath(`/dashboard/orders/${order.id}`);
   return { success: true, garments: additions };
 }
 

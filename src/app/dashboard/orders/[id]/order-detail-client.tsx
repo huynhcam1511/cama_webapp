@@ -494,12 +494,19 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                 </div>
               ) : (
                 <div className="overflow-x-auto overflow-y-hidden">
-                  <table className="w-full text-sm text-left">
+                  <table className="w-full table-fixed text-sm text-left">
+                    <colgroup>
+                      <col />
+                      <col className="w-[104px]" />
+                      <col className="w-[190px]" />
+                      <col className="w-14" />
+                    </colgroup>
                     <thead className="text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
                       <tr>
                         <th className="py-3 pr-4 font-semibold min-w-[200px]">Tên chi tiết & Ghi chú</th>
-                        <th className="px-4 py-3 font-semibold min-w-[250px]">Ảnh QC</th>
-                        <th className="pl-4 py-3 font-semibold whitespace-nowrap text-center w-24">SL</th>
+                        <th className="px-3 py-3 text-center font-semibold whitespace-nowrap">Ảnh sản phẩm</th>
+                        <th className="px-3 py-3 text-center font-semibold whitespace-nowrap">Ảnh QC</th>
+                        <th className="py-3 text-center font-semibold whitespace-nowrap">SL</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -508,8 +515,8 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                         const images = notesImages[rowId] || [];
                         const isUploading = uploadingImageId === rowId;
                         return (
-                          <tr key={idx} className="group hover:bg-slate-50/50">
-                            <td className="py-4 pr-4 align-top">
+                          <tr key={idx} className="group h-24 hover:bg-slate-50/50">
+                            <td className="py-3 pr-4 align-middle">
                               <div className="font-semibold text-slate-800">{item.detail || item.item_name}</div>
                               {item.notes && (
                                 <div className="mt-1 text-slate-700 font-medium bg-amber-50 inline-block px-2 py-0.5 rounded text-xs border border-amber-200/50">
@@ -526,10 +533,15 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                                 </div>
                               )}
                             </td>
-                            <td className="px-4 py-4 align-top">
-                              <div className="flex flex-col gap-2">
+                            <td className="px-3 py-3 align-middle">
+                              <div className="mx-auto flex h-16 w-14 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-slate-300" title="Dịch vụ không có ảnh sản phẩm kho">
+                                <icons.ImageIcon className="h-5 w-5" />
+                              </div>
+                            </td>
+                            <td className="px-3 py-3 align-middle">
+                              <div className="flex min-h-16 flex-wrap items-center justify-center gap-2">
                                 {images.length > 0 && (
-                                  <div className="flex flex-wrap gap-2">
+                                  <div className="flex flex-wrap justify-center gap-2">
                                     {images.map((img: string, iIdx: number) => (
                                       <div key={iIdx} onClick={() => setSelectedImage(img)} className="relative w-12 h-12 rounded border border-slate-200 overflow-hidden group/img bg-slate-100 cursor-pointer">
                                         <img src={img} alt="QC" className="w-full h-full object-cover" />
@@ -553,7 +565,7 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                                 )}
                               </div>
                             </td>
-                            <td className="pl-4 py-4 align-top text-center font-bold text-slate-700">
+                            <td className="py-3 align-middle text-center font-bold text-slate-700">
                               {item.quantity} <span className="text-xs font-normal text-slate-400">{item.unit || ''}</span>
                             </td>
                           </tr>
@@ -564,8 +576,8 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                         const images = notesImages[rowId] || [];
                         const isUploading = uploadingImageId === rowId;
                         return (
-                          <tr key={`g-${idx}`} className="group hover:bg-purple-50/20">
-                            <td className="py-4 pr-4 align-top">
+                          <tr key={`g-${idx}`} className="group h-24 hover:bg-purple-50/20">
+                            <td className="py-3 pr-4 align-middle">
                               <div className="font-semibold text-purple-800">{g.product_name}</div>
                               <div className="mt-1 flex flex-wrap gap-2 text-xs">
                                 <span className="font-mono text-purple-600">Mã: {g.garment_code}</span>
@@ -581,10 +593,21 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                                 </div>
                               )}
                             </td>
-                            <td className="px-4 py-3 align-top">
-                              <div className="flex flex-col gap-2">
+                            <td className="px-3 py-3 align-middle">
+                              {g.product_image_url ? (
+                                <button type="button" onClick={() => setSelectedImage(g.product_image_url)} className="mx-auto block h-16 w-14 overflow-hidden rounded-lg border border-slate-200 bg-slate-50" title="Ảnh nhận diện sản phẩm từ kho">
+                                  <img src={g.product_image_url} alt={g.product_name} className="h-full w-full object-cover" />
+                                </button>
+                              ) : (
+                                <div className="mx-auto flex h-16 w-14 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-slate-300">
+                                  <icons.Shirt className="h-5 w-5" />
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-3 py-3 align-middle">
+                              <div className="flex min-h-16 flex-wrap items-center justify-center gap-2">
                                 {images.length > 0 && (
-                                  <div className="flex flex-wrap gap-2">
+                                  <div className="flex flex-wrap justify-center gap-2">
                                     {images.map((img: string, iIdx: number) => (
                                       <div key={iIdx} onClick={() => setSelectedImage(img)} className="relative w-12 h-12 rounded border border-slate-200 overflow-hidden group/img bg-slate-100 cursor-pointer">
                                         <img src={img} alt="QC" className="w-full h-full object-cover" />
@@ -608,7 +631,7 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                                 )}
                               </div>
                             </td>
-                            <td className="pl-4 py-4 align-top text-center font-bold text-slate-700">1</td>
+                            <td className="py-3 align-middle text-center font-bold text-slate-700">1</td>
                           </tr>
                         );
                       })}

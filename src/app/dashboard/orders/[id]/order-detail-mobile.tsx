@@ -353,6 +353,43 @@ export default function OrderDetailMobile({
               </div>
             )
           })}
+          {garments.map((garment: any, idx: number) => {
+            const rowId = `garment_${garment.id || idx}_step_${viewingStepIndex}`;
+            const images = notesImages[rowId] || [];
+            const isUploading = uploadingImageId === rowId;
+            return (
+              <div key={`garment-${garment.id || idx}`} className="bg-white p-4">
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => garment.product_image_url && onImageClick?.(garment.product_image_url)} className="h-24 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                    {garment.product_image_url ? <img src={garment.product_image_url} alt={garment.product_name} className="h-full w-full object-cover" /> : <icons.Shirt className="m-6 h-7 w-7 text-slate-300" />}
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Ảnh sản phẩm từ kho</div>
+                    <div className="mt-1 text-sm font-bold text-slate-900">{garment.product_name}</div>
+                    <div className="mt-1 truncate font-mono text-[10px] text-indigo-600">{garment.garment_code}</div>
+                    <div className="text-xs font-semibold text-slate-600">Size {garment.size || "—"}</div>
+                  </div>
+                </div>
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Ảnh QC tại bước này</div>
+                  <div className="flex flex-wrap gap-2">
+                    {images.map((img: string, imageIndex: number) => (
+                      <div key={imageIndex} onClick={() => onImageClick?.(img)} className="relative h-14 w-14 cursor-pointer overflow-hidden rounded-lg border border-slate-200">
+                        <img src={img} alt="Ảnh QC" className="h-full w-full object-cover" />
+                        {!isReadOnly && <button onClick={(event) => { event.stopPropagation(); handleDeleteImage(rowId, img); }} className="absolute right-0.5 top-0.5 rounded-full bg-black/50 p-0.5 text-white"><icons.X className="h-3 w-3" /></button>}
+                      </div>
+                    ))}
+                    {!isReadOnly && (
+                      <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${isUploading ? "bg-slate-100 text-slate-400" : "bg-blue-50 text-blue-600"}`}>
+                        {isUploading ? <icons.Loader2 className="h-4 w-4 animate-spin" /> : <icons.ImagePlus className="h-4 w-4" />} Thêm ảnh QC
+                        <input type="file" accept="image/*" className="hidden" onChange={(event) => handleImageUpload(event, rowId)} disabled={isUploading} />
+                      </label>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -539,4 +576,3 @@ export default function OrderDetailMobile({
     </div>
   );
 }
-

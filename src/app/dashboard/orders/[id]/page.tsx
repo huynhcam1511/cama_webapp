@@ -3,6 +3,9 @@ import OrderDetailClient from "./order-detail-client";
 import { getOrderById } from "../actions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function OrderDetailPage({ params }: { params: { id: string } }) {
   const order = await getOrderById(params.id);
 

@@ -297,8 +297,8 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                           ) : <span className="text-slate-400 italic">---</span>}
                         </td>
                         <td className="px-4 py-3 align-top pt-4 text-xs">
-                          {order.event_date ? (
-                            <span className="font-semibold text-slate-600">{format(new Date(new Date(order.event_date).getTime() + 3*24*60*60*1000), "dd/MM/yyyy")}</span>
+                          {order.return_date ? (
+                            <span className="font-semibold text-slate-600">{format(new Date(order.return_date), "dd/MM/yyyy")}</span>
                           ) : <span className="text-slate-400 italic">---</span>}
                         </td>
                         <td className="px-4 py-3 align-top pt-4">

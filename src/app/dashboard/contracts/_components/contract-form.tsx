@@ -111,10 +111,10 @@ export default function ContractForm({
   const [contractDate, setContractDate] = useState<string>(new Date().toISOString().split("T")[0]);
 
   // Events State
-  const [events, setEvents] = useState<{name: string, event_date: string, pickup_date: string, return_date: string, location: string}[]>([
-    {name: "", event_date: "", pickup_date: "", return_date: "", location: ""},
-    {name: "", event_date: "", pickup_date: "", return_date: "", location: ""},
-    {name: "", event_date: "", pickup_date: "", return_date: "", location: ""}
+  const [events, setEvents] = useState<{id: string, name: string, event_date: string, pickup_date: string, return_date: string, location: string}[]>([
+    {id: "event-1", name: "", event_date: "", pickup_date: "", return_date: "", location: ""},
+    {id: "event-2", name: "", event_date: "", pickup_date: "", return_date: "", location: ""},
+    {id: "event-3", name: "", event_date: "", pickup_date: "", return_date: "", location: ""}
   ]);
 
   // 2. Chi Tiết Thực Hiện
@@ -284,8 +284,8 @@ export default function ContractForm({
           });
       }
       if (sourceEvents && Array.isArray(sourceEvents) && sourceEvents.length > 0) {
-        const loadedEvents = [...sourceEvents];
-        while (loadedEvents.length < 3) loadedEvents.push({name: "", event_date: "", pickup_date: "", return_date: "", location: ""});
+        const loadedEvents = sourceEvents.map((event: any, index: number) => ({ ...event, id: event.id || `event-${index + 1}` }));
+        while (loadedEvents.length < 3) loadedEvents.push({id: `event-${loadedEvents.length + 1}`, name: "", event_date: "", pickup_date: "", return_date: "", location: ""});
         setEvents(loadedEvents.slice(0, 3));
       }
 
