@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { X, QrCode } from "lucide-react";
 
 interface QRScannerProps {
@@ -21,8 +21,8 @@ export default function QRScanner({
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
-    // Create instance
-    const html5QrCode = new Html5Qrcode("qr-reader");
+    // Create instance restricted to QR_CODE for maximum performance
+    const html5QrCode = new Html5Qrcode("qr-reader", { formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ] });
     scannerRef.current = html5QrCode;
     let isStopping = false;
 
@@ -32,7 +32,7 @@ export default function QRScanner({
     html5QrCode.start(
       { facingMode: "environment" }, // Prefer back camera
       {
-        fps: 10,
+        fps: 20, // Increase scanning frequency for better responsiveness
         // No qrbox = scan the entire video frame
       },
       (decodedText) => {
