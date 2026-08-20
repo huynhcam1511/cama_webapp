@@ -232,6 +232,42 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
           </div>
         </div>
 
+        {/* Return Alerts */}
+        {(() => {
+          const returnAlerts = orders.filter(o => {
+            if (o.completion_status !== 'DELIVERED' && o.completion_status !== 'WAITING_RETURN') return false;
+            if (!o.return_date) return false;
+            const dt = new Date(o.return_date);
+            dt.setHours(23, 59, 59, 999); // End of the return day
+            const days = differenceInDays(dt, new Date());
+            return days <= 0;
+          });
+          if (returnAlerts.length === 0) return null;
+          return (
+            <div className="mb-4 bg-orange-50 border border-orange-200 rounded-xl p-4">
+              <h3 className="font-bold text-orange-800 flex items-center gap-2 mb-2">
+                <icons.AlertTriangle className="w-5 h-5" /> 
+                Cảnh báo Thu hồi ({returnAlerts.length} đơn)
+              </h3>
+              <div className="flex flex-col gap-2">
+                {returnAlerts.map(alert => {
+                  const dt = new Date(alert.return_date);
+                  dt.setHours(23, 59, 59, 999);
+                  const isOverdue = differenceInDays(dt, new Date()) < 0;
+                  return (
+                    <Link key={alert.id} href={`/dashboard/orders/${alert.id}`} className="bg-white px-3 py-2 rounded-lg border border-orange-100 flex items-center justify-between hover:bg-orange-100/50 transition">
+                      <div className="text-sm font-medium text-orange-900">{alert.order_code} - {alert.contract?.customer?.bride_name || alert.contract?.customer?.groom_name}</div>
+                      <div className={`text-xs font-bold px-2 py-1 rounded ${isOverdue ? 'text-rose-600 bg-rose-50' : 'text-orange-600 bg-orange-100'}`}>
+                        {isOverdue ? 'Quá hạn' : 'Về hôm nay'} ({format(new Date(alert.return_date), "dd/MM/yyyy")})
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Mobile FAB */}
         <Link 
           href="/dashboard/orders/create"

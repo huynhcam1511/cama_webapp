@@ -18,7 +18,7 @@ const GROUPS = [
 ];
 const FALLBACK_FORMS: Record<string, [string, string][]> = {
   VC: [["S02C", "Đuôi cá"], ["CONG", "Công chúa"], ["CUPI", "Cúp ngực"], ["CHUA", "Chữ A"], ["XO3M", "Xòe 3 mét"]],
-  SU: [["OM", "Form ôm"], ["SUON", "Form suông"], ["BLAZ", "Dáng Blazer"], ["SLIM", "Slim fit"], ["TUXE", "Tuxedo"]],
+  SU: [["SLIM", "Slim (Ôm)"], ["DAI", "Dài"], ["DUOI", "Đuôi tôm"], ["MANG", "Măng tô"], ["SUON", "Form suông"], ["BLAZ", "Dáng Blazer"], ["TUXE", "Tuxedo"]],
   JA: [["VEST", "Áo Vest"], ["BLAZ", "Blazer"], ["SOMI", "Áo sơ mi"]], QU: [["QUAN", "Quần Âu"]], AD: [["AODA", "Áo Dài"]],
   GI: [["TAY", "Giày tây"], ["LOAF", "Loafer"], ["BOOT", "Boot"]], CV: [["BAN", "Cà vạt bản"], ["NO", "Nơ cổ"]], PK: [["KCAP", "Khuy măng sét"], ["THAT", "Thắt lưng"], ["KHAC", "Phụ kiện khác"]],
 };
@@ -38,6 +38,9 @@ const FALLBACK_COLORS: Record<string, [string, string][]> = {
 const SUIT_PRODUCT_TYPES: [string, string][] = [["BT", "Bộ Suit thường"], ["BS", "Bộ Big Size"], ["AT", "Áo thời trang"], ["AL", "Áo lẻ"], ["QL", "Quần lẻ"], ["GL", "Gile"]];
 const SUIT_BUTTONS: [string, string][] = [["1C", "Áo 1 cúc"], ["2C", "Áo 2 cúc"], ["2H2C", "2 hàng 2 cúc"], ["2H4C", "2 hàng 4 cúc"], ["2H6C", "2 hàng 6 cúc"]];
 const SUIT_PATTERNS: [string, string][] = [["TR", "Trơn"], ["K", "Kẻ"], ["CA", "Caro"], ["SO", "Sọc"], ["HO", "Họa tiết khác"]];
+const SUIT_COLLAR_TYPES: [string, string][] = [["CO_LA", "Cổ lá"], ["CO_K", "Cổ K"], ["CO_TRON", "Cổ tròn"], ["CO_VUONG", "Cổ vuông"], ["CO_THOI_TRANG", "Cổ thời trang"], ["CO_NHUNG", "Cổ nhung"]];
+const SUIT_COLLAR_DETAILS: [string, string][] = [["BONG", "Cổ bóng"], ["K_BONG", "Cổ không bóng"], ["BONG_VIEN", "Cổ bóng viền chỉ"], ["K_BONG_VIEN", "Cổ không bóng viền chỉ"]];
+const SUIT_VELVET_COLLAR_DETAILS: [string, string][] = [["VE_TRON", "Ve tròn"], ["VE_LA", "Ve lá"], ["VE_K", "Ve K"], ["VE_VUONG", "Ve vuông"]];
 
 const newLine = (system: "VN" | "CN" = "VN"): SizeLine => ({ id: crypto.randomUUID(), size_system: system, size_code: "", quantity: 1, height_note: "", weight_note: "", fit_note: "", purchase_price: 0 });
 
@@ -79,7 +82,7 @@ export default function InventoryDeclarationPage() {
   const [form, setForm] = useState({
     location_floor: params.get("floor") || "", location_shelf: params.get("shelf") || "", location_tier: params.get("tier") || "",
     group_type: "VC", style_details: "", material_pattern: "", color_code: "", color_name: "", name: "", factory_code: "",
-    suit_product_type: "", button_style: "", pattern_code: "",
+    suit_product_type: "", button_style: "", pattern_code: "", collar_type: "", collar_detail: "",
     imageUrls: [] as string[], tag_image_url: "", supplier: "", notes: "", fit_note: "",
   });
   const [sizeLines, setSizeLines] = useState<SizeLine[]>([newLine()]);
@@ -107,6 +110,14 @@ export default function InventoryDeclarationPage() {
     if (params.get("step") !== "product" && !hasLocationInUrl) setLocationLocked(false);
   }, [params]);
 
+  const hasAutoOpenedScanner = useRef(false);
+  useEffect(() => {
+    if (!loading && !locationLocked && !hasAutoOpenedScanner.current) {
+      setLocationScannerOpen(true);
+      hasAutoOpenedScanner.current = true;
+    }
+  }, [loading, locationLocked]);
+
   const floors = useMemo(() => Array.from(new Set(locations.map(x => x.floor_name))), [locations]);
   const shelves = useMemo(() => Array.from(new Set(locations.filter(x => x.floor_name === form.location_floor).map(x => x.shelf_name).filter(Boolean))) as string[], [locations, form.location_floor]);
   const tiers = useMemo(() => Array.from(new Set(locations.filter(x => x.floor_name === form.location_floor && x.shelf_name === form.location_shelf).map(x => x.tier_name).filter(Boolean))) as string[], [locations, form.location_floor, form.location_shelf]);
@@ -117,7 +128,7 @@ export default function InventoryDeclarationPage() {
 
   useEffect(() => {
     if (!form.location_floor || allowedGroups.some(group => group.code === form.group_type)) return;
-    setForm(prev => ({ ...prev, group_type: allowedGroups[0]?.code || "", style_details: "", material_pattern: "", color_code: "", color_name: "", suit_product_type: "", button_style: "", pattern_code: "" }));
+    setForm(prev => ({ ...prev, group_type: allowedGroups[0]?.code || "", style_details: "", material_pattern: "", color_code: "", color_name: "", suit_product_type: "", button_style: "", pattern_code: "", collar_type: "", collar_detail: "" }));
   }, [allowedGroups, form.group_type, form.location_floor]);
   const options = (type: string, parent: string, fallback: Record<string, [string, string][]>) => {
     const rows = master.filter(x => x.type === type && x.parent_code === parent).map(x => ({ code: x.code, name: x.name }));
@@ -211,7 +222,7 @@ export default function InventoryDeclarationPage() {
   };
 
   const resetForNext = () => {
-    setForm(prev => ({ ...prev, style_details: "", material_pattern: "", color_code: "", color_name: "", name: "", factory_code: "", suit_product_type: "", button_style: "", pattern_code: "", imageUrls: [], tag_image_url: "", supplier: "", notes: "", fit_note: "" }));
+    setForm(prev => ({ ...prev, style_details: "", material_pattern: "", color_code: "", color_name: "", name: "", factory_code: "", suit_product_type: "", button_style: "", pattern_code: "", collar_type: "", collar_detail: "", imageUrls: [], tag_image_url: "", supplier: "", notes: "", fit_note: "" }));
     setMissingFactoryCode(false); setGeneratedFactoryCode("");
     setImagePreviews([]); setTagPreview("");
     setSizeLines([newLine()]);
@@ -263,7 +274,7 @@ export default function InventoryDeclarationPage() {
           <h2 className="font-black text-base md:text-lg text-slate-800 mb-3">1. Nhận diện nhanh</h2>
           <div className="bg-indigo-50/60 border border-indigo-100 p-3 md:p-4 rounded-xl md:rounded-2xl space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <label className="label">Nhóm<select value={form.group_type} onChange={e => setForm({ ...form, group_type: e.target.value, style_details: "", material_pattern: "", color_code: "", color_name: "", suit_product_type: "", button_style: "", pattern_code: "" })} className="field"><option value="">Chọn nhóm...</option>{allowedGroups.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
+              <label className="label">Nhóm<select value={form.group_type} onChange={e => setForm({ ...form, group_type: e.target.value, style_details: "", material_pattern: "", color_code: "", color_name: "", suit_product_type: "", button_style: "", pattern_code: "", collar_type: "", collar_detail: "" })} className="field"><option value="">Chọn nhóm...</option>{allowedGroups.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
               {form.group_type === "SU" &&
                 <label className="label">Loại đồ<select required value={form.suit_product_type} onChange={e => setForm({ ...form, suit_product_type: e.target.value })} className="field"><option value="">Chọn loại...</option>{SUIT_PRODUCT_TYPES.map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
               }
@@ -301,6 +312,8 @@ export default function InventoryDeclarationPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-200 bg-white p-4">
             {form.group_type === "SU" ? <>
               <label className="label">Form/kiểu dáng<select value={form.style_details} onChange={e => setForm({ ...form, style_details: e.target.value })} className="field"><option value="">Chọn form...</option>{forms.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
+              <label className="label">Kiểu cổ<select value={form.collar_type} onChange={e => setForm({ ...form, collar_type: e.target.value, collar_detail: "" })} className="field"><option value="">Chọn kiểu cổ...</option>{SUIT_COLLAR_TYPES.map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
+              <label className="label">Chi tiết cổ<select value={form.collar_detail} onChange={e => setForm({ ...form, collar_detail: e.target.value })} className="field"><option value="">Chọn chi tiết...</option>{(form.collar_type === "CO_NHUNG" ? SUIT_VELVET_COLLAR_DETAILS : SUIT_COLLAR_DETAILS).map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
               <label className="label">Kiểu cúc<select value={form.button_style} onChange={e => setForm({ ...form, button_style: e.target.value })} className="field"><option value="">Chọn kiểu cúc...</option>{SUIT_BUTTONS.map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
               <label className="label">Họa tiết<select value={form.pattern_code} onChange={e => setForm({ ...form, pattern_code: e.target.value })} className="field"><option value="">Chọn họa tiết...</option>{SUIT_PATTERNS.map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
             </> : <>

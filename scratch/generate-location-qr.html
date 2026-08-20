@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAMA - Tạo QR Code Vị Trí Kệ</title>
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+        .card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        h1 { font-size: 20px; color: #1e293b; margin-top: 0; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; font-size: 13px; font-weight: bold; color: #475569; margin-bottom: 5px; }
+        input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+        button { background: #4f46e5; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; margin-top: 10px; }
+        button:hover { background: #4338ca; }
+        #qrcode { margin-top: 30px; display: flex; justify-content: center; }
+        .instructions { margin-top: 20px; font-size: 14px; color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Tạo QR Code Vị Trí Kệ</h1>
+        
+        <div class="input-group">
+            <label>Lầu/Tầng (floor)</label>
+            <input type="text" id="floor" placeholder="VD: Lầu 1" value="Lầu 1">
+        </div>
+        <div class="input-group">
+            <label>Kệ/Sào (shelf)</label>
+            <input type="text" id="shelf" placeholder="VD: Sào 1" value="Sào 1">
+        </div>
+        <div class="input-group">
+            <label>Ngăn/Móc (tier - không bắt buộc)</label>
+            <input type="text" id="tier" placeholder="VD: Ngăn A">
+        </div>
+
+        <button onclick="generateQR()">Tạo Mã QR</button>
+
+        <div id="qrcode"></div>
+        <p class="instructions" id="url-preview"></p>
+    </div>
+
+    <script>
+        let qrcode = null;
+        function generateQR() {
+            const floor = document.getElementById('floor').value.trim();
+            const shelf = document.getElementById('shelf').value.trim();
+            const tier = document.getElementById('tier').value.trim();
+
+            if (!floor || !shelf) {
+                alert("Vui lòng nhập Lầu/Tầng và Kệ/Sào!");
+                return;
+            }
+
+            // Tạo URL giả lập (app dùng origin hiện tại, ta lấy một origin bất kỳ, scanner chỉ bóc tham số)
+            const url = new URL("http://cama.local");
+            url.searchParams.set("floor", floor);
+            url.searchParams.set("shelf", shelf);
+            if (tier) url.searchParams.set("tier", tier);
+
+            const urlString = url.toString();
+            document.getElementById('url-preview').innerText = "Dữ liệu QR: " + urlString;
+
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = "";
+            qrcode = new QRCode(qrContainer, {
+                text: urlString,
+                width: 200,
+                height: 200,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+        
+        // Generate default on load
+        generateQR();
+    </script>
+</body>
+</html>

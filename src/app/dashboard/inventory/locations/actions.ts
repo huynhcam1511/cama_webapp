@@ -96,3 +96,29 @@ export async function getLocationOrder() {
   if (error || !data) return { success: true, order: {} };
   return { success: true, order: data.value };
 }
+
+export async function getProductsByLocation(floor: string, shelf: string, tier: string) {
+  const supabase = await createClient();
+  let query = supabase.from('garments_inventory').select('id, name, sku, qr_code, size, status, image_url, model:garment_models(image_url)').eq('location_floor', floor);
+  
+  if (shelf) query = query.eq('location_shelf', shelf);
+  else query = query.or('location_shelf.is.null,location_shelf.eq.""');
+
+  if (tier) query = query.eq('location_tier', tier);
+  else query = query.or('location_tier.is.null,location_tier.eq.""');
+
+  const { data, error } = await query;
+  if (error) return { success: false, error: error.message };
+  
+  const formattedData = (data || []).map(p => {
+    const modelData = Array.isArray(p.model) ? p.model[0] : p.model;
+    const invUrl = (p.image_url && p.image_url !== 'null' && p.image_url !== 'undefined') ? p.image_url : null;
+    const modUrl = (modelData?.image_url && modelData.image_url !== 'null' && modelData.image_url !== 'undefined') ? modelData.image_url : null;
+    return {
+      ...p,
+      image_url: invUrl || modUrl || null
+    };
+  });
+  
+  return { success: true, products: formattedData };
+}

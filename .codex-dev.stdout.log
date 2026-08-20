@@ -1,0 +1,611 @@
+
+> cama-webapp@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.7s
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 771ms (127 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 4.6s (513 modules)
+ HEAD / 200 in 4799ms
+ ✓ Compiled in 450ms (255 modules)
+ GET / 200 in 35ms
+ GET / 200 in 61ms
+ ✓ Compiled /_not-found in 215ms (493 modules)
+ GET /icons/icon-192x192.png 404 in 364ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 4.7s (3854 modules)
+ GET /dashboard 200 in 307ms
+ GET /icon.png 404 in 24ms
+ GET /icons/icon-192x192.png 404 in 77ms
+ ○ Compiling /api/me/permissions ...
+ POST /dashboard 200 in 1324ms
+ ✓ Compiled /api/me/permissions in 763ms (2082 modules)
+ POST /dashboard 200 in 758ms
+ GET /api/me/permissions 200 in 3204ms
+ GET /api/me/permissions 200 in 866ms
+ GET /api/me/permissions 200 in 858ms
+ GET /api/me/permissions 200 in 853ms
+ ○ Compiling /dashboard/inventory/catalog ...
+ ✓ Compiled /dashboard/inventory/catalog in 674ms (3966 modules)
+ GET /icons/icon-192x192.png 404 in 82ms
+ POST /dashboard/inventory/catalog 200 in 1676ms
+ POST /dashboard/inventory/catalog 200 in 1041ms
+ POST /dashboard/inventory/catalog 200 in 3616ms
+ POST /dashboard/inventory/catalog 200 in 1966ms
+ GET /dashboard/inventory/catalog 200 in 183ms
+ GET /dashboard/inventory/catalog 200 in 81ms
+ GET /api/me/permissions 200 in 1001ms
+ GET /api/me/permissions 200 in 1282ms
+ POST /dashboard/inventory/catalog 200 in 1080ms
+ POST /dashboard/inventory/catalog 200 in 969ms
+ POST /dashboard/inventory/catalog 200 in 986ms
+ POST /dashboard/inventory/catalog 200 in 1034ms
+ ○ Compiling /dashboard/inventory/catalog/new ...
+ ✓ Compiled /dashboard/inventory/catalog/new in 572ms (3974 modules)
+ POST /dashboard/inventory/catalog/new 200 in 1921ms
+ POST /dashboard/inventory/catalog/new 200 in 1463ms
+ POST /dashboard/inventory/catalog 200 in 1466ms
+ POST /dashboard/inventory/catalog 200 in 978ms
+ POST /dashboard/inventory/catalog 200 in 975ms
+ POST /dashboard/inventory/catalog 200 in 1010ms
+ POST /dashboard/inventory/catalog/new 200 in 1207ms
+ POST /dashboard/inventory/catalog/new 200 in 1035ms
+ ✓ Compiled in 1039ms (3893 modules)
+ POST /dashboard/inventory/catalog 200 in 5766ms
+ POST /dashboard/inventory/catalog 200 in 1968ms
+ POST /dashboard/inventory/catalog 200 in 4107ms
+ POST /dashboard/inventory/catalog 200 in 2203ms
+ ✓ Compiled in 1125ms (3893 modules)
+ GET /dashboard/inventory/catalog 200 in 287ms
+ GET /dashboard/inventory/catalog 200 in 51ms
+ ✓ Compiled /api/me/permissions in 385ms (2097 modules)
+ GET /api/me/permissions 200 in 2868ms
+ GET /api/me/permissions 200 in 3092ms
+ POST /dashboard/inventory/catalog 200 in 1862ms
+ POST /dashboard/inventory/catalog 200 in 1517ms
+ POST /dashboard/inventory/catalog 200 in 1016ms
+ POST /dashboard/inventory/catalog 200 in 1055ms
+ GET /dashboard/inventory/catalog 200 in 227ms
+ ✓ Compiled in 864ms (3985 modules)
+ GET /api/me/permissions 200 in 3751ms
+ GET /api/me/permissions 200 in 3802ms
+ POST /dashboard/inventory/catalog 200 in 3778ms
+ POST /dashboard/inventory/catalog 200 in 1675ms
+ POST /dashboard/inventory/catalog 200 in 1751ms
+ POST /dashboard/inventory/catalog 200 in 4758ms
+ GET /dashboard/inventory/catalog 200 in 302ms
+ GET /api/me/permissions 200 in 1080ms
+ GET /api/me/permissions 200 in 1230ms
+ POST /dashboard/inventory/catalog 200 in 1286ms
+ POST /dashboard/inventory/catalog 200 in 1144ms
+ POST /dashboard/inventory/catalog 200 in 1267ms
+ POST /dashboard/inventory/catalog/new 200 in 1063ms
+ POST /dashboard/inventory/catalog/new 200 in 1056ms
+ POST /dashboard/inventory/catalog 200 in 1171ms
+ POST /dashboard/inventory/catalog/new 200 in 1007ms
+ POST /dashboard/inventory/catalog/new 200 in 1148ms
+ ✓ Compiled in 1200ms (3893 modules)
+ POST /dashboard/inventory/catalog 200 in 1252ms
+ POST /dashboard/inventory/catalog 200 in 995ms
+ POST /dashboard/inventory/catalog 200 in 1028ms
+ POST /dashboard/inventory/catalog 200 in 1211ms
+ ✓ Compiled in 964ms (3893 modules)
+ POST /dashboard/inventory/catalog/new 200 in 1241ms
+ POST /dashboard/inventory/catalog/new 200 in 1047ms
+ ✓ Compiled in 984ms (3893 modules)
+ ✓ Compiled in 743ms (3893 modules)
+ ✓ Compiled in 861ms (3893 modules)
+ ✓ Compiled in 1560ms (3893 modules)
+ POST /dashboard/inventory/catalog 200 in 2010ms
+ GET /dashboard/inventory/catalog 200 in 292ms
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /api/me/permissions in 984ms (2097 modules)
+ GET /api/me/permissions 200 in 3695ms
+ GET /api/me/permissions 200 in 3621ms
+ POST /dashboard/inventory/catalog 200 in 3326ms
+ POST /dashboard/inventory/catalog/new 200 in 1129ms
+ POST /dashboard/inventory/catalog/new 200 in 1109ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 3608ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 4429ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 5002ms
+ ✓ Compiled in 1179ms (3893 modules)
+ POST /dashboard/inventory/catalog/new?step=product 200 in 3581ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 2087ms
+ POST /dashboard/inventory/catalog 200 in 1871ms
+ POST /dashboard/inventory/catalog 200 in 1388ms
+ POST /dashboard/inventory/catalog 200 in 1599ms
+ POST /dashboard/inventory/catalog 200 in 1129ms
+ ✓ Compiled in 2.5s (3893 modules)
+ POST /dashboard/inventory/catalog 200 in 2265ms
+ POST /dashboard/inventory/catalog 200 in 1502ms
+ POST /dashboard/inventory/catalog 200 in 1401ms
+ POST /dashboard/inventory/catalog 200 in 1101ms
+ ✓ Compiled in 1613ms (3893 modules)
+ GET /dashboard/inventory/catalog 200 in 305ms
+ ✓ Compiled /api/me/permissions in 227ms (2097 modules)
+ GET /api/me/permissions 200 in 2377ms
+ GET /api/me/permissions 500 in 11633ms
+ ✓ Compiled in 814ms (3985 modules)
+ GET /dashboard/inventory/catalog 200 in 260ms
+ GET /api/me/permissions 200 in 1053ms
+ GET /api/me/permissions 200 in 1807ms
+ POST /dashboard/inventory/catalog 200 in 2366ms
+ POST /dashboard/inventory/catalog 200 in 1134ms
+ POST /dashboard/inventory/catalog 200 in 1879ms
+ POST /dashboard/inventory/catalog 200 in 1146ms
+ ✓ Compiled in 776ms (3985 modules)
+ ✓ Compiled in 2.1s (3893 modules)
+ ✓ Compiled in 1431ms (3893 modules)
+ ✓ Compiled in 1093ms (3893 modules)
+ ✓ Compiled in 742ms (3893 modules)
+ ✓ Compiled in 940ms (3893 modules)
+ POST /dashboard/inventory/catalog/new 200 in 1676ms
+ POST /dashboard/inventory/catalog/new 200 in 1425ms
+ POST /dashboard/inventory/catalog 200 in 2479ms
+ POST /dashboard/inventory/catalog 200 in 1237ms
+ POST /dashboard/inventory/catalog 200 in 2474ms
+ POST /dashboard/inventory/catalog 200 in 1273ms
+ POST /dashboard/inventory/catalog/new 200 in 1745ms
+ POST /dashboard/inventory/catalog/new 200 in 1246ms
+ ✓ Compiled in 1165ms (3893 modules)
+ ✓ Compiled in 447ms (1888 modules)
+ POST /dashboard/inventory/catalog/new?step=product 200 in 2207ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 1490ms
+ ✓ Compiled in 770ms (3893 modules)
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /api/me/permissions in 729ms (2097 modules)
+ GET /api/me/permissions 200 in 2269ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 1578ms
+ GET /api/me/permissions 200 in 1844ms
+ GET /dashboard/inventory/catalog/new?step=product 200 in 370ms
+ GET /api/me/permissions 200 in 1094ms
+ GET /api/me/permissions 200 in 1257ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 1592ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 1042ms
+ ✓ Compiled in 763ms (3985 modules)
+ GET /dashboard/inventory/catalog/new?step=product 200 in 261ms
+ GET /api/me/permissions 200 in 1238ms
+ GET /api/me/permissions 200 in 1194ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 1383ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 1064ms
+ ✓ Compiled in 2.2s (3893 modules)
+ ✓ Compiled in 1105ms (3893 modules)
+ ✓ Compiled in 777ms (3893 modules)
+ ✓ Compiled in 795ms (3893 modules)
+ POST /dashboard/inventory/catalog 200 in 2534ms
+ POST /dashboard/inventory/catalog 200 in 1335ms
+ POST /dashboard/inventory/catalog 200 in 1522ms
+ POST /dashboard/inventory/catalog 200 in 1194ms
+ ○ Compiling /dashboard/contracts ...
+ ✓ Compiled /dashboard/contracts in 2.2s (3994 modules)
+ ✓ Compiled /api/me/permissions in 238ms (2138 modules)
+ GET /api/me/permissions 200 in 2279ms
+ GET /api/me/permissions 200 in 2136ms
+ ○ Compiling /dashboard/contracts/[id]/edit ...
+ ✓ Compiled /dashboard/contracts/[id]/edit in 584ms (4038 modules)
+ GET /dashboard/contracts/85911476-600e-4676-a13e-531be37143f4/edit 200 in 1722ms
+ GET /api/me/permissions 200 in 1299ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 621ms (4036 modules)
+ GET /icons/icon-192x192.png 404 in 2074ms
+ GET /api/me/permissions 200 in 2344ms
+ ○ Compiling /dashboard/orders ...
+ ✓ Compiled /dashboard/orders in 940ms (4123 modules)
+ GET /icons/icon-192x192.png 404 in 64ms
+getOrders returned length: 9
+ ○ Compiling /dashboard/orders/[id] ...
+ ✓ Compiled /dashboard/orders/[id] in 550ms (4106 modules)
+ GET /icons/icon-192x192.png 404 in 60ms
+ GET /icons/icon-192x192.png 404 in 48ms
+ GET /api/me/permissions 200 in 888ms
+ GET /api/me/permissions 200 in 898ms
+ GET /icons/icon-192x192.png 404 in 40ms
+getOrders returned length: 9
+ GET /icons/icon-192x192.png 404 in 86ms
+ GET /icons/icon-192x192.png 404 in 38ms
+ GET /icons/icon-192x192.png 404 in 44ms
+ ✓ Compiled in 2.2s (4084 modules)
+ ✓ Compiled in 839ms (4084 modules)
+ ✓ Compiled in 735ms (1949 modules)
+ ✓ Compiled in 503ms (1949 modules)
+ ✓ Compiled in 532ms (1949 modules)
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /_not-found in 3.7s (4115 modules)
+ GET /icons/icon-192x192.png 404 in 3381ms
+ GET /api/me/permissions 200 in 8675ms
+ GET /api/me/permissions 200 in 1207ms
+ GET /icons/icon-192x192.png 404 in 45ms
+ ✓ Compiled in 2.5s (4084 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1155ms (4087 modules)
+ GET /icons/icon-192x192.png 404 in 1396ms
+ ✓ Compiled in 4.6s (4087 modules)
+ ✓ Compiled in 3s (4091 modules)
+ ○ Compiling /dashboard/contracts/[id] ...
+ ✓ Compiled /dashboard/contracts/[id] in 864ms (4087 modules)
+ GET /icons/icon-192x192.png 404 in 94ms
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /api/me/permissions in 2.4s (4011 modules)
+ GET /icons/icon-192x192.png 404 in 2330ms
+ GET /api/me/permissions 200 in 5980ms
+ GET /api/me/permissions 200 in 1131ms
+ ○ Compiling /dashboard/contracts/create ...
+ ✓ Compiled /dashboard/contracts/create in 805ms (4013 modules)
+ GET /icons/icon-192x192.png 404 in 123ms
+ GET /api/me/permissions 200 in 933ms
+ GET /dashboard/contracts/create?type=SERVICE 200 in 2159ms
+ GET /icons/icon-192x192.png 404 in 40ms
+ GET /api/me/permissions 200 in 1159ms
+ ✓ Compiled in 2.6s (4018 modules)
+ GET /icons/icon-192x192.png 404 in 101ms
+ ✓ Compiled in 922ms (4018 modules)
+ ✓ Compiled in 1109ms (3990 modules)
+ POST /dashboard/contracts/create?type=SERVICE 200 in 1856ms
+ POST /dashboard/contracts/create?type=SERVICE 200 in 1953ms
+ ○ Compiling /dashboard/contracts ...
+ ✓ Compiled /dashboard/contracts in 1312ms (2042 modules)
+ ✓ Compiled /api/me/permissions in 461ms (2070 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1125ms (4013 modules)
+ GET /icons/icon-192x192.png 404 in 1370ms
+ GET /api/me/permissions 200 in 3272ms
+ GET /api/me/permissions 200 in 972ms
+ GET /icons/icon-192x192.png 404 in 38ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 2193ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 6503ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 1979ms
+ ✓ Compiled in 1838ms (3989 modules)
+ ✓ Compiled in 900ms (3989 modules)
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 3897ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 1917ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 5051ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 1612ms
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /api/me/permissions in 845ms (2063 modules)
+ GET /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 3923ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1764ms (4020 modules)
+ GET /icons/icon-192x192.png 404 in 2016ms
+ GET /api/me/permissions 200 in 6373ms
+ GET /api/me/permissions 200 in 1023ms
+ GET /icons/icon-192x192.png 404 in 38ms
+ ✓ Compiled in 2.3s (3989 modules)
+ ✓ Compiled in 1542ms (3989 modules)
+ ✓ Compiled in 967ms (3989 modules)
+ ✓ Compiled in 1268ms (3989 modules)
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 1777ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 1500ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 4004ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 1668ms
+ ✓ Compiled in 2.3s (3989 modules)
+ ✓ Compiled in 1636ms (3989 modules)
+ GET /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 2711ms
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /api/me/permissions in 1854ms (4020 modules)
+ ✓ Compiled in 0ms (2064 modules)
+ ✓ Compiled in 635ms (4006 modules)
+ GET /icons/icon-192x192.png 404 in 3111ms
+ GET /api/me/permissions 200 in 3940ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 2560ms
+ GET /api/me/permissions 200 in 865ms
+ GET /icons/icon-192x192.png 404 in 53ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 5988ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 1640ms
+ GET /icons/icon-192x192.png 404 in 39ms
+ GET /api/me/permissions 200 in 1203ms
+ GET /api/me/permissions 200 in 886ms
+ GET /icons/icon-192x192.png 404 in 33ms
+ ○ Compiling /dashboard/orders ...
+ ✓ Compiled /dashboard/orders in 1114ms (2042 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1175ms (3985 modules)
+ GET /icons/icon-192x192.png 404 in 1408ms
+getOrders returned length: 9
+ GET /icons/icon-192x192.png 404 in 54ms
+ ✓ Compiled in 4.1s (3992 modules)
+ GET /icons/icon-192x192.png 404 in 220ms
+ GET /icons/icon-192x192.png 404 in 37ms
+ ✓ Compiled in 1837ms (3989 modules)
+ ✓ Compiled in 917ms (3989 modules)
+ GET /dashboard/orders/7b973b32-a367-45e6-8aa6-36dffac01ca6 200 in 646ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /api/me/permissions in 3s (4020 modules)
+ GET /icons/icon-192x192.png 404 in 4226ms
+ GET /icons/icon-192x192.png 404 in 34ms
+ GET /api/me/permissions 200 in 5172ms
+ GET /api/me/permissions 200 in 996ms
+ ✓ Compiled in 1277ms (1956 modules)
+getOrders returned length: 9
+ GET /icons/icon-192x192.png 404 in 44ms
+ GET /api/me/permissions 200 in 1019ms
+getOrders returned length: 9
+ GET /api/me/permissions 200 in 1143ms
+ GET /dashboard/orders 200 in 3644ms
+ GET /icons/icon-192x192.png 404 in 50ms
+ ✓ Compiled in 3s (4020 modules)
+getOrders returned length: 9
+getOrders returned length: 9
+ GET /icons/icon-192x192.png 404 in 175ms
+ GET /icons/icon-192x192.png 404 in 46ms
+ GET /api/me/permissions 200 in 1115ms
+ GET /api/me/permissions 200 in 1168ms
+ GET /icons/icon-192x192.png 404 in 39ms
+ ✓ Compiled in 2.1s (3989 modules)
+getOrders returned length: 9
+ ✓ Compiled in 1094ms (3989 modules)
+getOrders returned length: 9
+ ✓ Compiled in 1765ms (3989 modules)
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /api/me/permissions in 937ms (2063 modules)
+ GET /api/me/permissions 200 in 3244ms
+ GET /dashboard/orders 200 in 4693ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1875ms (4006 modules)
+ GET /icons/icon-192x192.png 404 in 2124ms
+ GET /api/me/permissions 200 in 2258ms
+ GET /icons/icon-192x192.png 404 in 36ms
+ POST /dashboard/contracts/64b3c834-a5ae-49d1-9912-822d3517237a/edit 200 in 6331ms
+ GET /icons/icon-192x192.png 404 in 43ms
+ GET /api/me/permissions 200 in 898ms
+ GET /api/me/permissions 200 in 903ms
+ GET /dashboard/orders/2daeea7f-b4e8-4333-bd47-f579ec605781 200 in 485ms
+ GET /icons/icon-192x192.png 404 in 47ms
+ GET /api/me/permissions 200 in 1224ms
+ GET /api/me/permissions 200 in 1081ms
+ GET /dashboard/orders/2daeea7f-b4e8-4333-bd47-f579ec605781 200 in 112ms
+ GET /icons/icon-192x192.png 404 in 34ms
+ GET /api/me/permissions 200 in 919ms
+ GET /api/me/permissions 200 in 917ms
+ ✓ Compiled in 2.2s (3989 modules)
+ ✓ Compiled /_not-found in 431ms (3978 modules)
+ GET /icons/icon-192x192.png 404 in 600ms
+ ✓ Compiled in 804ms (3992 modules)
+ ✓ Compiled in 937ms (3992 modules)
+ ✓ Compiled in 1348ms (3989 modules)
+ ○ Compiling /403 ...
+ ✓ Compiled /403 in 1979ms (3983 modules)
+ ✓ Compiled /_not-found in 426ms (3986 modules)
+ GET /icons/icon-192x192.png 404 in 579ms
+ ✓ Compiled in 931ms (3998 modules)
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /api/me/permissions in 880ms (4012 modules)
+ GET /icons/icon-192x192.png 404 in 1461ms
+ GET /api/me/permissions 200 in 2643ms
+ GET /api/me/permissions 200 in 1377ms
+ ✓ Compiled in 992ms (4026 modules)
+ ✓ Compiled in 1315ms (3995 modules)
+ ○ Compiling /dashboard/inventory/catalog ...
+ ✓ Compiled /dashboard/inventory/catalog in 1370ms (2142 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1547ms (4102 modules)
+ GET /icons/icon-192x192.png 404 in 1713ms
+ POST /dashboard/inventory/catalog 200 in 3335ms
+ POST /dashboard/inventory/catalog 200 in 1424ms
+ POST /dashboard/inventory/catalog 200 in 5133ms
+ POST /dashboard/inventory/catalog 200 in 2189ms
+ GET /dashboard/inventory/catalog 200 in 273ms
+ GET /dashboard/inventory/catalog 200 in 81ms
+ ✓ Compiled /api/me/permissions in 318ms (2171 modules)
+ GET /api/me/permissions 200 in 2657ms
+ GET /api/me/permissions 200 in 2686ms
+ POST /dashboard/inventory/catalog 200 in 2559ms
+ POST /dashboard/inventory/catalog 200 in 1301ms
+ POST /dashboard/inventory/catalog 200 in 3542ms
+ POST /dashboard/inventory/catalog 200 in 1390ms
+ ✓ Compiled /dashboard/inventory/catalog/new in 488ms (2176 modules)
+ POST /dashboard/inventory/catalog/new 200 in 1407ms
+ POST /dashboard/inventory/catalog/new 200 in 1107ms
+ GET /icons/icon-192x192.png 404 in 129ms
+ POST /dashboard/inventory/catalog 200 in 5804ms
+ POST /dashboard/inventory/catalog 200 in 1476ms
+ POST /dashboard/inventory/catalog 200 in 2821ms
+ POST /dashboard/inventory/catalog 200 in 1576ms
+ POST /dashboard/inventory/catalog/new 200 in 3277ms
+ POST /dashboard/inventory/catalog/new 200 in 1756ms
+ POST /dashboard/inventory/catalog 200 in 2015ms
+ POST /dashboard/inventory/catalog 200 in 1197ms
+ POST /dashboard/inventory/catalog 200 in 2769ms
+ POST /dashboard/inventory/catalog 200 in 2169ms
+ POST /dashboard/inventory/catalog/new 200 in 4781ms
+ POST /dashboard/inventory/catalog/new 200 in 2193ms
+ POST /dashboard/inventory/catalog 200 in 1914ms
+ POST /dashboard/inventory/catalog 200 in 1361ms
+ POST /dashboard/inventory/catalog 200 in 2193ms
+ POST /dashboard/inventory/catalog 200 in 1939ms
+ ○ Compiling /dashboard/inventory/locations ...
+ ✓ Compiled /dashboard/inventory/locations in 2.1s (4105 modules)
+ ✓ Compiled in 552ms (1970 modules)
+ POST /dashboard/inventory/locations 200 in 264ms
+ POST /dashboard/inventory/locations 200 in 224ms
+ POST /dashboard/inventory/locations 200 in 198ms
+ POST /dashboard/inventory/locations 200 in 197ms
+ POST /dashboard/inventory/locations 200 in 217ms
+ POST /dashboard/inventory/locations 200 in 196ms
+ POST /dashboard/inventory/catalog 200 in 2230ms
+ POST /dashboard/inventory/catalog 200 in 1427ms
+ POST /dashboard/inventory/catalog 200 in 2073ms
+ POST /dashboard/inventory/catalog 200 in 1435ms
+ POST /dashboard/inventory/catalog/new 200 in 1622ms
+ POST /dashboard/inventory/catalog/new 200 in 1233ms
+ ○ Compiling /_error ...
+ GET /dashboard/inventory/catalog/new?step=product 500 in 109ms
+ GET /dashboard/orders 500 in 111ms
+ ✓ Compiled /_not-found in 2.5s (4311 modules)
+ GET /_next/static/webpack/8abcb933858095cb.webpack.hot-update.json 404 in 2869ms
+ GET /_next/static/webpack/8abcb933858095cb.webpack.hot-update.json 404 in 61ms
+ GET /dashboard/inventory/catalog/new?step=product 200 in 305ms
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /api/me/permissions in 890ms (2198 modules)
+ GET /api/me/permissions 200 in 2374ms
+ GET /api/me/permissions 200 in 2013ms
+ GET /dashboard/orders 200 in 3519ms
+ GET /api/me/permissions 200 in 2790ms
+ GET /icons/icon-192x192.png 404 in 113ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 2270ms
+ GET /api/me/permissions 200 in 849ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 1047ms
+ GET /dashboard/orders 500 in 30ms
+ GET /dashboard/inventory/catalog/new?step=product 500 in 36ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 2.5s (4311 modules)
+ GET /_next/static/webpack/8abcb933858095cb.webpack.hot-update.json 404 in 2841ms
+ GET /_next/static/webpack/8abcb933858095cb.webpack.hot-update.json 404 in 46ms
+ GET /dashboard/inventory/catalog/new?step=product 200 in 296ms
+ ✓ Compiled /api/me/permissions in 313ms (2198 modules)
+ GET /api/me/permissions 200 in 6136ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 5869ms
+ GET /api/me/permissions 200 in 6191ms
+ GET /dashboard/orders 200 in 7878ms
+ GET /icons/icon-192x192.png 404 in 115ms
+ GET /api/me/permissions 200 in 1015ms
+ POST /dashboard/inventory/catalog/new?step=product 200 in 1332ms
+ GET /api/me/permissions 200 in 840ms
+ ✓ Compiled in 1364ms (4322 modules)
+ ✓ Compiled /_not-found in 448ms (4311 modules)
+ GET /icons/icon-192x192.png 404 in 577ms
+ POST /dashboard/inventory/catalog 200 in 2209ms
+ POST /dashboard/inventory/catalog 200 in 1447ms
+ POST /dashboard/inventory/catalog 200 in 2736ms
+ POST /dashboard/inventory/catalog 200 in 1247ms
+ ○ Compiling /dashboard/inventory ...
+ ✓ Compiled /dashboard/inventory in 1261ms (4310 modules)
+ POST /dashboard/inventory/catalog 200 in 3244ms
+ POST /dashboard/inventory/catalog 200 in 1495ms
+ POST /dashboard/inventory/catalog 200 in 4167ms
+ POST /dashboard/inventory/catalog 200 in 1539ms
+ ✓ Compiled in 1354ms (4322 modules)
+ ✓ Compiled in 821ms (4322 modules)
+ GET /dashboard/inventory/catalog 500 in 36ms
+ GET /dashboard/orders 500 in 30ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 3.3s (4311 modules)
+ GET /_next/static/webpack/8abcb933858095cb.webpack.hot-update.json 404 in 3783ms
+ GET /_next/static/webpack/8abcb933858095cb.webpack.hot-update.json 404 in 3778ms
+ GET /dashboard/inventory/catalog 200 in 372ms
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /api/me/permissions in 1038ms (2198 modules)
+ GET /api/me/permissions 200 in 2377ms
+ GET /api/me/permissions 200 in 2854ms
+ GET /api/me/permissions 200 in 2233ms
+ GET /dashboard/orders 200 in 4362ms
+ GET /icons/icon-192x192.png 404 in 98ms
+ POST /dashboard/inventory/catalog 200 in 3125ms
+ GET /api/me/permissions 200 in 1015ms
+ POST /dashboard/inventory/catalog 200 in 1468ms
+ POST /dashboard/inventory/catalog 200 in 1740ms
+ POST /dashboard/inventory/catalog 200 in 3399ms
+ ✓ Compiled in 945ms (4353 modules)
+ GET /icons/icon-192x192.png 404 in 73ms
+ ✓ Compiled in 1266ms (4353 modules)
+ ○ Compiling /dashboard/orders/[id] ...
+ ✓ Compiled /dashboard/orders/[id] in 776ms (2176 modules)
+ ✓ Compiled in 1466ms (4324 modules)
+ ✓ Compiled in 861ms (4324 modules)
+ ✓ Compiled in 1038ms (4324 modules)
+ GET /dashboard/orders/2daeea7f-b4e8-4333-bd47-f579ec605781 200 in 880ms
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /api/me/permissions in 874ms (2199 modules)
+ GET /api/me/permissions 200 in 2659ms
+ GET /api/me/permissions 200 in 2131ms
+ ✓ Compiled in 1384ms (4324 modules)
+ ✓ Compiled /api/me/permissions in 387ms (2199 modules)
+ GET /dashboard/orders/2daeea7f-b4e8-4333-bd47-f579ec605781 200 in 1395ms
+ GET /api/me/permissions 200 in 2025ms
+ GET /api/me/permissions 200 in 1937ms
+ GET /dashboard/orders/2daeea7f-b4e8-4333-bd47-f579ec605781 200 in 1064ms
+ GET /api/me/permissions 200 in 907ms
+ GET /api/me/permissions 200 in 988ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1386ms (4313 modules)
+ GET /icons/icon-192x192.png 404 in 1974ms
+ POST /dashboard/inventory/catalog 200 in 6051ms
+ POST /dashboard/inventory/catalog 200 in 1349ms
+ POST /dashboard/inventory/catalog 200 in 2148ms
+ POST /dashboard/inventory/catalog 200 in 1730ms
+ GET /icons/icon-192x192.png 404 in 81ms
+ POST /dashboard/inventory/locations 200 in 329ms
+ POST /dashboard/inventory/locations 200 in 211ms
+ POST /dashboard/inventory/locations 200 in 195ms
+ POST /dashboard/inventory/locations 200 in 191ms
+ POST /dashboard/inventory/locations 200 in 202ms
+ POST /dashboard/inventory/locations 200 in 207ms
+ GET /dashboard/inventory/locations 200 in 273ms
+ GET /dashboard/inventory/locations 200 in 76ms
+ ✓ Compiled /api/me/permissions in 350ms (2200 modules)
+ POST /dashboard/inventory/locations 200 in 288ms
+ POST /dashboard/inventory/locations 200 in 194ms
+ GET /api/me/permissions 200 in 2000ms
+ GET /api/me/permissions 200 in 2187ms
+ POST /dashboard/inventory/locations 200 in 205ms
+ POST /dashboard/inventory/locations 200 in 200ms
+ POST /dashboard/inventory/locations 200 in 209ms
+ POST /dashboard/inventory/locations 200 in 199ms
+ ✓ Compiled /dashboard/inventory in 449ms (2202 modules)
+ POST /dashboard/inventory/catalog 200 in 2549ms
+ POST /dashboard/inventory/catalog 200 in 1548ms
+ POST /dashboard/inventory/catalog 200 in 2240ms
+ POST /dashboard/inventory/catalog 200 in 1385ms
+ POST /dashboard/inventory/locations 200 in 232ms
+ POST /dashboard/inventory/locations 200 in 338ms
+ POST /dashboard/inventory/locations 200 in 1233ms
+ POST /dashboard/inventory/locations 200 in 220ms
+ POST /dashboard/inventory/locations 200 in 253ms
+ POST /dashboard/inventory/locations 200 in 261ms
+ ✓ Compiled in 1370ms (4326 modules)
+ ✓ Compiled in 1524ms (4324 modules)
+ ✓ Compiled in 1785ms (4324 modules)
+ POST /dashboard/inventory/locations 200 in 598ms
+ POST /dashboard/inventory/locations 200 in 298ms
+ POST /dashboard/inventory/locations 200 in 216ms
+ POST /dashboard/inventory/locations 200 in 212ms
+ POST /dashboard/inventory/locations 200 in 224ms
+ POST /dashboard/inventory/locations 200 in 225ms
+ GET /dashboard/inventory/locations 200 in 342ms
+ ○ Compiling /api/me/permissions ...
+ ✓ Compiled /api/me/permissions in 606ms (2199 modules)
+ POST /dashboard/inventory/locations 200 in 1080ms
+ POST /dashboard/inventory/locations 200 in 219ms
+ GET /api/me/permissions 200 in 1946ms
+ GET /api/me/permissions 200 in 2368ms
+ POST /dashboard/inventory/locations 200 in 222ms
+ POST /dashboard/inventory/locations 200 in 225ms
+ POST /dashboard/inventory/locations 200 in 218ms
+ POST /dashboard/inventory/locations 200 in 218ms
+ POST /dashboard/inventory/locations 200 in 235ms
+ ✓ Compiled /dashboard/inventory in 317ms (2201 modules)
+ POST /dashboard/inventory/catalog 200 in 2133ms
+ POST /dashboard/inventory/catalog 200 in 2286ms
+ POST /dashboard/inventory/catalog 200 in 4008ms
+ POST /dashboard/inventory/locations 200 in 240ms
+ POST /dashboard/inventory/catalog 200 in 1608ms
+ POST /dashboard/inventory/locations 200 in 225ms
+ POST /dashboard/inventory/locations 200 in 215ms
+ POST /dashboard/inventory/locations 200 in 220ms
+ POST /dashboard/inventory/locations 200 in 257ms
+ POST /dashboard/inventory/locations 200 in 882ms
+ POST /dashboard/inventory/locations 200 in 272ms
+ POST /dashboard/inventory/locations 200 in 332ms
+ POST /dashboard/inventory/locations 200 in 375ms
+ POST /dashboard/inventory/locations 200 in 741ms
+ POST /dashboard/inventory/catalog 200 in 3390ms
+ POST /dashboard/inventory/catalog 200 in 3722ms
+ POST /dashboard/inventory/catalog 200 in 2155ms
+ POST /dashboard/inventory/catalog 200 in 1219ms
+ POST /dashboard/inventory/locations 200 in 206ms
+ POST /dashboard/inventory/locations 200 in 209ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1268ms (4315 modules)
+ GET /dashboard/inventory/febf0960-0895-4b8e-9c14-4e7cf43ba924/2026-08-19/c12ec037-083f-41bd-865b-6c96c6236d2a.jpg 404 in 1912ms
+ GET /dashboard/inventory/febf0960-0895-4b8e-9c14-4e7cf43ba924/2026-08-19/4ea85619-c3a7-4064-b56f-cadde956f014.jpg 404 in 1917ms
+ GET /dashboard/inventory/febf0960-0895-4b8e-9c14-4e7cf43ba924/2026-08-19/5f22a134-b7c2-4129-a8da-988479a3935b.jpg 404 in 1910ms
+ ✓ Compiled in 1031ms (4327 modules)
+ GET /dashboard/inventory/febf0960-0895-4b8e-9c14-4e7cf43ba924/2026-08-19/4ea85619-c3a7-4064-b56f-cadde956f014.jpg 404 in 238ms
+ GET /dashboard/inventory/febf0960-0895-4b8e-9c14-4e7cf43ba924/2026-08-19/c12ec037-083f-41bd-865b-6c96c6236d2a.jpg 404 in 244ms
+ GET /dashboard/inventory/febf0960-0895-4b8e-9c14-4e7cf43ba924/2026-08-19/5f22a134-b7c2-4129-a8da-988479a3935b.jpg 404 in 40ms
+ ✓ Compiled in 1125ms (4327 modules)

@@ -13,6 +13,19 @@ const UI_STEPS = [
   { id: 'HOAN_TAT', label: 'Hoàn tất', statuses: ['COMPLETED'] }
 ];
 
+const ImageWithFallback = ({ src, alt, className, fallbackIcon: FallbackIcon = icons.Shirt }: any) => {
+  const [error, setError] = React.useState(false);
+  const isValidSrc = src && typeof src === 'string' && !src.includes('undefined') && !src.includes('null');
+  if (!isValidSrc || error) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-slate-50">
+        <FallbackIcon className="h-7 w-7 text-slate-300" />
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} onError={() => setError(true)} />;
+};
+
 export default function OrderDetailMobile({
   currentOrder,
   contract,
@@ -361,7 +374,7 @@ export default function OrderDetailMobile({
               <div key={`garment-${garment.id || idx}`} className="bg-white p-4">
                 <div className="flex gap-3">
                   <button type="button" onClick={() => garment.product_image_url && onImageClick?.(garment.product_image_url)} className="h-24 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                    {garment.product_image_url ? <img src={garment.product_image_url} alt={garment.product_name} className="h-full w-full object-cover" /> : <icons.Shirt className="m-6 h-7 w-7 text-slate-300" />}
+                    {garment.product_image_url ? <ImageWithFallback src={garment.product_image_url} alt={garment.product_name} className="h-full w-full object-cover" /> : <icons.Shirt className="m-6 h-7 w-7 text-slate-300" />}
                   </button>
                   <div className="min-w-0 flex-1">
                     <div className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Ảnh sản phẩm từ kho</div>

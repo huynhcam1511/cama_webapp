@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Layers, Plus, MapPin, ChevronRight, ChevronDown, Package, Box, Search, Trash2, Shirt, Pencil, PackagePlus } from 'lucide-react';
-import { getCustomLocations, addLocation, deleteLocation, saveLocationOrder, getLocationOrder, updateLocationNotes, renameLocation } from './actions';
+import { Layers, Plus, MapPin, ChevronRight, ChevronDown, Package, Box, Search, Trash2, Shirt, Pencil, PackagePlus, QrCode, Table, Download } from 'lucide-react';
+import { getCustomLocations, addLocation, deleteLocation, saveLocationOrder, getLocationOrder, updateLocationNotes, renameLocation, getProductsByLocation } from './actions';
 
 const smartLocationSort = (aName: string, bName: string) => {
   const getFloorWeight = (name: string) => {
@@ -32,11 +32,27 @@ const smartLocationSort = (aName: string, bName: string) => {
   return aName.localeCompare(bName, undefined, { numeric: true, sensitivity: 'base' });
 };
 
+const ImageWithFallback = ({ src, alt, className, fallbackIcon: FallbackIcon = Shirt }: any) => {
+  const [error, setError] = React.useState(false);
+  const isValidSrc = src && typeof src === 'string' && !src.includes('undefined') && !src.includes('null');
+  if (!isValidSrc || error) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-slate-50">
+        <FallbackIcon className="h-10 w-10 text-slate-300" />
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} onError={() => setError(true)} />;
+};
+
 export default function LocationExplorerPage() {
     const [customOrder, setCustomOrder] = useState<Record<string, string[]>>({});
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [customLocations, setCustomLocations] = useState<{floor: string, shelf: string, tier: string, notes?: string}[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [viewMode, setViewMode] = useState<'tree' | 'table'>('tree');
 
   // Load from Database
   useEffect(() => {
@@ -76,8 +92,30 @@ export default function LocationExplorerPage() {
     }));
   };
   const [selectedPath, setSelectedPath] = useState<string>("");
+
+  useEffect(() => {
+    async function loadProducts() {
+      if (!selectedPath) {
+        setProducts([]);
+        return;
+      }
+      setIsLoadingProducts(true);
+      const parts = selectedPath.split('|');
+      const floor = parts[0];
+      const shelf = parts[1] || "";
+      const tier = parts[2] || "";
+      const res = await getProductsByLocation(floor, shelf, tier);
+      if (res.success) {
+        setProducts(res.products || []);
+      }
+      setIsLoadingProducts(false);
+    }
+    loadProducts();
+  }, [selectedPath]);
+
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [isMobileTreeOpen, setIsMobileTreeOpen] = useState(false);
   const [newLocName, setNewLocName] = useState("");
   const [newLocNotes, setNewLocNotes] = useState("");
 
@@ -284,7 +322,10 @@ export default function LocationExplorerPage() {
       <div key={path} className="select-none">
         <div
           className={itemClass}
-          onClick={() => setSelectedPath(path)}
+          onClick={() => {
+            setSelectedPath(path);
+            setIsMobileTreeOpen(false);
+          }}
           style={{ paddingLeft: `${level * 16 + 8}px` }}
         >
           <div
@@ -372,20 +413,32 @@ export default function LocationExplorerPage() {
   }, [tree, selectedPath, selectedParts]);
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-slate-50">
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-slate-50 relative">
+
+      {/* Mobile Tree Backdrop */}
+      {isMobileTreeOpen && (
+        <div 
+          className="md:hidden absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-40" 
+          onClick={() => setIsMobileTreeOpen(false)} 
+        />
+      )}
 
       {/* LEFT SIDEBAR: TREE VIEW */}
-      <div className="w-72 bg-white border-r border-slate-200 flex flex-col h-full shadow-[2px_0_15px_-3px_rgba(0,0,0,0.05)] z-10">
+      <div className={`${isMobileTreeOpen ? 'flex' : 'hidden'} md:flex absolute md:relative inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex-col h-full shadow-[2px_0_15px_-3px_rgba(0,0,0,0.05)] z-50`}>
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0">
           <h2 className="font-bold text-slate-800 flex items-center gap-2">
             <Layers className="w-5 h-5 text-indigo-600" /> Cây Thư Mục Kho
           </h2>
+          <button onClick={() => setIsMobileTreeOpen(false)} className="md:hidden p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200">✕</button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
           <div
             className={`flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer transition-colors mb-2 ${selectedPath === '' ? 'bg-slate-100 text-slate-900 font-bold' : 'hover:bg-slate-100 text-slate-700'}`}
-            onClick={() => setSelectedPath("")}
+            onClick={() => {
+              setSelectedPath("");
+              setIsMobileTreeOpen(false);
+            }}
           >
             <MapPin className="w-4 h-4 text-slate-500" />
             <span className="text-sm">Toàn bộ kho</span>
@@ -421,11 +474,18 @@ export default function LocationExplorerPage() {
       {/* RIGHT MAIN CONTENT */}
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-white">
         <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
-              {selectedParts.length > 0 ? selectedParts[selectedParts.length - 1] : "Tổng quan kho"}
-            </h2>
-            <div className="text-sm text-slate-500 flex items-center gap-2 mt-1">
+          <div className="flex items-start gap-3">
+            <button 
+              onClick={() => setIsMobileTreeOpen(true)} 
+              className="md:hidden mt-1 p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors shrink-0"
+            >
+              <Layers className="w-5 h-5" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2 truncate">
+                {selectedParts.length > 0 ? selectedParts[selectedParts.length - 1] : "Tổng quan kho"}
+              </h2>
+              <div className="text-sm text-slate-500 flex items-center gap-2 mt-1 flex-wrap">
               <span className="cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => setSelectedPath("")}>Kho</span>
               {selectedParts.map((part, index) => (
                 <React.Fragment key={index}>
@@ -459,15 +519,22 @@ export default function LocationExplorerPage() {
               return null;
             })()}
 
+            </div>
           </div>
 
-          <div className="flex gap-2">
-            {selectedParts.length > 0 && (
+          <div className="flex overflow-x-auto hide-scrollbar gap-2 mt-4 md:mt-0 pb-1 md:pb-0">
+            <button
+              onClick={() => setViewMode(v => v === 'tree' ? 'table' : 'tree')}
+              className={`whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 font-semibold rounded-lg md:rounded-xl transition-colors flex items-center gap-1.5 md:gap-2 shadow-sm text-xs md:text-sm ${viewMode === 'table' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            >
+              {viewMode === 'tree' ? <><Table className="w-3.5 h-3.5 md:w-4 md:h-4" /> Danh sách in mã QR</> : <><Layers className="w-3.5 h-3.5 md:w-4 md:h-4" /> Xem sơ đồ cây</>}
+            </button>
+            {selectedParts.length > 0 && viewMode === 'tree' && (
               <a
                 href={`/dashboard/inventory/catalog/new?floor=${encodeURIComponent(selectedParts[0] || "")}&shelf=${encodeURIComponent(selectedParts[1] || "")}&tier=${encodeURIComponent(selectedParts[2] || "")}`}
-                className="px-4 py-2 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 transition-colors flex items-center gap-2 shadow-sm shadow-emerald-500/20"
+                className="whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 bg-emerald-500 text-white font-semibold rounded-lg md:rounded-xl hover:bg-emerald-600 transition-colors flex items-center gap-1.5 md:gap-2 shadow-sm text-xs md:text-sm"
               >
-                <PackagePlus className="w-4 h-4" /> Nhập hàng vào đây
+                <PackagePlus className="w-3.5 h-3.5 md:w-4 md:h-4" /> Nhập hàng vào đây
               </a>
             )}
             {selectedParts.length > 0 && (
@@ -482,35 +549,88 @@ export default function LocationExplorerPage() {
                   setEditLocNotes(currentLocation?.notes || "");
                   setIsEditingLocation(true);
                 }}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 shadow-sm"
+                className="whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 bg-white border border-slate-200 text-slate-600 font-semibold rounded-lg md:rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-1.5 md:gap-2 shadow-sm text-xs md:text-sm"
               >
-                <Pencil className="w-4 h-4" /> Chỉnh sửa
+                <Pencil className="w-3.5 h-3.5 md:w-4 md:h-4" /> Chỉnh sửa
               </button>
             )}
             {selectedParts.length < 3 && (
               <button
                 onClick={() => setIsAddingLocation(true)}
-                className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm shadow-indigo-500/20"
+                className="whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 bg-indigo-600 text-white font-semibold rounded-lg md:rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-1.5 md:gap-2 shadow-sm text-xs md:text-sm"
               >
-                <Plus className="w-4 h-4" /> {getAddLabel()}
+                <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" /> {getAddLabel()}
               </button>
             )}
             {selectedPath && (
               <button
                 onClick={() => handleDeleteLocation(selectedPath)}
-                className="px-4 py-2 bg-rose-50 text-rose-600 font-semibold rounded-xl hover:bg-rose-100 transition-colors flex items-center gap-2"
+                className="whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 bg-rose-50 text-rose-600 font-semibold rounded-lg md:rounded-xl hover:bg-rose-100 transition-colors flex items-center gap-1.5 md:gap-2 text-xs md:text-sm"
               >
-                <Trash2 className="w-4 h-4" /> Xoá Vị trí này
+                <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" /> Xoá Vị trí này
               </button>
             )}
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
-
-          {selectedParts.length < 3 ? (
-            // Show Sub-Folders
-            <div className="mb-8">
+          
+          {viewMode === 'table' ? (
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-slate-600">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
+                    <tr>
+                      <th className="px-4 py-3">Tầng/Lầu</th>
+                      <th className="px-4 py-3">Kệ/Sào</th>
+                      <th className="px-4 py-3">Ngăn/Móc</th>
+                      <th className="px-4 py-3">Mã Vị Trí</th>
+                      <th className="px-4 py-3 text-center">Mã QR</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {customLocations.map((loc, idx) => {
+                      const codeParts = [loc.floor, loc.shelf, loc.tier].filter(Boolean);
+                      const locCode = codeParts.map(s => s.trim().toUpperCase().replace(/\s+/g, '-')).join('-');
+                      
+                      const url = new URL(window.location.origin);
+                      url.searchParams.set("floor", loc.floor);
+                      if (loc.shelf) url.searchParams.set("shelf", loc.shelf);
+                      if (loc.tier) url.searchParams.set("tier", loc.tier);
+                      
+                      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url.toString())}`;
+                      
+                      return (
+                        <tr key={idx} className="hover:bg-slate-50/50">
+                          <td className="px-4 py-3 font-semibold text-slate-800">{loc.floor}</td>
+                          <td className="px-4 py-3">{loc.shelf || '-'}</td>
+                          <td className="px-4 py-3">{loc.tier || '-'}</td>
+                          <td className="px-4 py-3 font-mono text-indigo-600 text-xs">{locCode}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col items-center gap-2">
+                              <img src={qrUrl} alt={locCode} className="w-16 h-16 object-contain rounded border border-slate-200 p-1 bg-white" />
+                              <a href={qrUrl} download={`QR-${locCode}.png`} target="_blank" rel="noreferrer" className="text-[10px] flex items-center gap-1 font-bold text-slate-500 hover:text-indigo-600">
+                                <Download className="w-3 h-3" /> Tải về
+                              </a>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {customLocations.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-slate-500">Chưa có vị trí nào trong kho.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <>
+              {selectedParts.length < 3 ? (
+                // Show Sub-Folders
+                <div className="mb-8">
               <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Các thư mục con</h3>
               {currentChildren.length > 0 ? (
                 <DragDropContext onDragEnd={onDragEnd}>
@@ -573,20 +693,54 @@ export default function LocationExplorerPage() {
           ) : null}
 
           {/* Show Products (Always show products at this location level) */}
-          <div>
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Package className="w-4 h-4" /> Sản phẩm tại đây
-            </h3>
-            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center flex flex-col items-center justify-center shadow-sm">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border-2 border-slate-100">
-                <Shirt className="w-8 h-8 text-slate-300" />
-              </div>
-              <p className="text-slate-600 font-medium text-lg mb-1">Chưa có sản phẩm nào</p>
-              <p className="text-sm text-slate-400 max-w-md">
-                Chưa có sản phẩm nào được lưu trữ tại vị trí này. Hãy chuyển sang phần Danh Mục Sản Phẩm để nhập hàng vào kho.
-              </p>
+          {selectedParts.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Package className="w-4 h-4" /> Sản phẩm tại đây
+              </h3>
+              {isLoadingProducts ? (
+                <div className="bg-white border border-slate-200 rounded-xl p-8 text-center flex flex-col items-center shadow-sm">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+                  <p className="text-slate-500 font-medium">Đang tải sản phẩm...</p>
+                </div>
+              ) : products.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {products.map(p => (
+                    <div key={p.id} className="bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div className="h-40 bg-slate-100 flex items-center justify-center relative">
+                        <ImageWithFallback src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                        {p.status === 'RENTED' && (
+                          <div className="absolute top-2 right-2 px-2 py-1 bg-rose-500 text-white text-[10px] font-bold uppercase rounded-md shadow-sm">
+                            Đang thuê
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-4 flex-1 flex flex-col">
+                        <h4 className="font-bold text-slate-800 text-sm line-clamp-2">{p.name}</h4>
+                        <p className="text-xs text-indigo-600 font-mono mt-1">{p.qr_code}</p>
+                        <div className="mt-auto pt-3 flex items-center justify-between text-xs font-medium text-slate-500">
+                          <span>Size: {p.size || '—'}</span>
+                          <span className="text-slate-400 truncate ml-2">SKU: {p.sku || '—'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200 rounded-xl p-8 md:p-12 text-center flex flex-col items-center justify-center shadow-sm">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border-2 border-slate-100">
+                    <Shirt className="w-8 h-8 text-slate-300" />
+                  </div>
+                  <p className="text-slate-600 font-medium text-lg mb-1">Chưa có sản phẩm nào</p>
+                  <p className="text-sm text-slate-400 max-w-md">
+                    Chưa có sản phẩm nào được lưu trữ TRỰC TIẾP tại vị trí này. Hãy kiểm tra các thư mục con hoặc chuyển sang phần Nhập Hàng để thêm mới.
+                  </p>
+                </div>
+              )}
             </div>
-          </div>
+          )}
+            </>
+          )}
 
         </div>
       </div>

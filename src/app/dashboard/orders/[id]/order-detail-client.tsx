@@ -29,6 +29,19 @@ const UI_STEPS = [
   { id: 'HOAN_TAT', label: 'Hoàn tất', statuses: ['COMPLETED'] }
 ];
 
+const ImageWithFallback = ({ src, alt, className, fallbackIcon: FallbackIcon = icons.Shirt }: any) => {
+  const [error, setError] = React.useState(false);
+  const isValidSrc = src && typeof src === 'string' && !src.includes('undefined') && !src.includes('null');
+  if (!isValidSrc || error) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-slate-50">
+        <FallbackIcon className="h-7 w-7 text-slate-300" />
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} onError={() => setError(true)} />;
+};
+
 export default function OrderDetailClient({ order, users }: { order: Order, users?: any[] }) {
   const router = useRouter();
   const [currentOrder, setCurrentOrder] = useState<Order>(order);
@@ -596,7 +609,7 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                             <td className="px-3 py-3 align-middle">
                               {g.product_image_url ? (
                                 <button type="button" onClick={() => setSelectedImage(g.product_image_url)} className="mx-auto block h-16 w-14 overflow-hidden rounded-lg border border-slate-200 bg-slate-50" title="Ảnh nhận diện sản phẩm từ kho">
-                                  <img src={g.product_image_url} alt={g.product_name} className="h-full w-full object-cover" />
+                                  {g.product_image_url ? <ImageWithFallback src={g.product_image_url} alt={g.product_name} className="h-full w-full object-cover" /> : <icons.Shirt className="m-5 h-6 w-6 text-slate-300" />}
                                 </button>
                               ) : (
                                 <div className="mx-auto flex h-16 w-14 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-slate-300">

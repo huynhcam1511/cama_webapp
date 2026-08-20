@@ -84,13 +84,59 @@ export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   await requirePermission("ORDERS", "update");
   const supabase = createAdminClient();
+  
+  const { data: order } = await supabase.from("orders").select(`
+    id, pic_id, order_code, service_type, contract_id,
+    contract:contracts(contract_type, notes, services:contract_services(*), garments:contract_garments(*))
+  `).eq("id", orderId).single();
+
   const { error } = await supabase.from("orders").update({ completion_status: status }).eq("id", orderId);
   if (error) throw new Error(error.message);
+
+  // Cross-module update: Inventory status based on order status
+  if (order && order.contract && order.contract_id) {
+    try {
+      const contractData = Array.isArray(order.contract) ? order.contract[0] : order.contract;
+      const contractStr = contractData as any;
+      let items = Array.isArray(contractStr.services) ? contractStr.services : [];
+      let garments = Array.isArray(contractStr.garments) ? contractStr.garments : [];
+      if (contractStr.notes) {
+        try {
+          const meta = typeof contractStr.notes === 'string' && contractStr.notes.startsWith('{') 
+            ? JSON.parse(contractStr.notes) : {};
+          items = (meta.items && meta.items.length > 0) ? meta.items : items;
+          garments = (meta.garments && meta.garments.length > 0) ? meta.garments : garments;
+        } catch(e){}
+      }
+      const eventItems = (items || []).filter((item: any) => {
+        const usageEvents = Array.isArray(item.usage_events) ? item.usage_events : [];
+        return usageEvents.length === 0 || usageEvents.includes(order.service_type);
+      });
+      const linkedCodes = new Set<string>(eventItems.flatMap((item: any) => item.inventory_selection?.codes || []));
+      const targetGarmentCodes = (garments || [])
+        .filter((garment: any) => !garment.model_id || linkedCodes.has(garment.garment_code))
+        .map((g: any) => g.garment_code);
+
+      if (targetGarmentCodes.length > 0) {
+        if (status === 'DELIVERED') {
+          // Bán đứt -> SOLD, Thuê -> DELIVERED
+          const targetStatus = contractStr.contract_type === 'SALES' ? 'SOLD' : 'DELIVERED';
+          await supabase.from("garments_inventory").update({ status: targetStatus, updated_at: new Date().toISOString() }).in("qr_code", targetGarmentCodes);
+        } else if (status === 'COMPLETED') {
+          // Đã hoàn thành (Trả đồ) -> AVAILABLE
+          if (contractStr.contract_type !== 'SALES') {
+            await supabase.from("garments_inventory").update({ status: 'AVAILABLE', updated_at: new Date().toISOString() }).in("qr_code", targetGarmentCodes);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Inventory update error:", err);
+    }
+  }
 
   // Automation 5: Vận hành ↔ Kế Toán Lương (Trừ lương tự động khi có ISSUE)
   if (status === "ISSUE") {
     try {
-      const { data: order } = await supabase.from("orders").select("pic_id, order_code").eq("id", orderId).single();
       if (order && order.pic_id) {
         await supabase.from("payroll_deductions").insert([
           {
@@ -207,6 +253,21 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
               product_location: selection?.location || null,
             };
           });
+
+        const codesToFetch = garments.map((g: any) => g.garment_code).filter(Boolean);
+        if (codesToFetch.length > 0) {
+          const { data: invData } = await supabase.from('garments_inventory').select('qr_code, image_url, model:garment_models(image_url)').in('qr_code', codesToFetch);
+          if (invData && invData.length > 0) {
+            const imgMap = new Map(invData.map(row => {
+              const modelData = Array.isArray(row.model) ? row.model[0] : row.model;
+              return [row.qr_code, row.image_url || modelData?.image_url];
+            }));
+            garments = garments.map((g: any) => ({
+              ...g,
+              product_image_url: imgMap.get(g.garment_code) || g.product_image_url
+            }));
+          }
+        }
         
         if (meta.events) {
           data.contract.event_schedules = meta.events;
