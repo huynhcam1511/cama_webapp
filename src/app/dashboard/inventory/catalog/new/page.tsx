@@ -149,7 +149,14 @@ export default function InventoryDeclarationPage() {
     return Array.from(new Set([...masterSizes, ...defaults]));
   };
   const effectiveFactoryCode = missingFactoryCode ? generatedFactoryCode : form.factory_code;
-  const previewSku = [form.group_type || "NHÓM", ...(form.group_type === "SU" ? [form.suit_product_type || "LOẠI"] : []), form.color_code || "MÀU", effectiveFactoryCode || "MÃ"].join("-");
+  const previewSku = [
+    form.group_type || "NHÓM",
+    ...(form.group_type === "SU" ? [form.suit_product_type || "LOẠI"] : []),
+    form.style_details || "FORM",
+    (form.group_type === "SU" ? form.pattern_code : form.material_pattern) || "CHẤT_LIỆU",
+    form.color_code || "MÀU",
+    effectiveFactoryCode || "MÃ"
+  ].join("-");
 
   const uploadFile = async (file: File) => {
     const body = new FormData();
@@ -307,25 +314,24 @@ export default function InventoryDeclarationPage() {
           </div>
         </section>
 
-        <details className="group rounded-2xl border border-slate-200 bg-slate-50/70 overflow-hidden">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 font-black text-slate-800"><span>Thông tin bổ sung <small className="ml-1 font-medium text-slate-400">(không bắt buộc)</small></span><ChevronDown size={20} className="text-slate-400 transition-transform group-open:rotate-180" /></summary>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-200 bg-white p-4">
+        <section>
+          <h2 className="font-black text-base md:text-lg text-slate-800 mb-3">4. Đặc điểm chi tiết</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 border border-slate-200 bg-slate-50 p-4 rounded-xl">
             {form.group_type === "SU" ? <>
               <label className="label">Form/kiểu dáng<select value={form.style_details} onChange={e => setForm({ ...form, style_details: e.target.value })} className="field"><option value="">Chọn form...</option>{forms.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
               <label className="label">Kiểu cổ<select value={form.collar_type} onChange={e => setForm({ ...form, collar_type: e.target.value, collar_detail: "" })} className="field"><option value="">Chọn kiểu cổ...</option>{SUIT_COLLAR_TYPES.map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
               <label className="label">Chi tiết cổ<select value={form.collar_detail} onChange={e => setForm({ ...form, collar_detail: e.target.value })} className="field"><option value="">Chọn chi tiết...</option>{(form.collar_type === "CO_NHUNG" ? SUIT_VELVET_COLLAR_DETAILS : SUIT_COLLAR_DETAILS).map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
               <label className="label">Kiểu cúc<select value={form.button_style} onChange={e => setForm({ ...form, button_style: e.target.value })} className="field"><option value="">Chọn kiểu cúc...</option>{SUIT_BUTTONS.map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
-              <label className="label">Họa tiết<select value={form.pattern_code} onChange={e => setForm({ ...form, pattern_code: e.target.value })} className="field"><option value="">Chọn họa tiết...</option>{SUIT_PATTERNS.map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
+              <label className="label lg:col-span-2">Họa tiết<select value={form.pattern_code} onChange={e => setForm({ ...form, pattern_code: e.target.value })} className="field"><option value="">Chọn họa tiết...</option>{SUIT_PATTERNS.map(([code, name]) => <option key={code} value={code}>{code} — {name}</option>)}</select></label>
             </> : <>
-              <label className="label">Form/Chi tiết<select value={form.style_details} onChange={e => setForm({ ...form, style_details: e.target.value })} className="field"><option value="">Chọn form...</option>{forms.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
-              <label className="label">Chất liệu<select value={form.material_pattern} onChange={e => setForm({ ...form, material_pattern: e.target.value })} className="field"><option value="">Chọn chất liệu...</option>{materials.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
+              <label className="label lg:col-span-2">Form/Chi tiết<select value={form.style_details} onChange={e => setForm({ ...form, style_details: e.target.value })} className="field"><option value="">Chọn form...</option>{forms.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
+              <label className="label lg:col-span-2">Chất liệu<select value={form.material_pattern} onChange={e => setForm({ ...form, material_pattern: e.target.value })} className="field"><option value="">Chọn chất liệu...</option>{materials.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
             </>}
-            <label className="label">Tên sản phẩm <span className="font-normal text-slate-400">(tự tạo nếu trống)</span><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="field" placeholder="Tên dễ nhớ trong nội bộ" /></label>
-            <label className="label">Ghi chú form/dáng<input value={form.fit_note} onChange={e => setForm({ ...form, fit_note: e.target.value })} className="field" placeholder="Dáng ôm, eo cao, cần bóp..." /></label>
-            <label className="label">Nhà cung cấp/Xưởng<input value={form.supplier} onChange={e => setForm({ ...form, supplier: e.target.value })} className="field" /></label>
-            <label className="label">Ghi chú lần khai báo<input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="field" /></label>
+            <label className="label lg:col-span-4">Tên sản phẩm <span className="font-normal text-slate-400">(tự tạo nếu trống)</span><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="field" placeholder="Tên dễ nhớ trong nội bộ" /></label>
+            <label className="label lg:col-span-2">Nhà cung cấp/Xưởng<input value={form.supplier} onChange={e => setForm({ ...form, supplier: e.target.value })} className="field" /></label>
+            <label className="label lg:col-span-2">Ghi chú đặc biệt<input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="field" /></label>
           </div>
-        </details>
+        </section>
         <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-2 p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] bg-white/95 backdrop-blur border-t border-slate-200 shadow-[0_-8px_24px_rgba(15,23,42,.08)] md:static md:p-0 md:bg-transparent md:border-0 md:shadow-none md:justify-end md:pt-5 md:border-t"><Link href="/dashboard/inventory/catalog" className="hidden md:block px-6 py-3 rounded-xl bg-slate-100 font-bold text-slate-600">Thoát</Link><button disabled={saving || uploading} className="w-full md:w-auto px-5 md:px-8 py-3 rounded-xl bg-indigo-600 text-white font-black shadow-lg disabled:opacity-50 flex justify-center gap-2 items-center">{saving || uploading ? <Loader2 className="animate-spin" /> : <Shirt size={19} />} {uploading ? "Đang tải ảnh..." : saving ? "Đang lưu..." : "Lưu sản phẩm"}</button></div>
         </>}
       </form>

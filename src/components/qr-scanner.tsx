@@ -22,7 +22,7 @@ export default function QRScanner({
 
   useEffect(() => {
     // Create instance restricted to QR_CODE for maximum performance
-    const html5QrCode = new Html5Qrcode("qr-reader", { formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ] });
+    const html5QrCode = new Html5Qrcode("qr-reader", { verbose: false, formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ] });
     scannerRef.current = html5QrCode;
     let isStopping = false;
 
