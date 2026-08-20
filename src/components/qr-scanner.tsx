@@ -33,8 +33,7 @@ export default function QRScanner({
       { facingMode: "environment" }, // Prefer back camera
       {
         fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
+        // No qrbox = scan the entire video frame
       },
       (decodedText) => {
         const now = Date.now();

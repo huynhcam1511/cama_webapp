@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Layers, Plus, MapPin, ChevronRight, ChevronDown, Package, Box, Search, Trash2, Shirt, Pencil, PackagePlus, QrCode, Table, Download } from 'lucide-react';
+import { Layers, Plus, MapPin, ChevronRight, ChevronDown, Package, Box, Search, Trash2, Shirt, Pencil, PackagePlus, QrCode, Table, Download, Loader2 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { getCustomLocations, addLocation, deleteLocation, saveLocationOrder, getLocationOrder, updateLocationNotes, renameLocation, getProductsByLocation } from './actions';
 
 const smartLocationSort = (aName: string, bName: string) => {
@@ -53,6 +54,51 @@ export default function LocationExplorerPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [viewMode, setViewMode] = useState<'tree' | 'table'>('tree');
+  const [qrImages, setQrImages] = useState<Record<string, string>>({});
+
+  // Generate QR images with text below when in table view
+  useEffect(() => {
+    if (viewMode === 'table') {
+      customLocations.forEach(async (loc) => {
+        const codeParts = [loc.floor, loc.shelf, loc.tier].filter(Boolean);
+        const locCode = codeParts.map(s => s.trim().toUpperCase().replace(/\s+/g, '-')).join('-');
+        
+        if (qrImages[locCode]) return; // Already generated
+
+        const url = new URL(window.location.origin);
+        url.searchParams.set("floor", loc.floor);
+        if (loc.shelf) url.searchParams.set("shelf", loc.shelf);
+        if (loc.tier) url.searchParams.set("tier", loc.tier);
+        
+        try {
+          const qrDataUrl = await QRCode.toDataURL(url.toString(), { margin: 2, width: 300, color: { dark: '#0f172a', light: '#ffffff' } });
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+            const paddingBottom = 45;
+            canvas.width = img.width;
+            canvas.height = img.height + paddingBottom;
+            
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(locCode, canvas.width / 2, canvas.height - 15);
+            
+            setQrImages(prev => ({ ...prev, [locCode]: canvas.toDataURL("image/png") }));
+          };
+          img.src = qrDataUrl;
+        } catch (e) {
+          console.error("Failed to generate QR for", locCode, e);
+        }
+      });
+    }
+  }, [viewMode, customLocations, qrImages]);
 
   // Load from Database
   useEffect(() => {
@@ -592,13 +638,7 @@ export default function LocationExplorerPage() {
                     {customLocations.map((loc, idx) => {
                       const codeParts = [loc.floor, loc.shelf, loc.tier].filter(Boolean);
                       const locCode = codeParts.map(s => s.trim().toUpperCase().replace(/\s+/g, '-')).join('-');
-                      
-                      const url = new URL(window.location.origin);
-                      url.searchParams.set("floor", loc.floor);
-                      if (loc.shelf) url.searchParams.set("shelf", loc.shelf);
-                      if (loc.tier) url.searchParams.set("tier", loc.tier);
-                      
-                      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url.toString())}`;
+                      const qrDataUrl = qrImages[locCode];
                       
                       return (
                         <tr key={idx} className="hover:bg-slate-50/50">
@@ -608,10 +648,18 @@ export default function LocationExplorerPage() {
                           <td className="px-4 py-3 font-mono text-indigo-600 text-xs">{locCode}</td>
                           <td className="px-4 py-3">
                             <div className="flex flex-col items-center gap-2">
-                              <img src={qrUrl} alt={locCode} className="w-16 h-16 object-contain rounded border border-slate-200 p-1 bg-white" />
-                              <a href={qrUrl} download={`QR-${locCode}.png`} target="_blank" rel="noreferrer" className="text-[10px] flex items-center gap-1 font-bold text-slate-500 hover:text-indigo-600">
-                                <Download className="w-3 h-3" /> Tải về
-                              </a>
+                              {qrDataUrl ? (
+                                <>
+                                  <img src={qrDataUrl} alt={locCode} className="w-24 object-contain rounded border border-slate-200 shadow-sm bg-white" />
+                                  <a href={qrDataUrl} download={`QR-${locCode}.png`} className="px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg text-[11px] flex items-center gap-1 font-bold text-indigo-600 hover:bg-indigo-100 transition-colors">
+                                    <Download className="w-3.5 h-3.5" /> Tải về
+                                  </a>
+                                </>
+                              ) : (
+                                <div className="w-24 h-24 flex items-center justify-center bg-slate-50 border border-slate-100 rounded">
+                                  <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>
