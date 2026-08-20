@@ -65,7 +65,7 @@ export default function LocationExplorerPage() {
         
         if (qrImages[locCode]) return; // Already generated
 
-        const url = new URL(window.location.origin);
+        const url = new URL(window.location.origin + '/dashboard/inventory/catalog/new');
         url.searchParams.set("floor", loc.floor);
         if (loc.shelf) url.searchParams.set("shelf", loc.shelf);
         if (loc.tier) url.searchParams.set("tier", loc.tier);
