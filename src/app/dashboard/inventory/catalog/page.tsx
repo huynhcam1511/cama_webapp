@@ -21,6 +21,7 @@ export default function InventoryCatalogPage() {
   const [tier, setTier] = useState("ALL");
   const [size, setSize] = useState("ALL");
   const [stock, setStock] = useState("ALL");
+  const [supplier, setSupplier] = useState("ALL");
   const [filterOpen, setFilterOpen] = useState(false);
   const [tab, setTab] = useState<"stock" | "history">("stock");
   const [detail, setDetail] = useState<any>(null);
@@ -39,8 +40,9 @@ export default function InventoryCatalogPage() {
   const shelves = useMemo(() => Array.from(new Set(models.filter(x => floor === "ALL" || x.default_location_floor === floor).map(x => x.default_location_shelf).filter(Boolean))) as string[], [models, floor]);
   const tiers = useMemo(() => Array.from(new Set(models.filter(x => (floor === "ALL" || x.default_location_floor === floor) && (shelf === "ALL" || x.default_location_shelf === shelf)).map(x => x.default_location_tier).filter(Boolean))) as string[], [models, floor, shelf]);
   const sizes = useMemo(() => Array.from(new Set(models.flatMap(x => (x.instances || []).map((item: any) => item.size_code).filter(Boolean))).values()).sort(), [models]);
-  const activeFilterCount = [group, color, floor, shelf, tier, size, stock].filter(value => value !== "ALL").length;
-  const resetFilters = () => { setGroup("ALL"); setColor("ALL"); setFloor("ALL"); setShelf("ALL"); setTier("ALL"); setSize("ALL"); setStock("ALL"); };
+  const suppliers = useMemo(() => Array.from(new Set([...models.map(x => x.supplier), ...history.map(x => x.supplier)].filter(Boolean))) as string[], [models, history]);
+  const activeFilterCount = [group, color, floor, shelf, tier, size, stock, supplier].filter(value => value !== "ALL").length;
+  const resetFilters = () => { setGroup("ALL"); setColor("ALL"); setFloor("ALL"); setShelf("ALL"); setTier("ALL"); setSize("ALL"); setStock("ALL"); setSupplier("ALL"); };
 
   const filtered = useMemo(() => models.filter(model => {
     if (group !== "ALL" && model.group_type !== group) return false;
@@ -51,23 +53,26 @@ export default function InventoryCatalogPage() {
     if (size !== "ALL" && !(model.instances || []).some((item: any) => item.size_code === size)) return false;
     if (stock === "AVAILABLE" && !(model.instances?.length > 0)) return false;
     if (stock === "EMPTY" && model.instances?.length > 0) return false;
+    if (supplier !== "ALL" && model.supplier !== supplier) return false;
     const needle = search.toLowerCase();
-    return !needle || [model.name, model.base_sku, model.factory_code, model.color_name, model.color_code, model.default_location_floor, model.default_location_shelf, model.default_location_tier].some(x => x?.toLowerCase().includes(needle));
-  }), [models, group, color, floor, shelf, tier, size, stock, search]);
+    return !needle || [model.name, model.base_sku, model.factory_code, model.color_name, model.color_code, model.default_location_floor, model.default_location_shelf, model.default_location_tier, model.supplier].some(x => x?.toLowerCase().includes(needle));
+  }), [models, group, color, floor, shelf, tier, size, stock, supplier, search]);
   const historyFiltered = useMemo(() => history.filter(item => {
+    if (supplier !== "ALL" && item.supplier !== supplier) return false;
     const needle = search.toLowerCase();
     return !needle || [item.model?.name, item.model?.base_sku, item.model?.factory_code, item.supplier, item.location_floor, item.location_shelf, item.location_tier].some(x => x?.toLowerCase().includes(needle));
-  }), [history, search]);
+  }), [history, supplier, search]);
 
   return (
     <div className="px-3 pb-3 pt-0 sm:p-4 md:p-7 max-w-7xl mx-auto flex flex-col gap-2 md:gap-5">
-      <div className="hidden md:flex justify-end">
-        <Link href="/dashboard/inventory/catalog/new" className="px-5 py-3 bg-indigo-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"><Plus /> Khai báo sản phẩm</Link>
-      </div>
-
-      <div className="flex border-b border-slate-200">
-        <button onClick={() => setTab("stock")} className={`tab ${tab === "stock" ? "active" : ""}`}><PackageCheck /> <span className="tab-label">Danh sách</span><span className="tab-count">{models.reduce((sum, x) => sum + (x.instances?.length || 0), 0)}</span></button>
-        <button onClick={() => setTab("history")} className={`tab ${tab === "history" ? "active" : ""}`}><History /> <span className="tab-label">Lịch sử nhập</span><span className="tab-count">{history.length}</span></button>
+      <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-200 gap-3 md:gap-0">
+        <div className="flex flex-1 w-full md:w-auto">
+          <button onClick={() => setTab("stock")} className={`tab ${tab === "stock" ? "active" : ""}`}><PackageCheck /> <span className="tab-label">Danh sách</span><span className="tab-count">{models.reduce((sum, x) => sum + (x.instances?.length || 0), 0)}</span></button>
+          <button onClick={() => setTab("history")} className={`tab ${tab === "history" ? "active" : ""}`}><History /> <span className="tab-label">Lịch sử nhập</span><span className="tab-count">{history.length}</span></button>
+        </div>
+        <div className="hidden md:flex justify-end mb-2 ml-4">
+          <Link href="/dashboard/inventory/catalog/new" className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 text-sm hover:bg-indigo-700 transition-colors"><Plus size={18} /> Khai báo sản phẩm</Link>
+        </div>
       </div>
 
       <div className="flex gap-2">
@@ -75,8 +80,8 @@ export default function InventoryCatalogPage() {
         {tab === "stock" && <button type="button" onClick={() => setFilterOpen(true)} className="md:hidden relative w-12 shrink-0 rounded-xl border border-slate-200 bg-white text-slate-600 flex items-center justify-center" aria-label="Mở bộ lọc"><SlidersHorizontal size={20} />{activeFilterCount > 0 && <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full bg-indigo-600 text-white text-[10px] font-black flex items-center justify-center">{activeFilterCount}</span>}</button>}
       </div>
 
-      {tab === "stock" && <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-2">
-        <FilterFields group={group} setGroup={setGroup} color={color} setColor={setColor} floor={floor} setFloor={(value: string) => { setFloor(value); setShelf("ALL"); setTier("ALL"); }} shelf={shelf} setShelf={(value: string) => { setShelf(value); setTier("ALL"); }} tier={tier} setTier={setTier} size={size} setSize={setSize} stock={stock} setStock={setStock} colors={colors} floors={floors} shelves={shelves} tiers={tiers} sizes={sizes} />
+      {tab === "stock" && <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-2">
+        <FilterFields group={group} setGroup={setGroup} color={color} setColor={setColor} floor={floor} setFloor={(value: string) => { setFloor(value); setShelf("ALL"); setTier("ALL"); }} shelf={shelf} setShelf={(value: string) => { setShelf(value); setTier("ALL"); }} tier={tier} setTier={setTier} size={size} setSize={setSize} stock={stock} setStock={setStock} supplier={supplier} setSupplier={setSupplier} colors={colors} floors={floors} shelves={shelves} tiers={tiers} sizes={sizes} suppliers={suppliers} />
       </div>}
 
       {error && <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700"><strong>Không thể đọc dữ liệu:</strong> {error}<div className="text-sm mt-1">Cần áp dụng migration mới trước khi dùng module.</div></div>}
@@ -93,7 +98,7 @@ export default function InventoryCatalogPage() {
           <div className="hidden md:block overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th>Sản phẩm</th><th>Mã nhận diện</th><th>Size & tồn</th><th>Vị trí</th><th>Cập nhật</th><th /></tr></thead><tbody>
             {filtered.map(model => { const sizes = Object.entries((model.instances || []).reduce((acc: any, x: any) => { const key = x.size_code || "?"; acc[key] = (acc[key] || 0) + 1; return acc; }, {})); return <tr key={model.id}>
               <td><div className="flex items-center gap-3"><div className="w-12 h-16 bg-slate-100 rounded-lg overflow-hidden shrink-0">{model.image_url ? <img src={model.image_url} alt={model.name} className="w-full h-full object-cover" /> : <ImageIcon className="m-3 text-slate-300" />}</div><div><strong className="text-slate-900">{model.name}</strong><div className="text-xs text-slate-400 mt-1">{model.group_type} · {model.color_name || model.color_code}</div></div></div></td>
-              <td><code className="text-indigo-700">{model.base_sku}</code><div className="text-xs text-slate-400 mt-1">Mác: {model.factory_code || "—"}</div></td>
+              <td><code className="text-indigo-700">{model.base_sku}</code><div className="text-xs text-slate-400 mt-1">Mác: {model.factory_code || "—"}</div><div className="text-xs text-slate-400 mt-0.5">Hãng: {model.supplier || "—"}</div></td>
               <td><div className="flex flex-wrap gap-1">{sizes.map(([name, qty]: any) => <span key={name} className="badge">{name}: <b>{qty}</b></span>)}</div><div className="text-xs text-emerald-600 mt-1 font-bold">Tổng {model.instances?.length || 0}</div></td>
               <td><span className="flex gap-1 items-center text-slate-600"><MapPin size={14} /> {[model.default_location_floor, model.default_location_shelf, model.default_location_tier].filter(Boolean).join(" › ")}</span></td>
               <td className="text-slate-500">{model.updated_at ? dateTime(model.updated_at) : "—"}</td>
@@ -115,7 +120,7 @@ export default function InventoryCatalogPage() {
 
       {filterOpen && <div className="md:hidden fixed inset-0 z-[110] bg-slate-950/50 flex items-end" onClick={() => setFilterOpen(false)}><div className="w-full max-h-[88vh] overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5"><div><h2 className="text-lg font-black text-slate-900">Bộ lọc sản phẩm</h2><p className="text-xs text-slate-500 mt-0.5">Ưu tiên màu, sau đó nhóm và vị trí</p></div><button type="button" onClick={() => setFilterOpen(false)} className="p-2 rounded-full bg-slate-100 text-slate-500"><X size={20} /></button></div>
-        <div className="grid grid-cols-2 gap-3"><FilterFields group={group} setGroup={setGroup} color={color} setColor={setColor} floor={floor} setFloor={(value: string) => { setFloor(value); setShelf("ALL"); setTier("ALL"); }} shelf={shelf} setShelf={(value: string) => { setShelf(value); setTier("ALL"); }} tier={tier} setTier={setTier} size={size} setSize={setSize} stock={stock} setStock={setStock} colors={colors} floors={floors} shelves={shelves} tiers={tiers} sizes={sizes} /></div>
+        <div className="grid grid-cols-2 gap-3"><FilterFields group={group} setGroup={setGroup} color={color} setColor={setColor} floor={floor} setFloor={(value: string) => { setFloor(value); setShelf("ALL"); setTier("ALL"); }} shelf={shelf} setShelf={(value: string) => { setShelf(value); setTier("ALL"); }} tier={tier} setTier={setTier} size={size} setSize={setSize} stock={stock} setStock={setStock} supplier={supplier} setSupplier={setSupplier} colors={colors} floors={floors} shelves={shelves} tiers={tiers} sizes={sizes} suppliers={suppliers} /></div>
         <div className="grid grid-cols-[auto_1fr] gap-2 mt-5"><button type="button" onClick={resetFilters} className="px-4 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold">Xóa lọc</button><button type="button" onClick={() => setFilterOpen(false)} className="px-4 py-3 rounded-xl bg-indigo-600 text-white font-black">Xem {filtered.length} sản phẩm</button></div>
       </div></div>}
 
@@ -137,9 +142,9 @@ function FilterFields(props: any) {
     <label className="text-xs font-bold text-slate-500">Màu sắc<select value={props.color} onChange={e => props.setColor(e.target.value)} className={fieldClass}><option value="ALL">Tất cả màu</option>{props.colors.map(([code, name]: [string, string]) => <option key={code} value={code}>{name}</option>)}</select></label>
     <label className="text-xs font-bold text-slate-500">Nhóm<select value={props.group} onChange={e => props.setGroup(e.target.value)} className={fieldClass}><option value="ALL">Tất cả nhóm</option><option value="VC">Váy cưới</option><option value="SU">Suit</option><option value="JA">Vest</option><option value="QU">Quần</option><option value="AD">Áo dài</option><option value="GI">Giày</option><option value="CV">Cà vạt</option><option value="PK">Phụ kiện</option></select></label>
     <label className="text-xs font-bold text-slate-500">Tầng<select value={props.floor} onChange={e => props.setFloor(e.target.value)} className={fieldClass}><option value="ALL">Tất cả tầng</option>{props.floors.map((value: string) => <option key={value}>{value}</option>)}</select></label>
-    <label className="text-xs font-bold text-slate-500">Kệ/Dãy<select value={props.shelf} onChange={e => props.setShelf(e.target.value)} className={fieldClass}><option value="ALL">Tất cả kệ</option>{props.shelves.map((value: string) => <option key={value}>{value}</option>)}</select></label>
-    <label className="text-xs font-bold text-slate-500">Ngăn<select value={props.tier} onChange={e => props.setTier(e.target.value)} className={fieldClass}><option value="ALL">Tất cả ngăn</option>{props.tiers.map((value: string) => <option key={value}>{value}</option>)}</select></label>
+    <label className="text-xs font-bold text-slate-500">Vị trí<select value={props.shelf} onChange={e => props.setShelf(e.target.value)} className={fieldClass}><option value="ALL">Tất cả vị trí</option>{props.shelves.map((value: string) => <option key={value}>{value}</option>)}</select></label>
     <label className="text-xs font-bold text-slate-500">Size<select value={props.size} onChange={e => props.setSize(e.target.value)} className={fieldClass}><option value="ALL">Tất cả size</option>{props.sizes.map((value: string) => <option key={value}>{value}</option>)}</select></label>
+    <label className="text-xs font-bold text-slate-500">Hãng/Xưởng<select value={props.supplier} onChange={e => props.setSupplier(e.target.value)} className={fieldClass}><option value="ALL">Tất cả hãng</option>{props.suppliers.map((value: string) => <option key={value}>{value}</option>)}</select></label>
     <label className="text-xs font-bold text-slate-500">Tồn kho<select value={props.stock} onChange={e => props.setStock(e.target.value)} className={fieldClass}><option value="ALL">Tất cả</option><option value="AVAILABLE">Còn hàng</option><option value="EMPTY">Hết hàng</option></select></label>
   </>;
 }

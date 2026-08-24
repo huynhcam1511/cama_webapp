@@ -507,7 +507,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     moduleCode: "PERMISSIONS",
     label: "Phân quyền",
     shortLabel: "Phân Quyền",
-    route: "/dashboard/employees?tab=permissions", // Or somewhere else
+    route: "/dashboard/permissions",
     icon: "ShieldCheck",
     group: "ADMIN",
     parentCode: null,

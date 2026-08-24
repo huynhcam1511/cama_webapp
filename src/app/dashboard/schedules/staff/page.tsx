@@ -25,12 +25,7 @@ export default async function StaffSchedulePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-serif">Lịch Nhân Sự & Phân Ca</h1>
-          <p className="text-slate-500 mt-1">Quản lý ngày làm việc, nghỉ phép và điểm danh của nhân viên.</p>
-        </div>
-      </div>
+      {/* Header removed per user request */}
       
       <StaffSchedulesView 
         initialSchedules={schedules} 

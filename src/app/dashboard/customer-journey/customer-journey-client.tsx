@@ -136,7 +136,7 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
          </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="md:bg-white md:rounded-xl md:border md:border-slate-200 md:shadow-sm md:overflow-hidden">
         <div className="overflow-x-auto hidden md:block">
                 <table className="w-full text-left text-sm text-slate-600">
                   <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase font-bold text-slate-500">

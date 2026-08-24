@@ -328,7 +328,7 @@ export default function InventoryDeclarationPage() {
               <label className="label">Chất liệu<select value={form.material_pattern} onChange={e => setForm({ ...form, material_pattern: e.target.value })} className="field"><option value="">Chọn chất liệu...</option>{materials.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
             </>}
             <label className="label md:col-span-2">Tên sản phẩm <span className="font-normal text-slate-400">(tự tạo nếu trống)</span><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="field" placeholder="Tên dễ nhớ trong nội bộ" /></label>
-            <label className="label">Nhà cung cấp/Xưởng<input value={form.supplier} onChange={e => setForm({ ...form, supplier: e.target.value })} className="field" /></label>
+            <label className="label">Nhà cung cấp/Xưởng/Hãng<input list="suppliers" value={form.supplier} onChange={e => setForm({ ...form, supplier: e.target.value })} className="field" placeholder="Chọn hoặc nhập hãng..." /><datalist id="suppliers"><option value="Xilai" /><option value="Morden" /><option value="Hàng may" /><option value="Hàng trung" /><option value="CHRISMAN" /></datalist></label>
             <label className="label">Ghi chú đặc biệt<input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="field" /></label>
           </div>
         </details>

@@ -532,10 +532,9 @@ export default function EmployeeDetailView({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Vị trí (Tổ / Nhóm) *</label>
+                <label className="text-sm font-semibold text-slate-700">Vị trí (Tổ / Nhóm)</label>
                 <select
                   name="team_id"
-                  required
                   value={formData.team_id}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors"
@@ -550,7 +549,6 @@ export default function EmployeeDetailView({
                 <label className="text-sm font-semibold text-slate-700">Chức vụ *</label>
                 <select
                   name="position_id"
-                  required
                   value={formData.position_id}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors"

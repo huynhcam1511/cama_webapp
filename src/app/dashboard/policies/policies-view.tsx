@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Search, Filter, Edit, Trash2, FileText, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Search, Filter, Edit, Trash2, FileText, CheckCircle2, XCircle, Eye } from "lucide-react";
 import { deletePolicy } from "./actions";
 import PolicyDialog from "./policy-dialog";
 import { useRouter } from "next/navigation";
@@ -66,13 +66,8 @@ export default function PoliciesView({ initialPolicies, permissions, departments
 
   return (
     <div className="space-y-6 text-slate-900">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
-            <FileText className="w-6 h-6 text-blue-600" /> Chính Sách & Nội Quy
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">Quản lý các chính sách chung và riêng tư của studio</p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
+        {/* Title removed per user request */}
         {canCreate && (
           <button
             onClick={() => { setEditingPolicy(null); setIsDialogOpen(true); }}
@@ -110,7 +105,7 @@ export default function PoliciesView({ initialPolicies, permissions, departments
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+          <table className="w-full min-w-[800px] text-xs text-left whitespace-nowrap">
             <thead className="uppercase bg-slate-50 text-slate-500 border-b border-slate-200 font-bold tracking-wider">
               <tr>
                 <th className="px-6 py-4">Tên Chính Sách</th>
@@ -137,6 +132,13 @@ export default function PoliciesView({ initialPolicies, permissions, departments
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => router.push(`/dashboard/policies/${p.id}`)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        title="Xem chi tiết"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                       {canUpdate && (
                         <button
                           onClick={() => { setEditingPolicy(p); setIsDialogOpen(true); }}

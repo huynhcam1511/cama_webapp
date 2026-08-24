@@ -122,3 +122,25 @@ export async function getProductsByLocation(floor: string, shelf: string, tier: 
   
   return { success: true, products: formattedData };
 }
+
+export async function generateSequentialLocations(floor: string, startNumber: number, endNumber: number, notes?: string) {
+  const supabase = await createClient();
+  const locationsToInsert = [];
+
+  for (let i = startNumber; i <= endNumber; i++) {
+    const paddedNumber = i.toString().padStart(2, '0');
+    locationsToInsert.push({
+      floor_name: floor,
+      shelf_name: paddedNumber, // using shelf as the 'number' for simple locations
+      tier_name: null,
+      notes: notes || null
+    });
+  }
+
+  const { error } = await supabase.from('inventory_locations').insert(locationsToInsert);
+  
+  if (error) {
+     return { success: false, error: error.message };
+  }
+  return { success: true };
+}

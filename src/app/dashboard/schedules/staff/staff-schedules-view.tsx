@@ -38,10 +38,13 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
 
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
 
   const [filterDepartment, setFilterDepartment] = useState<string>("ALL");
   const [filterRole, setFilterRole] = useState<string>("ALL");
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const activeFilterCount = [filterDepartment, filterRole, filterStatus].filter(value => value !== "ALL").length;
 
   // Form state
   const [leaveForm, setLeaveForm] = useState({
@@ -196,71 +199,49 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
   return (
     <div className="space-y-6">
       {/* Filters & Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
-          <select 
-            value={filterDepartment} 
-            onChange={e => setFilterDepartment(e.target.value)}
-            className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
-          >
-            <option value="ALL">Tất cả phòng ban</option>
-            {departments.map(d => (
-              <option key={d.id} value={d.id}>{d.department_name}</option>
-            ))}
-          </select>
+      <div className="flex items-center justify-between gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+        <button type="button" onClick={() => setFilterOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+          <icons.Filter size={16} /> <span className="hidden sm:inline">Bộ lọc</span> {activeFilterCount > 0 && <span className="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">{activeFilterCount}</span>}
+        </button>
 
-          <select 
-            value={filterRole} 
-            onChange={e => setFilterRole(e.target.value)}
-            className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px]"
-          >
-            <option value="ALL">Tất cả chức vụ</option>
-            {roles.map(r => (
-              <option key={r.id} value={r.id}>{r.role_name}</option>
-            ))}
-          </select>
-
-          <select 
-            value={filterStatus} 
-            onChange={e => setFilterStatus(e.target.value)}
-            className="hidden"
-          >
-            <option value="ALL">Tất cả trạng thái</option>
-          </select>
+        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+          <button onClick={handlePreviousWeek} className="p-1.5 hover:bg-white rounded shadow-sm text-slate-600 transition-colors">
+            <icons.ChevronLeft className="w-4 h-4" />
+          </button>
+          <button onClick={handleToday} className="px-2 py-1 font-bold text-slate-700 hover:bg-white rounded transition-colors text-xs tracking-wide">
+            {format(weekStart, "dd/MM")} - {format(weekEnd, "dd/MM")}
+          </button>
+          <button onClick={handleNextWeek} className="p-1.5 hover:bg-white rounded shadow-sm text-slate-600 transition-colors">
+            <icons.ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex bg-slate-100 rounded-lg p-1">
-            <button onClick={handlePreviousWeek} className="p-1.5 hover:bg-white rounded shadow-sm text-slate-600 transition-colors">
-              <icons.ChevronLeft className="w-4 h-4" />
+        {permissions.can_create && (
+          <div className="relative">
+            <button 
+              onClick={() => setActionMenuOpen(!actionMenuOpen)}
+              className="bg-blue-600 hover:bg-blue-700 text-white w-8 h-8 rounded-full font-medium shadow-sm transition-colors flex items-center justify-center"
+            >
+              <icons.Plus className="w-5 h-5" />
             </button>
-            <button onClick={handleToday} className="px-3 py-1.5 font-medium text-slate-700 hover:bg-white rounded transition-colors text-xs uppercase tracking-wide">
-              {format(weekStart, "dd/MM", { locale: vi })} - {format(weekEnd, "dd/MM/yyyy", { locale: vi })}
-            </button>
-            <button onClick={handleNextWeek} className="p-1.5 hover:bg-white rounded shadow-sm text-slate-600 transition-colors">
-              <icons.ChevronRight className="w-4 h-4" />
-            </button>
+            {actionMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-1 z-50">
+                <button 
+                  onClick={() => { setShowLeaveModal(true); setActionMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2"
+                >
+                  <icons.Coffee className="w-4 h-4 text-rose-500" /> Khai báo nghỉ
+                </button>
+                <button 
+                  onClick={() => { setShowOvertimeModal(true); setActionMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2"
+                >
+                  <icons.Briefcase className="w-4 h-4 text-blue-500" /> Khai báo làm thêm
+                </button>
+              </div>
+            )}
           </div>
-
-          {permissions.can_create && (
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setShowLeaveModal(true)}
-                className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg font-medium shadow-sm transition-colors flex items-center gap-1.5 text-sm"
-              >
-                <icons.Coffee className="w-4 h-4" />
-                Khai Báo Nghỉ
-              </button>
-              <button 
-                onClick={() => setShowOvertimeModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium shadow-sm transition-colors flex items-center gap-1.5 text-sm"
-              >
-                <icons.Briefcase className="w-4 h-4" />
-                Khai Báo Làm Thêm
-              </button>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Weekly Grid */}
@@ -272,7 +253,7 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
             {daysInWeek.map(day => (
               <div key={day.toISOString()} className={`py-3 text-center border-r border-slate-200 last:border-0 ${isToday(day) ? 'bg-blue-50/50' : ''}`}>
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                  {format(day, "EEEE", { locale: vi })}
+                  {format(day, "EEEE", { locale: vi }).replace("Thứ ", "T")}
                 </div>
                 <div className={`text-sm font-bold inline-flex items-center justify-center w-7 h-7 rounded-full ${isToday(day) ? 'bg-blue-600 text-white shadow-md' : 'text-slate-800'}`}>
                   {format(day, "d")}
@@ -361,12 +342,13 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
                           key={schedule.id}
                           className={`text-[10px] p-1.5 rounded border leading-tight ${getScheduleColor(schedule.schedule_type, schedule.approval_status)} group relative overflow-hidden`}
                         >
-                          <div className="font-bold flex items-center justify-between">
-                            <span>{translateType(schedule.schedule_type)}</span>
-                            {schedule.is_default && <span className="opacity-50 text-[8px] italic ml-1">(Mặc định)</span>}
-                          </div>
-                          {(schedule.start_time || schedule.end_time) && schedule.schedule_type === "WORKING" && (
-                            <div className="mt-0.5 opacity-90 font-mono text-[9px]">
+                          {schedule.schedule_type !== "WORKING" && (
+                            <div className="font-bold flex items-center justify-between">
+                              <span>{translateType(schedule.schedule_type)}</span>
+                            </div>
+                          )}
+                          {(schedule.start_time || schedule.end_time) && (
+                            <div className={`opacity-90 font-mono ${schedule.schedule_type === "WORKING" ? "font-bold text-center mt-1" : "text-[9px] mt-0.5"}`}>
                               {schedule.start_time?.substring(0, 5)} - {schedule.end_time?.substring(0, 5)}
                             </div>
                           )}
@@ -488,6 +470,65 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Filter Modal */}
+      {filterOpen && (
+        <div className="fixed inset-0 z-[110] bg-slate-950/50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setFilterOpen(false)}>
+          <div className="w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200 pb-[max(1.25rem,env(safe-area-inset-bottom))]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-black text-slate-900">Bộ lọc nhân sự</h2>
+              <button onClick={() => setFilterOpen(false)} className="p-2 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
+                <icons.X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-500 mb-1 block">Phòng ban</label>
+                <select 
+                  value={filterDepartment} 
+                  onChange={e => setFilterDepartment(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="ALL">Tất cả phòng ban</option>
+                  {departments.map(d => (
+                    <option key={d.id} value={d.id}>{d.department_name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-500 mb-1 block">Chức vụ</label>
+                <select 
+                  value={filterRole} 
+                  onChange={e => setFilterRole(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="ALL">Tất cả chức vụ</option>
+                  {roles.map(r => (
+                    <option key={r.id} value={r.id}>{r.role_name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-xs font-bold text-slate-500 mb-1 block">Trạng thái</label>
+                <select 
+                  value={filterStatus} 
+                  onChange={e => setFilterStatus(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="ALL">Tất cả trạng thái</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center gap-3">
+              <button type="button" onClick={() => { setFilterDepartment("ALL"); setFilterRole("ALL"); setFilterStatus("ALL"); }} className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">Xóa lọc</button>
+              <button type="button" onClick={() => setFilterOpen(false)} className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/30">Áp dụng</button>
+            </div>
           </div>
         </div>
       )}

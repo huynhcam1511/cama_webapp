@@ -32,8 +32,9 @@ export default function QRScanner({
     html5QrCode.start(
       { facingMode: "environment" }, // Prefer back camera
       {
-        fps: 20, // Increase scanning frequency for better responsiveness
-        // No qrbox = scan the entire video frame
+        fps: 25, // Tăng tốc độ khung hình quét để nhạy hơn
+        aspectRatio: 1.0, // Ép camera dùng tỉ lệ vuông hoặc tùy ý để tận dụng tối đa khung ảnh
+        // No qrbox = scan the entire video frame, which is better for sensitivity without constraints
       },
       (decodedText) => {
         const now = Date.now();
@@ -70,42 +71,57 @@ export default function QRScanner({
   }, [onScanSuccess]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-        
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
-          <h3 className="font-bold flex items-center gap-2">
-            <QrCode className="w-5 h-5 text-blue-400" /> {title}
-          </h3>
-          <button 
-            onClick={onClose} 
-            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-[100] bg-black flex flex-col animate-in fade-in duration-200">
+      <style>{`
+        @keyframes scan-line {
+          0% { top: 0%; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+      `}</style>
 
-        {/* Scanner Body */}
-        <div className="p-6 flex-1 overflow-y-auto bg-slate-50 flex flex-col items-center justify-center">
-          <div className="w-full max-w-sm aspect-square bg-slate-200 rounded-xl overflow-hidden relative shadow-inner border-2 border-slate-300">
-            {/* The div where html5-qrcode will render the video stream */}
-            <div id="qr-reader" className="w-full h-full"></div>
-            
-            {/* Overlay target frame - html5-qrcode adds its own, but we can style around it if needed */}
-          </div>
+      {/* Video Stream */}
+      <div id="qr-reader" className="absolute inset-0 [&>video]:object-cover [&>video]:w-full [&>video]:h-full [&>video]:absolute [&>video]:inset-0"></div>
+      
+      {/* Dark Overlay with Transparent Square Box using CSS box-shadow trick */}
+      <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden">
+        <div className="w-64 h-64 md:w-80 md:h-80 border-2 border-white/20 rounded-3xl relative shadow-[0_0_0_9999px_rgba(0,0,0,0.7)]">
+          {/* Mảng nháy scan */}
+          <div className="absolute left-0 w-full h-[3px] bg-green-500 shadow-[0_0_12px_3px_rgba(34,197,94,0.8)]" style={{ animation: 'scan-line 2s ease-in-out infinite' }}></div>
           
-          <p className="text-sm text-slate-500 mt-6 text-center font-medium">
-            {instruction}<br/>
-            Hệ thống sẽ tự động nhận diện.
-          </p>
-
-          {error && (
-            <div className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-bold w-full text-center">
-              {error}
-            </div>
-          )}
+          {/* Góc trang trí */}
+          <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-white rounded-tl-3xl -m-[2px]"></div>
+          <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-white rounded-tr-3xl -m-[2px]"></div>
+          <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-white rounded-bl-3xl -m-[2px]"></div>
+          <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-white rounded-br-3xl -m-[2px]"></div>
         </div>
+      </div>
+
+      {/* Header / Controls floating on top */}
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-start justify-between p-5 pt-8 bg-gradient-to-b from-black/80 via-black/40 to-transparent pb-12 pointer-events-auto">
+        <h3 className="font-bold flex items-center gap-2 text-white text-lg drop-shadow-md">
+          <QrCode className="w-6 h-6 text-white" /> {title}
+        </h3>
+        <button 
+          onClick={onClose} 
+          className="p-2 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 text-white transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Instruction floating at bottom */}
+      <div className="absolute bottom-12 left-0 right-0 z-20 flex flex-col items-center justify-center px-6 pointer-events-auto">
+        <div className="bg-black/60 backdrop-blur-md text-white text-sm md:text-base text-center font-medium px-6 py-4 rounded-3xl shadow-xl max-w-sm border border-white/10">
+          {instruction}
+        </div>
+        
+        {error && (
+          <div className="mt-4 px-4 py-3 bg-red-500/90 text-white backdrop-blur rounded-2xl text-sm font-bold w-full max-w-sm text-center shadow-lg">
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );

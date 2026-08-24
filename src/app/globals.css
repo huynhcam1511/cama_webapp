@@ -35,3 +35,8 @@
     @apply bg-slate-50 text-slate-900 font-sans antialiased;
   }
 }
+@media print {
+  body > *:not(#cama-app-root) {
+    display: none !important;
+  }
+}

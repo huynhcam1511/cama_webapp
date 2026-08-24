@@ -38,10 +38,12 @@ export default function RootLayout({
   return (
     <html lang="vi" className="dark">
       <body className={inter.className}>
-        <div className="flex min-h-screen w-full flex-col bg-background">
+        <div id="cama-app-root" className="flex min-h-screen w-full flex-col bg-background">
           {children}
         </div>
-        {process.env.NODE_ENV === 'development' && <Agentation />}
+        <div className="print:hidden">
+          {process.env.NODE_ENV === 'development' && <Agentation />}
+        </div>
       </body>
     </html>
   );

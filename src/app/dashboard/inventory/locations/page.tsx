@@ -2,11 +2,15 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Layers, Plus, MapPin, ChevronRight, ChevronDown, Package, Box, Search, Trash2, Shirt, Pencil, PackagePlus, QrCode, Table, Download, Loader2 } from 'lucide-react';
+import { Layers, Plus, MapPin, ChevronRight, ChevronDown, Package, Box, Search, Trash2, Shirt, Pencil, PackagePlus, QrCode, Table, Download, Loader2, ChevronLeft, Info, Printer } from 'lucide-react';
 import QRCode from 'qrcode';
 import { getCustomLocations, addLocation, deleteLocation, saveLocationOrder, getLocationOrder, updateLocationNotes, renameLocation, getProductsByLocation } from './actions';
 
 const smartLocationSort = (aName: string, bName: string) => {
+  // Always pin Kho Ảo to the top
+  if (aName === 'Kho Ảo') return -1;
+  if (bName === 'Kho Ảo') return 1;
+
   const getFloorWeight = (name: string) => {
     const lower = name.toLowerCase();
     if (lower.includes('hầm')) return -1;
@@ -71,13 +75,19 @@ export default function LocationExplorerPage() {
         if (loc.tier) url.searchParams.set("tier", loc.tier);
         
         try {
-          const qrDataUrl = await QRCode.toDataURL(url.toString(), { margin: 2, width: 300, color: { dark: '#0f172a', light: '#ffffff' } });
+          // Nâng cấp: Tăng độ phân giải (width: 500), dùng mức sửa lỗi cao nhất (H), và màu đen tuyền tuyệt đối
+          const qrDataUrl = await QRCode.toDataURL(url.toString(), { 
+            margin: 2, 
+            width: 500, 
+            errorCorrectionLevel: 'H', 
+            color: { dark: '#000000', light: '#ffffff' } 
+          });
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
             if (!ctx) return;
-            const paddingBottom = 45;
+            const paddingBottom = 75; // Tăng khoảng trống bên dưới để cân xứng
             canvas.width = img.width;
             canvas.height = img.height + paddingBottom;
             
@@ -85,10 +95,10 @@ export default function LocationExplorerPage() {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
             
-            ctx.fillStyle = "#0f172a";
-            ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            ctx.fillStyle = "#000000";
+            ctx.font = "bold 32px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"; // Phóng to chữ
             ctx.textAlign = "center";
-            ctx.fillText(locCode, canvas.width / 2, canvas.height - 15);
+            ctx.fillText(locCode, canvas.width / 2, canvas.height - 25);
             
             setQrImages(prev => ({ ...prev, [locCode]: canvas.toDataURL("image/png") }));
           };
@@ -157,6 +167,21 @@ export default function LocationExplorerPage() {
       setIsLoadingProducts(false);
     }
     loadProducts();
+
+    // Auto-expand tree sidebar
+    if (selectedPath) {
+       const parts = selectedPath.split('|');
+       setExpandedPaths(prev => {
+         const newSet = new Set(prev);
+         let currentPath = parts[0];
+         newSet.add(currentPath);
+         for(let i = 1; i < parts.length - 1; i++) {
+            currentPath += '|' + parts[i];
+            newSet.add(currentPath);
+         }
+         return newSet;
+       });
+    }
   }, [selectedPath]);
 
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
@@ -419,9 +444,8 @@ export default function LocationExplorerPage() {
   };
 
   const getAddLabel = () => {
-    if (addTargetLevel === 'floor') return 'Thêm Lầu/Tầng';
-    if (addTargetLevel === 'shelf') return 'Thêm Kệ/Sào';
-    if (addTargetLevel === 'tier') return 'Thêm Ngăn/Móc';
+    if (addTargetLevel === 'floor') return 'Thêm Tầng';
+    if (addTargetLevel === 'shelf') return 'Thêm Vị trí';
     return '';
   };
 
@@ -459,23 +483,22 @@ export default function LocationExplorerPage() {
   }, [tree, selectedPath, selectedParts]);
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-slate-50 relative">
-
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-slate-50 relative print:h-auto print:overflow-visible">
       {/* Mobile Tree Backdrop */}
       {isMobileTreeOpen && (
         <div 
-          className="md:hidden absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-40" 
+          className="md:hidden absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-40 print:hidden" 
           onClick={() => setIsMobileTreeOpen(false)} 
         />
       )}
 
       {/* LEFT SIDEBAR: TREE VIEW */}
-      <div className={`${isMobileTreeOpen ? 'flex' : 'hidden'} md:flex absolute md:relative inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex-col h-full shadow-[2px_0_15px_-3px_rgba(0,0,0,0.05)] z-50`}>
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0">
+      <div className={`${isMobileTreeOpen ? 'flex' : 'hidden'} md:flex absolute md:relative inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex-col h-full shadow-[2px_0_15px_-3px_rgba(0,0,0,0.05)] z-50 print:hidden`}>
+        <div className="md:hidden p-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0">
           <h2 className="font-bold text-slate-800 flex items-center gap-2">
             <Layers className="w-5 h-5 text-indigo-600" /> Cây Thư Mục Kho
           </h2>
-          <button onClick={() => setIsMobileTreeOpen(false)} className="md:hidden p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200">✕</button>
+          <button onClick={() => setIsMobileTreeOpen(false)} className="p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200">✕</button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
@@ -518,124 +541,128 @@ export default function LocationExplorerPage() {
       </div>
 
       {/* RIGHT MAIN CONTENT */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-white">
-        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <button 
-              onClick={() => setIsMobileTreeOpen(true)} 
-              className="md:hidden mt-1 p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors shrink-0"
-            >
-              <Layers className="w-5 h-5" />
-            </button>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2 truncate">
-                {selectedParts.length > 0 ? selectedParts[selectedParts.length - 1] : "Tổng quan kho"}
-              </h2>
-              <div className="text-sm text-slate-500 flex items-center gap-2 mt-1 flex-wrap">
-              <span className="cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => setSelectedPath("")}>Kho</span>
-              {selectedParts.map((part, index) => (
-                <React.Fragment key={index}>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                  <span
-                    className={`cursor-pointer hover:text-indigo-600 transition-colors ${index === selectedParts.length - 1 ? 'font-semibold text-slate-700' : ''}`}
-                    onClick={() => setSelectedPath(selectedParts.slice(0, index + 1).join('|'))}
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-white print:h-auto print:overflow-visible">
+        <div className="p-6 border-b border-slate-100 flex flex-col gap-4 print:hidden">
+          {/* Main Top Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
+            <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 flex-1 min-w-0">
+              
+              {/* Breadcrumb / Back button (if inside a folder) */}
+              <div className="flex items-center gap-2">
+                {selectedParts.length > 0 && (
+                  <button 
+                    onClick={() => {
+                      const newParts = selectedParts.slice(0, -1);
+                      setSelectedPath(newParts.join('|'));
+                    }}
+                    className="flex shrink-0 items-center gap-1 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors bg-slate-100 hover:bg-indigo-50 px-3 py-1.5 rounded-lg"
                   >
-                    {part}
-                  </span>
-                </React.Fragment>
-              ))}
-            </div>
+                    <ChevronLeft className="w-4 h-4" /> <span className="hidden sm:inline">Quay lại</span>
+                  </button>
+                )}
+                <h2 className="text-xl md:text-2xl font-black text-slate-800 ml-1 truncate">
+                  {selectedParts.length === 0 ? "Tổng quan kho" : 
+                   selectedParts.length === 2 ? `${selectedParts[0]} - Vị trí ${selectedParts[1]}` :
+                   selectedParts.join(' - ')}
+                </h2>
+              </div>
 
-            {/* Show Notes if available */}
-            {(() => {
-              if (selectedParts.length === 0) return null;
-              const currentLocation = customLocations.find(l =>
-                l.floor === selectedParts[0] &&
-                (l.shelf || "") === (selectedParts[1] || "") &&
-                (l.tier || "") === (selectedParts[2] || "")
-              );
-              if (currentLocation?.notes) {
-                return (
-                  <div className="mt-3 text-sm text-slate-600 bg-indigo-50 border border-indigo-100 p-3 rounded-lg flex gap-2 items-start max-w-xl">
-                    <div className="w-5 h-5 flex-shrink-0 text-indigo-500 mt-0.5">ℹ️</div>
-                    <p>{currentLocation.notes}</p>
-                  </div>
+              {/* Show Notes if available */}
+              {(() => {
+                if (selectedParts.length === 0) return null;
+                const currentLocation = customLocations.find(l =>
+                  l.floor === selectedParts[0] &&
+                  (l.shelf || "") === (selectedParts[1] || "") &&
+                  (l.tier || "") === (selectedParts[2] || "")
                 );
-              }
-              return null;
-            })()}
-
-            </div>
-          </div>
-
-          <div className="flex overflow-x-auto hide-scrollbar gap-2 mt-4 md:mt-0 pb-1 md:pb-0">
-            <button
-              onClick={() => setViewMode(v => v === 'tree' ? 'table' : 'tree')}
-              className={`whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 font-semibold rounded-lg md:rounded-xl transition-colors flex items-center gap-1.5 md:gap-2 shadow-sm text-xs md:text-sm ${viewMode === 'table' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
-            >
-              {viewMode === 'tree' ? <><Table className="w-3.5 h-3.5 md:w-4 md:h-4" /> Danh sách in mã QR</> : <><Layers className="w-3.5 h-3.5 md:w-4 md:h-4" /> Xem sơ đồ cây</>}
-            </button>
-            {selectedParts.length > 0 && viewMode === 'tree' && (
-              <a
-                href={`/dashboard/inventory/catalog/new?floor=${encodeURIComponent(selectedParts[0] || "")}&shelf=${encodeURIComponent(selectedParts[1] || "")}&tier=${encodeURIComponent(selectedParts[2] || "")}`}
-                className="whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 bg-emerald-500 text-white font-semibold rounded-lg md:rounded-xl hover:bg-emerald-600 transition-colors flex items-center gap-1.5 md:gap-2 shadow-sm text-xs md:text-sm"
-              >
-                <PackagePlus className="w-3.5 h-3.5 md:w-4 md:h-4" /> Nhập hàng vào đây
-              </a>
-            )}
-            {selectedParts.length > 0 && (
-              <button
-                onClick={() => {
-                  const currentLocation = customLocations.find(l =>
-                    l.floor === selectedParts[0] &&
-                    (l.shelf || "") === (selectedParts[1] || "") &&
-                    (l.tier || "") === (selectedParts[2] || "")
+                if (currentLocation?.notes) {
+                  return (
+                    <div className="text-sm text-slate-600 bg-indigo-50 border border-indigo-100 px-3 py-2 rounded-lg flex gap-2 items-center max-w-xl">
+                      <Info className="w-4 h-4 flex-shrink-0 text-indigo-500" />
+                      <p className="truncate">{currentLocation.notes}</p>
+                    </div>
                   );
-                  setEditLocName(selectedParts[selectedParts.length - 1]);
-                  setEditLocNotes(currentLocation?.notes || "");
-                  setIsEditingLocation(true);
-                }}
-                className="whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 bg-white border border-slate-200 text-slate-600 font-semibold rounded-lg md:rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-1.5 md:gap-2 shadow-sm text-xs md:text-sm"
-              >
-                <Pencil className="w-3.5 h-3.5 md:w-4 md:h-4" /> Chỉnh sửa
-              </button>
-            )}
-            {selectedParts.length < 3 && (
+                }
+                return null;
+              })()}
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
               <button
-                onClick={() => setIsAddingLocation(true)}
-                className="whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 bg-indigo-600 text-white font-semibold rounded-lg md:rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-1.5 md:gap-2 shadow-sm text-xs md:text-sm"
+                onClick={() => setViewMode(v => v === 'tree' ? 'table' : 'tree')}
+                className={`p-2 font-semibold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 ${viewMode === 'table' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                title={viewMode === 'tree' ? 'Danh sách in mã QR' : 'Xem sơ đồ cây'}
               >
-                <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" /> {getAddLabel()}
+                {viewMode === 'tree' ? <QrCode className="w-5 h-5 md:w-4 md:h-4" /> : <Layers className="w-5 h-5 md:w-4 md:h-4" />}
+                <span className="hidden md:inline">{viewMode === 'tree' ? 'Danh sách in mã QR' : 'Xem sơ đồ cây'}</span>
               </button>
-            )}
-            {selectedPath && (
-              <button
-                onClick={() => handleDeleteLocation(selectedPath)}
-                className="whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 bg-rose-50 text-rose-600 font-semibold rounded-lg md:rounded-xl hover:bg-rose-100 transition-colors flex items-center gap-1.5 md:gap-2 text-xs md:text-sm"
-              >
-                <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" /> Xoá Vị trí này
-              </button>
-            )}
+
+              {viewMode === 'table' && (
+                <button
+                  onClick={() => window.print()}
+                  className="p-2 md:px-4 md:py-2 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 transition-colors shadow-sm flex items-center justify-center gap-2"
+                  title="In hàng loạt mã QR đang hiển thị"
+                >
+                  <Printer className="w-5 h-5 md:w-4 md:h-4" /> <span className="hidden md:inline">In mã QR</span>
+                </button>
+              )}
+              
+              {selectedParts.length > 0 && viewMode === 'tree' && (
+                <a
+                  href={`/dashboard/inventory/catalog/new?floor=${encodeURIComponent(selectedParts[0] || "")}&shelf=${encodeURIComponent(selectedParts[1] || "")}&tier=${encodeURIComponent(selectedParts[2] || "")}`}
+                  className="p-2 md:px-4 md:py-2 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 transition-colors shadow-sm flex items-center justify-center gap-2"
+                  title="Nhập hàng vào đây"
+                >
+                  <PackagePlus className="w-5 h-5 md:w-4 md:h-4" /> <span className="hidden md:inline">Nhập hàng</span>
+                </a>
+              )}
+              
+              {/* Edit and Delete buttons removed by user request */}
+
+              {/* Desktop Add Button (hidden on mobile, replaced by FAB) */}
+              {selectedParts.length < 2 && viewMode === 'tree' && (
+                <button
+                  onClick={() => setIsAddingLocation(true)}
+                  className="hidden md:flex whitespace-nowrap px-4 py-2 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors items-center gap-2 shadow-sm text-sm"
+                >
+                  <Plus className="w-4 h-4" /> {getAddLabel()}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 print:overflow-visible print:p-0 print:bg-white">
           
           {viewMode === 'table' ? (
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <>
+              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden print:hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm text-slate-600">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
                     <tr>
-                      <th className="px-4 py-3">Tầng/Lầu</th>
-                      <th className="px-4 py-3">Kệ/Sào</th>
-                      <th className="px-4 py-3">Ngăn/Móc</th>
+                      <th className="px-4 py-3">Tầng</th>
+                      <th className="px-4 py-3">Vị Trí</th>
                       <th className="px-4 py-3">Mã Vị Trí</th>
                       <th className="px-4 py-3 text-center">Mã QR</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {customLocations.map((loc, idx) => {
+                    {customLocations
+                      .filter(loc => {
+                        if (selectedParts.length === 0) return true;
+                        if (selectedParts.length >= 1 && loc.floor !== selectedParts[0]) return false;
+                        if (selectedParts.length >= 2 && loc.shelf !== selectedParts[1]) return false;
+                        if (selectedParts.length >= 3 && loc.tier !== selectedParts[2]) return false;
+                        return true;
+                      })
+                      .sort((a, b) => {
+                        if (a.floor !== b.floor) return smartLocationSort(a.floor, b.floor);
+                        const shelfA = a.shelf || '';
+                        const shelfB = b.shelf || '';
+                        return shelfA.localeCompare(shelfB, undefined, { numeric: true });
+                      })
+                      .map((loc, idx) => {
                       const codeParts = [loc.floor, loc.shelf, loc.tier].filter(Boolean);
                       const locCode = codeParts.map(s => s.trim().toUpperCase().replace(/\s+/g, '-')).join('-');
                       const qrDataUrl = qrImages[locCode];
@@ -644,7 +671,6 @@ export default function LocationExplorerPage() {
                         <tr key={idx} className="hover:bg-slate-50/50">
                           <td className="px-4 py-3 font-semibold text-slate-800">{loc.floor}</td>
                           <td className="px-4 py-3">{loc.shelf || '-'}</td>
-                          <td className="px-4 py-3">{loc.tier || '-'}</td>
                           <td className="px-4 py-3 font-mono text-indigo-600 text-xs">{locCode}</td>
                           <td className="px-4 py-3">
                             <div className="flex flex-col items-center gap-2">
@@ -665,27 +691,65 @@ export default function LocationExplorerPage() {
                         </tr>
                       );
                     })}
-                    {customLocations.length === 0 && (
+                    {customLocations.filter(loc => {
+                        if (selectedParts.length === 0) return true;
+                        if (selectedParts.length >= 1 && loc.floor !== selectedParts[0]) return false;
+                        return true;
+                    }).length === 0 && (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-slate-500">Chưa có vị trí nào trong kho.</td>
+                        <td colSpan={4} className="px-4 py-8 text-center text-slate-500">Chưa có vị trí nào trong khu vực này.</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
             </div>
+            
+            {/* Hidden Print Layout */}
+            <div id="print-batch-area" className="hidden print:block w-full">
+               <div className="grid grid-cols-4 gap-4 w-full" style={{ pageBreakInside: 'avoid' }}>
+                 {customLocations
+                    .filter(loc => {
+                      if (selectedParts.length === 0) return true;
+                      if (selectedParts.length >= 1 && loc.floor !== selectedParts[0]) return false;
+                      if (selectedParts.length >= 2 && loc.shelf !== selectedParts[1]) return false;
+                      return true;
+                    })
+                    .sort((a, b) => {
+                      if (a.floor !== b.floor) return smartLocationSort(a.floor, b.floor);
+                      const shelfA = a.shelf || '';
+                      const shelfB = b.shelf || '';
+                      return shelfA.localeCompare(shelfB, undefined, { numeric: true });
+                    })
+                    .map((loc, idx) => {
+                      const codeParts = [loc.floor, loc.shelf, loc.tier].filter(Boolean);
+                      const locCode = codeParts.map(s => s.trim().toUpperCase().replace(/\s+/g, '-')).join('-');
+                      const qrDataUrl = qrImages[locCode];
+                      if (!qrDataUrl) return null;
+                      
+                      return (
+                        <div key={idx} className="flex flex-col items-center justify-center border border-slate-300 p-2 break-inside-avoid text-center">
+                          <img src={qrDataUrl} alt={locCode} className="w-20 h-20 object-contain mb-1" />
+                          <div className="font-bold text-slate-900 leading-tight" style={{ fontSize: '11px' }}>{locCode}</div>
+                        </div>
+                      );
+                 })}
+               </div>
+            </div>
+            </>
           ) : (
             <>
-              {selectedParts.length < 3 ? (
-                // Show Sub-Folders
-                <div className="mb-8">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Các thư mục con</h3>
+              <div className="print:hidden">
+                {selectedParts.length < 2 ? (
+                  // Show Sub-Folders
+                  <div className="mb-8">
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Danh sách Vị trí</h3>
               {currentChildren.length > 0 ? (
                 <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable droppableId="locations-grid" direction="horizontal">
                       {(provided) => (
                         <div
-                          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                          className="flex flex-col gap-2"
                           {...provided.droppableProps}
                           ref={provided.innerRef}
                         >
@@ -699,22 +763,25 @@ export default function LocationExplorerPage() {
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
                                     onClick={() => setSelectedPath(childPath)}
-                                    className={`bg-white p-4 rounded-xl border ${snapshot.isDragging ? 'border-indigo-500 shadow-xl scale-105 z-50 ring-2 ring-indigo-200' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md'} cursor-pointer transition-all flex flex-col gap-3 group`}
+                                    className={`bg-white px-4 py-3 rounded-lg border ${snapshot.isDragging ? 'border-indigo-500 shadow-lg scale-[1.01] z-50' : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'} cursor-pointer transition-all flex items-center justify-between group`}
                                   >
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
-                                        <MapPin className="w-5 h-5 text-indigo-600" />
+                                    <div className="flex items-center gap-4">
+                                      <div className="w-8 h-8 rounded-md bg-indigo-50 flex items-center justify-center text-indigo-500">
+                                        <MapPin className="w-4 h-4" />
                                       </div>
-                                      <div className="flex-1">
-                                        <h4 className="font-bold text-slate-800">{child.name}</h4>
-                                        <p className="text-xs text-slate-500">{Object.keys(child.children).length} thành phần con</p>
+                                      <div>
+                                        <h4 className="font-bold text-slate-800 text-sm">{child.name}</h4>
+                                        {child.notes && (
+                                          <p className="text-xs text-slate-500 italic flex items-center gap-1 mt-0.5"><Info className="w-3 h-3"/> {child.notes}</p>
+                                        )}
                                       </div>
                                     </div>
-                                    {child.notes && (
-                                      <div className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg line-clamp-2 italic border border-slate-100">
-                                        {child.notes}
-                                      </div>
-                                    )}
+                                    <div className="flex items-center gap-4">
+                                       <span className="text-xs font-semibold px-2 py-1 bg-slate-100 text-slate-500 rounded-md">
+                                         {Object.keys(child.children).length} thành phần con
+                                       </span>
+                                       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-400" />
+                                    </div>
                                   </div>
                                 )}
                               </Draggable>
@@ -787,6 +854,7 @@ export default function LocationExplorerPage() {
               )}
             </div>
           )}
+              </div>
             </>
           )}
 
@@ -895,6 +963,17 @@ export default function LocationExplorerPage() {
           </div>
         </div>
       )}
+
+      {/* Mobile FAB for Add */}
+      {selectedParts.length < 3 && viewMode === 'tree' && (
+        <button
+          onClick={() => setIsAddingLocation(true)}
+          className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-600/30 flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all z-40"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
+
     </div>
   );
 }
