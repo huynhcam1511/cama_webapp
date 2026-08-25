@@ -143,39 +143,39 @@ export default function PolicyDialog({ isOpen, onClose, policy, departments, rol
       <form onSubmit={handleSave} className="bg-white w-full h-full flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
-          <div>
-            <h2 className="text-xl font-bold font-serif text-slate-900">
+        <div className="flex-none flex items-center justify-between gap-3 px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-white">
+          <div className="min-w-0">
+            <h2 className="text-lg md:text-xl font-bold font-serif text-slate-900 truncate">
               {isNew ? "Thêm Chính Sách Mới" : "Chỉnh Sửa Chính Sách"}
             </h2>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="hidden md:block text-sm text-slate-500 mt-0.5">
               Soạn thảo văn bản quy định, chính sách, hoặc thông báo với trình soạn thảo Markdown.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+              className="p-2 md:px-4 md:py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
             >
-              Hủy
+              <X className="w-5 h-5 md:hidden" /><span className="hidden md:inline">Hủy</span>
             </button>
             <button
               type="submit"
               disabled={isSaving || isUploading}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg text-sm transition-all shadow-md shadow-blue-500/20 flex items-center gap-2 disabled:opacity-70"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 md:px-6 py-2 rounded-lg text-sm transition-all shadow-md shadow-blue-500/20 flex items-center gap-2 disabled:opacity-70"
             >
               {(isSaving || isUploading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              <span>{isUploading ? "Đang tải file..." : "Lưu Chính Sách"}</span>
+              <span>{isUploading ? "Đang tải..." : <><span className="md:hidden">Lưu</span><span className="hidden md:inline">Lưu Chính Sách</span></>}</span>
             </button>
           </div>
         </div>
 
         {/* Main Workspace */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
           
           {/* Left Sidebar - Settings */}
-          <div className="w-[380px] flex-none border-r border-slate-200 bg-slate-50/50 p-6 overflow-y-auto space-y-6">
+          <div className="w-full md:w-[380px] flex-none border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50/50 p-4 md:p-6 md:overflow-y-auto space-y-5 md:space-y-6">
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg">
                 {error}
@@ -283,7 +283,7 @@ export default function PolicyDialog({ isOpen, onClose, policy, departments, rol
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:bg-slate-100 hover:border-blue-400 hover:text-blue-600 transition-all text-sm font-medium bg-white"
+                  className="w-full flex flex-col items-center justify-center gap-2 p-4 md:p-6 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:bg-slate-100 hover:border-blue-400 hover:text-blue-600 transition-all text-sm font-medium bg-white"
                 >
                   <UploadCloud className="w-8 h-8 opacity-50" />
                   <span>Bấm để tải file lên (&lt; 10MB)</span>
@@ -307,10 +307,10 @@ export default function PolicyDialog({ isOpen, onClose, policy, departments, rol
           </div>
 
           {/* Right Workspace - Editor & Preview Split */}
-          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-slate-200">
+          <div className="flex-1 min-h-[420px] flex flex-col lg:flex-row md:overflow-hidden bg-slate-200">
             
             {/* Editor Pane */}
-            <div className="flex-1 flex flex-col bg-white overflow-hidden border-r border-slate-200">
+            <div className="flex-1 min-h-[420px] flex flex-col bg-white overflow-hidden border-r border-slate-200">
               <div className="flex-none px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
                 <Edit3 className="w-4 h-4 text-slate-500" />
                 <h3 className="text-sm font-bold text-slate-700">Soạn thảo nội dung</h3>
@@ -320,7 +320,7 @@ export default function PolicyDialog({ isOpen, onClose, policy, departments, rol
                 required
                 value={formData.content}
                 onChange={handleChange}
-                className="flex-1 w-full p-6 text-sm text-slate-800 bg-white focus:outline-none resize-none leading-relaxed font-mono"
+                className="flex-1 min-h-[360px] w-full p-4 md:p-6 text-sm text-slate-800 bg-white focus:outline-none resize-none leading-relaxed font-mono"
                 placeholder="Nhập nội dung ở đây...&#10;Hỗ trợ Markdown:&#10;**In đậm**&#10;*In nghiêng*&#10;- Gạch đầu dòng"
               />
             </div>
@@ -367,4 +367,3 @@ export default function PolicyDialog({ isOpen, onClose, policy, departments, rol
     </div>
   );
 }
-

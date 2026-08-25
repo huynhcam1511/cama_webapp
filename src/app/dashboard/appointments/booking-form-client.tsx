@@ -49,7 +49,6 @@ export default function BookingFormClient({
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 md:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
           <h3 className="text-lg md:text-xl font-bold text-slate-800 flex items-center gap-2">
-            <icons.CalendarDays className="w-5 h-5 text-blue-600" />
             {formData.id ? 'Cập nhật Lịch Hẹn' : 'Thêm Lịch Hẹn Mới'}
           </h3>
         </div>

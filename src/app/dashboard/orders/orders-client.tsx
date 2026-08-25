@@ -172,9 +172,11 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
             
             <button
               onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
-              className={`md:hidden px-3 py-2 border rounded-lg flex items-center justify-center transition-colors ${isMobileFilterOpen ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600'}`}
+              className="md:hidden relative w-12 shrink-0 border border-slate-200 rounded-xl bg-white text-slate-600 flex items-center justify-center"
+              aria-label="Mở bộ lọc"
             >
-              <icons.Filter className="w-4 h-4" />
+              <icons.Filter className="w-5 h-5" />
+              {(filterTeam !== 'ALL' || filterStatus !== 'ALL') && <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full bg-indigo-600 text-white text-[10px] font-black flex items-center justify-center">{Number(filterTeam !== 'ALL') + Number(filterStatus !== 'ALL')}</span>}
             </button>
             
             <Link 
@@ -185,77 +187,80 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
             </Link>
           </div>
           
-          {/* Premium Filter Pills */}
-          <div className={`${isMobileFilterOpen ? 'flex' : 'hidden'} md:flex flex-col gap-3 pt-2 md:pt-0 border-t border-slate-100 md:border-none`}>
-            {/* Team Pills */}
-            <div className="flex gap-2 overflow-x-auto pb-1 -mx-2 px-2 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <div className="flex gap-1.5 shrink-0 items-center">
-                <button 
-                  onClick={() => setFilterTeam('ALL')} 
-                  className={`px-3 py-1 rounded-full text-[11px] md:text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === 'ALL' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
-                >
-                  Tất cả tổ nhóm
-                </button>
+          <div className="hidden md:grid grid-cols-2 gap-2">
+            <select value={filterTeam} onChange={(e) => setFilterTeam(e.target.value)} className="bg-white text-slate-700 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500">
+              <option value="ALL">Tất cả tổ nhóm</option>
                 {[...teams].sort((a, b) => {
                   const order = ['Phòng suit', 'Phòng váy', 'Kho', 'Phòng stu'];
                   const idxA = order.indexOf(a.name);
                   const idxB = order.indexOf(b.name);
                   return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
-                }).map(t => (
-                  <button 
-                    key={t.id}
-                    onClick={() => setFilterTeam(t.id)} 
-                    className={`px-3 py-1 rounded-full text-[11px] md:text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === t.id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
-                  >
-                    {t.name}
-                  </button>
-                ))}
-                <button 
-                  onClick={() => setFilterTeam('UNASSIGNED')} 
-                  className={`px-3 py-1 rounded-full text-[11px] md:text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === 'UNASSIGNED' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
-                >
-                  Chưa phân công
+                }).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              <option value="UNASSIGNED">Chưa phân công</option>
+            </select>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="bg-white text-slate-700 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500">
+              <option value="ALL">Tất cả trạng thái</option>
+              {UI_STEPS.map(step => <option key={step.id} value={step.id}>{step.label}</option>)}
+              <option value="CANCELLED">Đã hủy</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Mobile Filter Modal */}
+        {isMobileFilterOpen && (
+          <div className="md:hidden fixed inset-0 z-[110] bg-slate-950/50 flex items-end" onClick={() => setIsMobileFilterOpen(false)}>
+            <div className="w-full max-h-[88vh] overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl flex flex-col gap-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h2 className="text-lg font-black text-slate-900">Bộ lọc Đơn hàng</h2>
+                </div>
+                <button type="button" onClick={() => setIsMobileFilterOpen(false)} className="p-2 rounded-full bg-slate-100 text-slate-500">
+                  <icons.X className="w-5 h-5" />
                 </button>
               </div>
-            </div>
 
-            {/* Status Pills */}
-            <div className="flex gap-2 overflow-x-auto pb-1 -mx-2 px-2 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <div className="flex gap-1.5 shrink-0 items-center">
-                <button 
-                  onClick={() => setFilterStatus('ALL')}
-                  className={`px-3 py-1 rounded-full text-[11px] md:text-[12px] font-bold whitespace-nowrap transition-all border ${filterStatus === 'ALL' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
-                >
-                  Tất cả trạng thái
-                </button>
-                {UI_STEPS.map((step) => {
-                  const isSelected = filterStatus === step.id;
-                  // Assign color based on the first status in the step
-                  const firstStatus = step.statuses[0] as OrderStatus;
-                  const colorClasses = isSelected ? STATUS_MAP[firstStatus].color : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
-                  const Icon = STATUS_MAP[firstStatus].icon;
-                  return (
-                    <button 
-                      key={step.id}
-                      onClick={() => setFilterStatus(step.id)}
-                      className={`px-3 py-1 rounded-full text-[11px] md:text-[12px] font-bold whitespace-nowrap transition-all border ${colorClasses} flex items-center gap-1`}
-                    >
-                      {isSelected && <Icon className="w-3 h-3" />}
-                      {step.label}
-                    </button>
-                  );
-                })}
-                <button 
-                  onClick={() => setFilterStatus('CANCELLED')}
-                  className={`px-3 py-1 rounded-full text-[11px] md:text-[12px] font-bold whitespace-nowrap transition-all border ${filterStatus === 'CANCELLED' ? STATUS_MAP['CANCELLED'].color : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'} flex items-center gap-1`}
-                >
-                  {filterStatus === 'CANCELLED' && <STATUS_MAP.CANCELLED.icon className="w-3 h-3" />}
-                  Đã hủy
-                </button>
+              <div className="grid grid-cols-1 gap-4">
+                <label className="text-xs font-bold text-slate-500">Tổ nhóm phụ trách
+                  <select
+                    value={filterTeam}
+                    onChange={(e) => setFilterTeam(e.target.value)}
+                    className="mt-1 w-full bg-white text-slate-700 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none"
+                  >
+                    <option value="ALL">Tất cả tổ nhóm</option>
+                    {[...teams].sort((a, b) => {
+                      const order = ['Phòng suit', 'Phòng váy', 'Kho', 'Phòng stu'];
+                      const idxA = order.indexOf(a.name);
+                      const idxB = order.indexOf(b.name);
+                      return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+                    }).map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                    <option value="UNASSIGNED">Chưa phân công</option>
+                  </select>
+                </label>
+
+                <label className="text-xs font-bold text-slate-500">Trạng thái
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="mt-1 w-full bg-white text-slate-700 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none"
+                  >
+                    <option value="ALL">Tất cả trạng thái</option>
+                    {UI_STEPS.map((step) => (
+                      <option key={step.id} value={step.id}>{step.label}</option>
+                    ))}
+                    <option value="CANCELLED">Đã hủy</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-[auto_1fr] gap-2 mt-4">
+                <button type="button" onClick={() => { setFilterTeam('ALL'); setFilterStatus('ALL'); }} className="px-4 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold">Xóa lọc</button>
+                <button type="button" onClick={() => setIsMobileFilterOpen(false)} className="px-4 py-3 rounded-xl bg-blue-600 text-white font-black text-center">Áp dụng ({filteredOrders.length})</button>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Return Alerts */}
         {(() => {

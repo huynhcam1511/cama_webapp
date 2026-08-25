@@ -395,54 +395,83 @@ export default function ContractsView({ initialContracts, initialStats, customer
              ))}
           </div>
 
-          {/* Mobile Filter Panel */}
+          {/* Mobile Filter Modal */}
           {isMobileFilterOpen && (
-            <div className="sm:hidden absolute top-full left-0 right-0 z-40 bg-white border border-slate-200 p-4 shadow-xl rounded-b-xl flex flex-col gap-3">
-              <select
-                value={contractTypeFilter}
-                onChange={(e) => setContractTypeFilter(e.target.value)}
-                className="w-full bg-white text-slate-700 border border-slate-200 rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="">Tất cả Loại HĐ</option>
-                <option value="SERVICE">HĐ Dịch Vụ</option>
-                <option value="SALES">HĐ Bán Hàng</option>
-              </select>
-              <select
-                value={contractStatusFilter}
-                onChange={(e) => setContractStatusFilter(e.target.value)}
-                className="w-full bg-white text-slate-700 border border-slate-200 rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="">Tất cả Trạng thái</option>
-                <option value="DRAFT">Nháp</option>
-                <option value="CONFIRMED">Đã xác nhận</option>
-                <option value="EFFECTIVE">Đang hiệu lực</option>
-                <option value="COMPLETED">Đã hoàn tất</option>
-                <option value="CANCELLED">Đã hủy</option>
-              </select>
-              <select
-                value={paymentStatusFilter}
-                onChange={(e) => setPaymentStatusFilter(e.target.value)}
-                className="w-full bg-white text-slate-700 border border-slate-200 rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="">Tất cả Thanh toán</option>
-                <option value="UNPAID">Chưa TT</option>
-                <option value="DEPOSITED">Đã cọc</option>
-                <option value="PARTIALLY_PAID">TT 1 phần</option>
-                <option value="FULLY_PAID">Đã đủ</option>
-                <option value="OVERDUE">Quá hạn</option>
-              </select>
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-                {['', 'NEW', 'HIGH_DEBT', 'DUE_SOON', 'OVERDUE'].map(q => (
-                  <button
-                    key={q}
-                    onClick={() => setQuickFilter(q)}
-                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full border ${quickFilter === q ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border-slate-200'}`}
-                  >
-                    {q || 'Tất cả'}
+            <div className="sm:hidden fixed inset-0 z-[110] bg-slate-950/50 flex items-end" onClick={() => setIsMobileFilterOpen(false)}>
+              <div className="w-full max-h-[88vh] overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl flex flex-col gap-4" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900">Bộ lọc Hợp đồng</h2>
+                  </div>
+                  <button type="button" onClick={() => setIsMobileFilterOpen(false)} className="p-2 rounded-full bg-slate-100 text-slate-500">
+                    <X className="w-5 h-5" />
                   </button>
-                ))}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  <label className="text-xs font-bold text-slate-500">Loại Hợp đồng
+                    <select
+                      value={contractTypeFilter}
+                      onChange={(e) => setContractTypeFilter(e.target.value)}
+                      className="mt-1 w-full bg-white text-slate-700 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none"
+                    >
+                      <option value="">Tất cả Loại HĐ</option>
+                      <option value="SERVICE">HĐ Dịch Vụ</option>
+                      <option value="SALES">HĐ Bán Hàng</option>
+                    </select>
+                  </label>
+
+                  <label className="text-xs font-bold text-slate-500">Trạng thái
+                    <select
+                      value={contractStatusFilter}
+                      onChange={(e) => setContractStatusFilter(e.target.value)}
+                      className="mt-1 w-full bg-white text-slate-700 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none"
+                    >
+                      <option value="">Tất cả Trạng thái</option>
+                      <option value="DRAFT">Nháp</option>
+                      <option value="CONFIRMED">Đã xác nhận</option>
+                      <option value="EFFECTIVE">Đang hiệu lực</option>
+                      <option value="COMPLETED">Đã hoàn tất</option>
+                      <option value="CANCELLED">Đã hủy</option>
+                    </select>
+                  </label>
+
+                  <label className="text-xs font-bold text-slate-500">Thanh toán
+                    <select
+                      value={paymentStatusFilter}
+                      onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                      className="mt-1 w-full bg-white text-slate-700 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none"
+                    >
+                      <option value="">Tất cả Thanh toán</option>
+                      <option value="UNPAID">Chưa TT</option>
+                      <option value="DEPOSITED">Đã cọc</option>
+                      <option value="PARTIALLY_PAID">TT 1 phần</option>
+                      <option value="FULLY_PAID">Đã đủ</option>
+                      <option value="OVERDUE">Quá hạn</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100">
+                  <label className="text-xs font-bold text-slate-500 mb-2 block">Lọc nhanh</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['', 'NEW', 'HIGH_DEBT', 'DUE_SOON', 'OVERDUE'].map(q => (
+                      <button
+                        key={q}
+                        onClick={() => setQuickFilter(q)}
+                        className={`px-3 py-2 text-[12px] font-semibold rounded-xl border ${quickFilter === q ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border-slate-200'}`}
+                      >
+                        {q || 'Tất cả'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[auto_1fr] gap-2 mt-4">
+                  <button type="button" onClick={handleResetFilters} className="px-4 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold">Xóa lọc</button>
+                  <button type="button" onClick={() => setIsMobileFilterOpen(false)} className="px-4 py-3 rounded-xl bg-blue-600 text-white font-black text-center">Áp dụng</button>
+                </div>
               </div>
-              <button onClick={handleResetFilters} className="w-full mt-2 py-2 text-center text-sm text-red-600 bg-red-50 rounded-lg font-medium">Đặt lại bộ lọc</button>
             </div>
           )}
         </div>
@@ -674,9 +703,9 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 // Trích xuất tên dịch vụ chính
                 let mainService = "Chưa có DV";
                 let extraServices = 0;
-                if (contract.contract_items && contract.contract_items.length > 0) {
-                  mainService = contract.contract_items[0].service_name;
-                  extraServices = contract.contract_items.length - 1;
+                if (contract.items && contract.items.length > 0) {
+                  mainService = contract.items[0].item_name;
+                  extraServices = contract.items.length - 1;
                 }
                 
                 // Trích xuất PIC

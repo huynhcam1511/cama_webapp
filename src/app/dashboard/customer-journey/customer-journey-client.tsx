@@ -15,8 +15,16 @@ interface Props {
 export default function CustomerJourneyClient({ initialContracts, initialSchedules, journeyTasks = [], staffs = [] }: Props) {
   const [activeTab, setActiveTab] = useState<"JOURNEY" | "REMINDERS" | "TICKETS">("JOURNEY");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [filterProgress, setFilterProgress] = useState("ALL"); // ALL, NOT_STARTED, IN_PROGRESS, COMPLETED
 
   const filteredContracts = initialContracts.filter((c: any) => {
+     if (filterProgress !== "ALL") {
+       const prog = calculateProgress(c.journey_data);
+       if (filterProgress === "NOT_STARTED" && prog.percent > 0) return false;
+       if (filterProgress === "IN_PROGRESS" && (prog.percent === 0 || prog.percent === 100)) return false;
+       if (filterProgress === "COMPLETED" && prog.percent < 100) return false;
+     }
      if (!searchTerm) return true;
      const lowerTerm = searchTerm.toLowerCase();
      const name = `${c.customers?.bride_name} ${c.customers?.groom_name}`.toLowerCase();
@@ -60,7 +68,8 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
     });
   };
   
-  const calculateProgress = (journeyData: any) => {
+  // We need to hoist calculateProgress above the filter
+  function calculateProgress(journeyData: any) {
     if (!journeyData) return { total: 0, completed: 0, percent: 0, currentStage: "" };
     let total = 0;
     let completed = 0;
@@ -114,7 +123,7 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
 
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { total, completed, percent, currentStage };
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -130,11 +139,50 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
              className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
            />
          </div>
-         <button className="px-3 py-2 bg-white border border-slate-200 rounded-lg flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium shadow-sm">
-           <icons.Filter className="w-4 h-4" />
-           Lọc
+         <select value={filterProgress} onChange={(e) => setFilterProgress(e.target.value)} className="hidden md:block bg-white text-slate-700 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 shadow-sm">
+           <option value="ALL">Tất cả tiến độ</option><option value="NOT_STARTED">Chưa bắt đầu</option><option value="IN_PROGRESS">Đang thực hiện</option><option value="COMPLETED">Đã hoàn thành</option>
+         </select>
+         <button onClick={() => setIsMobileFilterOpen(true)} className="md:hidden relative w-12 self-stretch shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 shadow-sm" aria-label="Mở bộ lọc">
+           <icons.Filter className="w-5 h-5" />
+           {filterProgress !== "ALL" && <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full bg-indigo-600 text-white text-[10px] font-black flex items-center justify-center">1</span>}
          </button>
       </div>
+
+      {/* Mobile Filter Modal */}
+      {isMobileFilterOpen && (
+        <div className="md:hidden fixed inset-0 z-[110] bg-slate-950/50 flex items-end" onClick={() => setIsMobileFilterOpen(false)}>
+          <div className="w-full max-h-[88vh] overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl flex flex-col gap-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h2 className="text-lg font-black text-slate-900">Bộ lọc Hành trình</h2>
+              </div>
+              <button type="button" onClick={() => setIsMobileFilterOpen(false)} className="p-2 rounded-full bg-slate-100 text-slate-500">
+                <icons.X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <label className="text-xs font-bold text-slate-500">Tiến độ
+                <select
+                  value={filterProgress}
+                  onChange={(e) => setFilterProgress(e.target.value)}
+                  className="mt-1 w-full bg-white text-slate-700 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-indigo-500 outline-none"
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="NOT_STARTED">Chưa bắt đầu</option>
+                  <option value="IN_PROGRESS">Đang thực hiện</option>
+                  <option value="COMPLETED">Đã hoàn thành</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-[auto_1fr] gap-2 mt-4">
+              <button type="button" onClick={() => setFilterProgress("ALL")} className="px-4 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold">Xóa lọc</button>
+              <button type="button" onClick={() => setIsMobileFilterOpen(false)} className="px-4 py-3 rounded-xl bg-indigo-600 text-white font-black text-center">Áp dụng ({filteredContracts.length})</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="md:bg-white md:rounded-xl md:border md:border-slate-200 md:shadow-sm md:overflow-hidden">
         <div className="overflow-x-auto hidden md:block">
