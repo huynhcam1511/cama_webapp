@@ -34,14 +34,14 @@ export default function BookingFormClient({
       alert("Lỗi: " + error);
       setIsSaving(false);
     } else if (data) {
-      router.push("/dashboard/appointments");
+      router.push("/dashboard/schedules/operation");
       router.refresh();
     }
   };
 
   return (
     <div className="max-w-4xl mx-auto py-4 md:py-8 px-3 md:px-0">
-      <Link href="/dashboard/appointments" className="hidden md:inline-flex items-center text-sm text-slate-500 hover:text-blue-600 mb-6 gap-1 font-medium">
+      <Link href="/dashboard/schedules/operation" className="hidden md:inline-flex items-center text-sm text-slate-500 hover:text-blue-600 mb-6 gap-1 font-medium">
         <icons.ArrowLeft className="w-4 h-4" />
         Quay lại Lịch Hẹn Khách
       </Link>
