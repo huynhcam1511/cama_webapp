@@ -41,6 +41,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [filterTeam, setFilterTeam] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const router = useRouter();
 
   const [isUpdatingPic, setIsUpdatingPic] = useState<string | null>(null);
@@ -135,11 +136,11 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
   return (
     <div className="gap-6 flex h-[calc(100vh-100px)] overflow-hidden">
       {/* Left: Main List */}
-      <div className="flex-1 flex flex-col gap-4 w-full">
+      <div className="flex-1 flex flex-col gap-4 w-full px-3 md:px-0">
 
 
-        {/* Filters */}
-        <div className="flex flex-col gap-2 md:gap-3 bg-white p-2 md:p-3 rounded-xl border border-slate-200 shadow-sm shrink-0">
+        {/* Filters & Search */}
+        <div className="flex flex-col gap-2 md:gap-3 md:bg-white pt-2 md:pt-0 md:p-3 md:rounded-xl md:border md:border-slate-200 md:shadow-sm shrink-0">
           <div className="flex gap-2 w-full">
             <div className="flex-1 relative">
               <icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -148,9 +149,16 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                 placeholder="Tìm mã đơn, Hợp đồng, SĐT..." 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 md:py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
+                className="w-full pl-9 pr-4 py-2 md:py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white md:bg-slate-50 shadow-sm md:shadow-none"
               />
             </div>
+            
+            <button
+              onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+              className={`md:hidden px-3 py-2 border rounded-lg flex items-center justify-center transition-colors ${isMobileFilterOpen ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600'}`}
+            >
+              <icons.Filter className="w-4 h-4" />
+            </button>
             
             <Link 
               href="/dashboard/orders/create"
@@ -161,13 +169,13 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
           </div>
           
           {/* Premium Filter Pills */}
-          <div className="flex flex-col gap-3">
+          <div className={`${isMobileFilterOpen ? 'flex' : 'hidden'} md:flex flex-col gap-3 pt-2 md:pt-0 border-t border-slate-100 md:border-none`}>
             {/* Team Pills */}
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-2 px-2 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <div className="flex gap-2 shrink-0 items-center">
+              <div className="flex gap-1.5 shrink-0 items-center">
                 <button 
                   onClick={() => setFilterTeam('ALL')} 
-                  className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === 'ALL' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                  className={`px-3 py-1 rounded-full text-[11px] md:text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === 'ALL' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
                 >
                   Tất cả tổ nhóm
                 </button>
@@ -180,14 +188,14 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                   <button 
                     key={t.id}
                     onClick={() => setFilterTeam(t.id)} 
-                    className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === t.id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                    className={`px-3 py-1 rounded-full text-[11px] md:text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === t.id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
                   >
                     {t.name}
                   </button>
                 ))}
                 <button 
                   onClick={() => setFilterTeam('UNASSIGNED')} 
-                  className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === 'UNASSIGNED' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                  className={`px-3 py-1 rounded-full text-[11px] md:text-[13px] font-bold whitespace-nowrap transition-all border ${filterTeam === 'UNASSIGNED' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
                 >
                   Chưa phân công
                 </button>
@@ -196,10 +204,10 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
 
             {/* Status Pills */}
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-2 px-2 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <div className="flex gap-2 shrink-0 items-center">
+              <div className="flex gap-1.5 shrink-0 items-center">
                 <button 
                   onClick={() => setFilterStatus('ALL')}
-                  className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-all border ${filterStatus === 'ALL' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                  className={`px-3 py-1 rounded-full text-[11px] md:text-[12px] font-bold whitespace-nowrap transition-all border ${filterStatus === 'ALL' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
                 >
                   Tất cả trạng thái
                 </button>
@@ -213,18 +221,18 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                     <button 
                       key={step.id}
                       onClick={() => setFilterStatus(step.id)}
-                      className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-all border ${colorClasses} flex items-center gap-1.5`}
+                      className={`px-3 py-1 rounded-full text-[11px] md:text-[12px] font-bold whitespace-nowrap transition-all border ${colorClasses} flex items-center gap-1`}
                     >
-                      {isSelected && <Icon className="w-3.5 h-3.5" />}
+                      {isSelected && <Icon className="w-3 h-3" />}
                       {step.label}
                     </button>
                   );
                 })}
                 <button 
                   onClick={() => setFilterStatus('CANCELLED')}
-                  className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-all border ${filterStatus === 'CANCELLED' ? STATUS_MAP['CANCELLED'].color : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'} flex items-center gap-1.5`}
+                  className={`px-3 py-1 rounded-full text-[11px] md:text-[12px] font-bold whitespace-nowrap transition-all border ${filterStatus === 'CANCELLED' ? STATUS_MAP['CANCELLED'].color : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'} flex items-center gap-1`}
                 >
-                  {filterStatus === 'CANCELLED' && <STATUS_MAP.CANCELLED.icon className="w-3.5 h-3.5" />}
+                  {filterStatus === 'CANCELLED' && <STATUS_MAP.CANCELLED.icon className="w-3 h-3" />}
                   Đã hủy
                 </button>
               </div>
@@ -244,21 +252,21 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
           });
           if (returnAlerts.length === 0) return null;
           return (
-            <div className="mb-4 bg-orange-50 border border-orange-200 rounded-xl p-4">
-              <h3 className="font-bold text-orange-800 flex items-center gap-2 mb-2">
-                <icons.AlertTriangle className="w-5 h-5" /> 
+            <div className="mb-3 bg-orange-50 border border-orange-200 rounded-xl p-2.5 md:p-4">
+              <h3 className="font-bold text-orange-800 flex items-center gap-1.5 mb-2 text-[12px] md:text-base">
+                <icons.AlertTriangle className="w-4 h-4 md:w-5 md:h-5" /> 
                 Cảnh báo Thu hồi ({returnAlerts.length} đơn)
               </h3>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5">
                 {returnAlerts.map(alert => {
                   const dt = new Date(alert.return_date);
                   dt.setHours(23, 59, 59, 999);
                   const isOverdue = differenceInDays(dt, new Date()) < 0;
                   return (
-                    <Link key={alert.id} href={`/dashboard/orders/${alert.id}`} className="bg-white px-3 py-2 rounded-lg border border-orange-100 flex items-center justify-between hover:bg-orange-100/50 transition">
-                      <div className="text-sm font-medium text-orange-900">{alert.order_code} - {alert.contract?.customer?.bride_name || alert.contract?.customer?.groom_name}</div>
-                      <div className={`text-xs font-bold px-2 py-1 rounded ${isOverdue ? 'text-rose-600 bg-rose-50' : 'text-orange-600 bg-orange-100'}`}>
-                        {isOverdue ? 'Quá hạn' : 'Về hôm nay'} ({format(new Date(alert.return_date), "dd/MM/yyyy")})
+                    <Link key={alert.id} href={`/dashboard/orders/${alert.id}`} className="bg-white px-2.5 py-1.5 md:px-3 md:py-2 rounded-lg border border-orange-100 flex items-center justify-between hover:bg-orange-100/50 transition">
+                      <div className="text-[11px] md:text-sm font-medium text-orange-900 truncate flex-1 pr-2">{alert.order_code} - {alert.contract?.customer?.bride_name || alert.contract?.customer?.groom_name}</div>
+                      <div className={`text-[10px] md:text-xs font-bold px-1.5 py-0.5 rounded shrink-0 ${isOverdue ? 'text-rose-600 bg-rose-50' : 'text-orange-600 bg-orange-100'}`}>
+                        {isOverdue ? 'Quá hạn' : 'Hôm nay'}
                       </div>
                     </Link>
                   )

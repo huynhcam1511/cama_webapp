@@ -119,7 +119,7 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
   return (
     <div className="space-y-6">
       {/* SEARCH & FILTER BAR */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 px-3 md:px-0 mt-2">
          <div className="relative flex-1 max-w-md">
            <icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
            <input 
@@ -227,7 +227,7 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
               </div>
 
               {/* MOBILE CARDS VIEW */}
-              <div className="flex flex-col md:hidden gap-3 pb-24 mt-3">
+              <div className="flex flex-col md:hidden gap-3 pb-24 mt-3 px-3">
                  {filteredContracts.length === 0 && (
                     <div className="text-center py-8 text-slate-500 text-sm italic bg-white rounded-xl shadow-sm border border-slate-200">
                       Không tìm thấy kết quả nào.
@@ -241,63 +241,56 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
                     const badgeBg = progress.percent === 100 ? 'bg-emerald-100 text-emerald-700' : progress.total === 0 ? 'bg-slate-100 text-slate-600' : 'bg-emerald-100 text-emerald-700';
                     const statusText = progress.percent === 100 ? 'HOÀN THÀNH' : progress.total === 0 ? 'CHỜ XỬ LÝ' : 'ĐANG XỬ LÝ';
 
+                    const bride = contract.customers?.bride_name || "";
+                    const groom = contract.customers?.groom_name || "";
+                    const customerName = bride && groom ? `${bride} & ${groom}` : (bride || groom || "Khách Hàng");
+                    const phone = contract.customers?.phone || "Chưa cập nhật";
+                    
+                    const picNames = contract.assigned_staff_names && contract.assigned_staff_names.length > 0 
+                      ? contract.assigned_staff_names.join(', ') 
+                      : (contract.assigned_staff_name || "Chưa PIC");
+
                     return (
-                       <Link href={`/dashboard/customer-journey/${contract.id}`} key={contract.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 flex flex-col gap-0 relative overflow-hidden active:scale-[0.98] transition-transform">
+                       <Link href={`/dashboard/customer-journey/${contract.id}`} key={contract.id} className="bg-white rounded-xl shadow-sm border border-slate-200 relative overflow-hidden active:scale-[0.98] transition-transform">
                           {/* Left Border Indicator */}
-                          <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${percentColor}`}></div>
+                          <div className={`absolute left-0 top-0 bottom-0 w-1 ${percentColor}`}></div>
                           
-                          {/* Row 1: Name & Phone & Badge */}
-                          <div className="flex justify-between items-center mb-2 pl-2">
-                             <div className="flex items-center gap-2 overflow-hidden mr-2">
-                                <div className="font-extrabold text-slate-900 text-[13px] uppercase tracking-tight truncate max-w-[130px] sm:max-w-[150px]">
-                                   {contract.customers?.bride_name} & {contract.customers?.groom_name}
-                                </div>
-                                <div className="flex items-center gap-1 text-[11px] font-mono text-slate-500 shrink-0">
-                                   <icons.Phone className="w-3 h-3" /> {contract.customers?.phone || "Chưa cập nhật SĐT"}
-                                </div>
-                             </div>
-                             <div className={`shrink-0 px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-widest whitespace-nowrap ${badgeBg}`}>
-                                {statusText}
-                             </div>
-                          </div>
+                          <div className="p-2.5 pl-3 flex flex-col gap-1.5">
+                            {/* Row 1: Name, Phone & Badge */}
+                            <div className="flex justify-between items-start gap-2">
+                               <div className="font-bold text-slate-900 text-[13px] truncate flex-1 leading-tight">
+                                  {customerName}
+                                  <span className="font-mono font-medium text-slate-500 text-[10px] ml-1.5 whitespace-nowrap">
+                                    <icons.Phone className="w-2.5 h-2.5 inline -mt-0.5" /> {phone}
+                                  </span>
+                               </div>
+                               <div className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${badgeBg}`}>
+                                  {statusText}
+                               </div>
+                            </div>
 
-                          {/* Row 2: Note/Stage + Contract info */}
-                          <div className="mb-2.5 ml-1 bg-slate-50/80 p-2 rounded-xl border border-slate-100/60 flex justify-between items-center">
-                             <div className="flex flex-col gap-0.5 overflow-hidden">
-                                {progress.currentStage ? (
-                                   <div className="text-[11px] font-semibold text-slate-700 truncate">{progress.currentStage}</div>
-                                ) : (
-                                   <div className="text-[11px] font-medium text-slate-500 italic truncate">{note || "Không có ghi chú"}</div>
-                                )}
-                                
-                                <div className="text-emerald-600 font-mono text-[10px] font-bold">
-                                   <icons.Link className="w-3 h-3 inline mr-1 -mt-0.5" />{contract.contract_code}
-                                </div>
-                             </div>
-                             
-                             <div className="flex flex-col gap-0.5 items-end shrink-0 pl-3 border-l border-slate-200/60">
-                                <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                                   <icons.User className="w-3 h-3" />
-                                   <span className="font-bold text-slate-700">Chưa PIC</span>
-                                </div>
-                                <div className="text-[9px] text-emerald-600 font-bold flex items-center">
-                                   Chi tiết <icons.ChevronRight className="w-3 h-3 ml-0.5" />
-                                </div>
-                             </div>
-                          </div>
+                            {/* Row 2: Code, Stage/Note, PIC */}
+                            <div className="text-[10px] text-slate-500 flex items-center gap-1.5 truncate">
+                               <span className="text-emerald-600 font-mono font-bold shrink-0">{contract.contract_code}</span>
+                               <span className="text-slate-300 shrink-0">•</span>
+                               <span className="text-slate-700 font-medium truncate max-w-[140px]">
+                                 {progress.currentStage ? progress.currentStage : (note || "Không có ghi chú")}
+                               </span>
+                               <span className="text-slate-300 shrink-0">•</span>
+                               <span className="truncate max-w-[70px]">{picNames}</span>
+                            </div>
 
-                          {/* Row 3: Progress Timeline */}
-                          <div className="pt-2 border-t border-slate-100 ml-1">
-                             <div className="flex justify-between items-center text-[10px] font-bold tracking-wide text-slate-500 mb-1.5">
-                                <div className="flex items-center gap-1.5">
-                                  <icons.Target className="w-3 h-3 text-orange-500" />
-                                  <span className="uppercase text-orange-500">{progress.completed}/{progress.total} TASK</span>
-                                </div>
-                                <span className="font-mono text-emerald-600">{progress.percent}%</span>
-                             </div>
-                             <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                <div className={`h-full rounded-full transition-all duration-500 ${percentColor}`} style={{ width: `${progress.percent}%` }}></div>
-                             </div>
+                            {/* Row 3: Progress Bar Inline */}
+                            <div className="flex items-center gap-2 pt-1.5 mt-0.5 border-t border-slate-100">
+                               <div className="flex items-center gap-1 text-[9px] font-bold text-orange-500 shrink-0 tracking-wide uppercase">
+                                 <icons.Target className="w-3 h-3" />
+                                 {progress.completed}/{progress.total} TASK
+                               </div>
+                               <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                  <div className={`h-full rounded-full transition-all duration-500 ${percentColor}`} style={{ width: `${progress.percent}%` }}></div>
+                               </div>
+                               <span className="text-[9px] font-mono font-bold text-emerald-600 shrink-0">{progress.percent}%</span>
+                            </div>
                           </div>
                        </Link>
                     );

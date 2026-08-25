@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Clock3, Eye, History, ImageIcon, Loader2, MapPin, PackageCheck, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { Clock3, Eye, History, ImageIcon, Loader2, MapPin, PackageCheck, Plus, Search, SlidersHorizontal, X, Calendar as CalendarIcon, Wrench, CheckCircle2, List } from "lucide-react";
 import { getInventoryCatalog, getInventoryIntakeHistory } from "./actions";
 
 const dateTime = (value: string) => new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "medium", hour12: false }).format(new Date(value));
@@ -25,6 +25,7 @@ export default function InventoryCatalogPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [tab, setTab] = useState<"stock" | "history">("stock");
   const [detail, setDetail] = useState<any>(null);
+  const [detailTab, setDetailTab] = useState<"info" | "calendar" | "instances">("info");
 
   const load = async () => {
     setLoading(true); setError(""); setHistoryError("");
@@ -89,17 +90,23 @@ export default function InventoryCatalogPage() {
       {loading ? <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-indigo-600" /></div> : tab === "stock" ? (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="md:hidden divide-y divide-slate-100">
-            {filtered.map(model => { const sizes = Object.entries((model.instances || []).reduce((acc: any, x: any) => { const key = x.size_code || "?"; acc[key] = (acc[key] || 0) + 1; return acc; }, {})); return <button type="button" key={model.id} onClick={() => setDetail({ type: "model", data: model })} className="w-full p-3 text-left flex gap-3 active:bg-slate-50">
+            {filtered.map(model => { const sizes = Object.entries((model.instances || []).reduce((acc: any, x: any) => { const key = x.size_code || "?"; acc[key] = (acc[key] || 0) + 1; return acc; }, {})); const statusCounts = (model.instances || []).reduce((acc: any, x: any) => { const s = x.status || "AVAILABLE"; acc[s] = (acc[s] || 0) + 1; return acc; }, {} as Record<string, number>); return <button type="button" key={model.id} onClick={() => setDetail({ type: "model", data: model })} className="w-full p-3 text-left flex gap-3 active:bg-slate-50">
               <div className="w-16 h-20 bg-slate-100 rounded-xl overflow-hidden shrink-0">{model.image_url ? <img src={model.image_url} alt={model.name} className="w-full h-full object-cover" /> : <ImageIcon className="m-5 text-slate-300" />}</div>
-              <div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><strong className="text-slate-900 leading-tight line-clamp-2">{model.name}</strong><Eye size={18} className="text-indigo-500 shrink-0" /></div><code className="block text-xs text-indigo-700 mt-1 truncate">{model.base_sku}</code><div className="flex flex-wrap gap-1 mt-2">{sizes.map(([name, qty]: any) => <span key={name} className="badge">{name}: <b>{qty}</b></span>)}<span className="badge !bg-emerald-50 !text-emerald-700">Tổng {model.instances?.length || 0}</span></div><div className="flex gap-1 items-center text-xs text-slate-500 mt-2 truncate"><MapPin size={13} className="shrink-0" /> {[model.default_location_floor, model.default_location_shelf, model.default_location_tier].filter(Boolean).join(" › ") || "Chưa có vị trí"}</div></div>
+              <div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><strong className="text-slate-900 leading-tight line-clamp-2">{model.name}</strong><Eye size={18} className="text-indigo-500 shrink-0" /></div><code className="block text-xs text-indigo-700 mt-1 truncate">{model.base_sku}</code><div className="flex flex-wrap gap-1 mt-2">{sizes.map(([name, qty]: any) => <span key={name} className="badge">{name}: <b>{qty}</b></span>)}{statusCounts.AVAILABLE > 0 && <span className="badge !bg-emerald-50 !text-emerald-700">Sẵn sàng: {statusCounts.AVAILABLE}</span>}
+   {statusCounts.RENTED > 0 && <span className="badge !bg-indigo-50 !text-indigo-700">Cho thuê: {statusCounts.RENTED}</span>}
+   {statusCounts.MAINTENANCE > 0 && <span className="badge !bg-amber-50 !text-amber-700">Bảo trì: {statusCounts.MAINTENANCE}</span>}</div><div className="flex gap-1 items-center text-xs text-slate-500 mt-2 truncate"><MapPin size={13} className="shrink-0" /> {[model.default_location_floor, model.default_location_shelf, model.default_location_tier].filter(Boolean).join(" › ") || "Chưa có vị trí"}</div></div>
             </button>; })}
             {!filtered.length && <div className="px-5 py-12 text-center text-sm text-slate-500">Chưa có sản phẩm phù hợp.<div className="mt-1">Bấm “Khai báo sản phẩm” để bắt đầu.</div></div>}
           </div>
           <div className="hidden md:block overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th>Sản phẩm</th><th>Mã nhận diện</th><th>Size & tồn</th><th>Vị trí</th><th>Cập nhật</th><th /></tr></thead><tbody>
-            {filtered.map(model => { const sizes = Object.entries((model.instances || []).reduce((acc: any, x: any) => { const key = x.size_code || "?"; acc[key] = (acc[key] || 0) + 1; return acc; }, {})); return <tr key={model.id}>
+            {filtered.map(model => { const sizes = Object.entries((model.instances || []).reduce((acc: any, x: any) => { const key = x.size_code || "?"; acc[key] = (acc[key] || 0) + 1; return acc; }, {})); const statusCounts = (model.instances || []).reduce((acc: any, x: any) => { const s = x.status || "AVAILABLE"; acc[s] = (acc[s] || 0) + 1; return acc; }, {} as Record<string, number>); return <tr key={model.id}>
               <td><div className="flex items-center gap-3"><div className="w-12 h-16 bg-slate-100 rounded-lg overflow-hidden shrink-0">{model.image_url ? <img src={model.image_url} alt={model.name} className="w-full h-full object-cover" /> : <ImageIcon className="m-3 text-slate-300" />}</div><div><strong className="text-slate-900">{model.name}</strong><div className="text-xs text-slate-400 mt-1">{model.group_type} · {model.color_name || model.color_code}</div></div></div></td>
               <td><code className="text-indigo-700">{model.base_sku}</code><div className="text-xs text-slate-400 mt-1">Mác: {model.factory_code || "—"}</div><div className="text-xs text-slate-400 mt-0.5">Hãng: {model.supplier || "—"}</div></td>
-              <td><div className="flex flex-wrap gap-1">{sizes.map(([name, qty]: any) => <span key={name} className="badge">{name}: <b>{qty}</b></span>)}</div><div className="text-xs text-emerald-600 mt-1 font-bold">Tổng {model.instances?.length || 0}</div></td>
+              <td><div className="flex flex-wrap gap-1">{sizes.map(([name, qty]: any) => <span key={name} className="badge">{name}: <b>{qty}</b></span>)}</div><div className="flex gap-1 mt-1 flex-wrap">
+      {statusCounts.AVAILABLE > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-md font-bold">Sẵn sàng {statusCounts.AVAILABLE}</span>}
+      {statusCounts.RENTED > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-md font-bold">Cho thuê {statusCounts.RENTED}</span>}
+      {statusCounts.MAINTENANCE > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-md font-bold">Bảo trì {statusCounts.MAINTENANCE}</span>}
+   </div></td>
               <td><span className="flex gap-1 items-center text-slate-600"><MapPin size={14} /> {[model.default_location_floor, model.default_location_shelf, model.default_location_tier].filter(Boolean).join(" › ")}</span></td>
               <td className="text-slate-500">{model.updated_at ? dateTime(model.updated_at) : "—"}</td>
               <td><button onClick={() => setDetail({ type: "model", data: model })} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"><Eye /></button></td>
@@ -124,11 +131,90 @@ export default function InventoryCatalogPage() {
         <div className="grid grid-cols-[auto_1fr] gap-2 mt-5"><button type="button" onClick={resetFilters} className="px-4 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold">Xóa lọc</button><button type="button" onClick={() => setFilterOpen(false)} className="px-4 py-3 rounded-xl bg-indigo-600 text-white font-black">Xem {filtered.length} sản phẩm</button></div>
       </div></div>}
 
-      {detail && <div className="fixed inset-0 z-[100] bg-slate-950/50 backdrop-blur-sm p-4 flex items-center justify-center" onClick={() => setDetail(null)}><div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}><div className="p-5 border-b flex justify-between"><h2 className="text-xl font-black">{detail.type === "model" ? "Chi tiết sản phẩm" : "Chi tiết lần nhập"}</h2><button onClick={() => setDetail(null)}><X /></button></div><div className="p-6 space-y-5">
-        {(detail.data.image_url || detail.data.model?.image_url) && <div className="flex gap-3 overflow-x-auto"><img src={detail.data.image_url || detail.data.model?.image_url} alt="Sản phẩm" className="w-40 aspect-[3/4] object-cover rounded-xl" />{(detail.data.additional_images || []).map((url: string) => <img key={url} src={url} alt="Sản phẩm" className="w-40 aspect-[3/4] object-cover rounded-xl" />)}</div>}
-        {detail.type === "model" ? <div className="grid sm:grid-cols-2 gap-3"><Info label="Tên" value={detail.data.name} /><Info label="Mã mẫu" value={detail.data.base_sku} /><Info label="Mã mác" value={detail.data.factory_code} /><Info label="Nhóm/Form/Chất liệu" value={`${detail.data.group_type} / ${detail.data.style_details} / ${detail.data.material_pattern}`} /><Info label="Màu" value={detail.data.color_name || detail.data.color_code} /><Info label="Vị trí" value={[detail.data.default_location_floor, detail.data.default_location_shelf, detail.data.default_location_tier].filter(Boolean).join(" › ")} /></div> : <div className="grid sm:grid-cols-2 gap-3"><Info label="Hoàn tất lúc" value={dateTime(detail.data.completed_at)} /><Info label="Tổng số lượng" value={detail.data.total_quantity} /><Info label="Vị trí" value={[detail.data.location_floor, detail.data.location_shelf, detail.data.location_tier].filter(Boolean).join(" › ")} /><Info label="Nhà cung cấp" value={detail.data.supplier} /><Info label="Ghi chú" value={detail.data.notes} /></div>}
-        {detail.type === "history" && <div><h3 className="font-bold mb-2">Chi tiết size</h3>{detail.data.lines.map((line: any) => <div key={line.id} className="p-3 border rounded-xl mb-2">Size <b>{line.size_code}</b> · {line.quantity} chiếc · Cao {line.height_note || "—"} · Nặng {line.weight_note || "—"}<div className="text-slate-500 text-sm">{line.fit_note || "Không có ghi chú"}</div></div>)}</div>}
-      </div></div></div>}
+      {detail && <div className="fixed inset-0 z-[100] bg-slate-950/50 backdrop-blur-sm p-4 flex items-center justify-center" onClick={() => setDetail(null)}><div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}><div className="p-5 border-b flex justify-between items-center"><h2 className="text-xl font-black">{detail.type === "model" ? "Chi tiết sản phẩm" : "Chi tiết lần nhập"}</h2><button onClick={() => setDetail(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20} /></button></div>
+        
+        {detail.type === "model" && (
+          <div className="flex px-5 pt-3 border-b border-slate-200 gap-4">
+            <button onClick={() => setDetailTab("info")} className={`pb-3 text-sm font-bold border-b-2 ${detailTab === "info" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Thông tin chung</button>
+            <button onClick={() => setDetailTab("instances")} className={`pb-3 text-sm font-bold border-b-2 ${detailTab === "instances" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Danh sách mã vạch</button>
+            <button onClick={() => setDetailTab("calendar")} className={`pb-3 text-sm font-bold border-b-2 ${detailTab === "calendar" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Lịch trình 30 ngày</button>
+          </div>
+        )}
+
+        <div className="p-6 space-y-5">
+        {detailTab === "info" && (
+          <>
+            {(detail.data.image_url || detail.data.model?.image_url) && <div className="flex gap-3 overflow-x-auto pb-2"><img src={detail.data.image_url || detail.data.model?.image_url} alt="Sản phẩm" className="w-40 aspect-[3/4] object-cover rounded-xl" />{(detail.data.additional_images || []).map((url: string) => <img key={url} src={url} alt="Sản phẩm" className="w-40 aspect-[3/4] object-cover rounded-xl" />)}</div>}
+            {detail.type === "model" ? <div className="grid sm:grid-cols-2 gap-3"><Info label="Tên" value={detail.data.name} /><Info label="Mã mẫu" value={detail.data.base_sku} /><Info label="Mã mác" value={detail.data.factory_code} /><Info label="Nhóm/Form/Chất liệu" value={`${detail.data.group_type} / ${detail.data.style_details} / ${detail.data.material_pattern}`} /><Info label="Màu" value={detail.data.color_name || detail.data.color_code} /><Info label="Vị trí mặc định" value={[detail.data.default_location_floor, detail.data.default_location_shelf, detail.data.default_location_tier].filter(Boolean).join(" › ")} /></div> : <div className="grid sm:grid-cols-2 gap-3"><Info label="Hoàn tất lúc" value={dateTime(detail.data.completed_at)} /><Info label="Tổng số lượng" value={detail.data.total_quantity} /><Info label="Vị trí" value={[detail.data.location_floor, detail.data.location_shelf, detail.data.location_tier].filter(Boolean).join(" › ")} /><Info label="Nhà cung cấp" value={detail.data.supplier} /><Info label="Ghi chú" value={detail.data.notes} /></div>}
+            {detail.type === "history" && <div><h3 className="font-bold mb-2">Chi tiết size</h3>{detail.data.lines.map((line: any) => <div key={line.id} className="p-3 border rounded-xl mb-2">Size <b>{line.size_code}</b> · {line.quantity} chiếc · Cao {line.height_note || "—"} · Nặng {line.weight_note || "—"}<div className="text-slate-500 text-sm">{line.fit_note || "Không có ghi chú"}</div></div>)}</div>}
+          </>
+        )}
+
+        {detailTab === "instances" && detail.type === "model" && (
+          <div className="space-y-3">
+             <div className="flex items-center justify-between mb-2">
+               <h3 className="font-black text-slate-800">Từng sản phẩm cụ thể ({detail.data.instances?.length || 0})</h3>
+             </div>
+             <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+               {(detail.data.instances || []).map((inst: any, idx: number) => (
+                 <div key={inst.id} className="p-4 bg-white flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
+                    <div>
+                      <div className="font-bold text-slate-800">Size: {inst.size_code}</div>
+                      <div className="text-xs text-slate-500 mt-1 flex items-center gap-1"><MapPin size={12}/> {[inst.location_floor, inst.location_shelf, inst.location_tier].filter(Boolean).join(" › ") || "Chưa xếp vị trí"}</div>
+                    </div>
+                    <div className="flex gap-2">
+                       <select 
+                         className={`text-xs font-bold px-3 py-2 rounded-lg border ${inst.status === 'RENTED' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : inst.status === 'MAINTENANCE' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}
+                         value={inst.status || "AVAILABLE"}
+                         onChange={(e) => alert("Tính năng thay đổi trạng thái sẽ kết nối API ở bản cập nhật sau. Trạng thái chọn: " + e.target.value)}
+                       >
+                         <option value="AVAILABLE">Sẵn sàng</option>
+                         <option value="RENTED">Đang cho thuê</option>
+                         <option value="MAINTENANCE">Báo hỏng / Đi giặt</option>
+                       </select>
+                    </div>
+                 </div>
+               ))}
+               {!(detail.data.instances?.length > 0) && <div className="p-8 text-center text-slate-500 text-sm">Chưa có sản phẩm vật lý nào trong kho.</div>}
+             </div>
+          </div>
+        )}
+
+        {detailTab === "calendar" && detail.type === "model" && (
+          <div className="space-y-4">
+             <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl flex items-start gap-3">
+               <CalendarIcon className="text-indigo-500 shrink-0 mt-0.5" size={20} />
+               <div>
+                 <strong className="text-indigo-900 block text-sm">Chế độ giả lập (Mock Data)</strong>
+                 <p className="text-xs text-indigo-700 mt-1">Dữ liệu hiển thị dưới đây là giả lập để demo UI. Khi module Hợp đồng hoàn tất, lịch thuê thực tế sẽ được fill vào bảng này.</p>
+               </div>
+             </div>
+
+             <div className="border border-slate-200 rounded-xl overflow-hidden">
+               {/* 30 Day Calendar Mock */}
+               <div className="bg-slate-50 p-3 border-b border-slate-200 font-bold text-sm text-slate-700 flex justify-between items-center">
+                 <span>Tháng 10/2026</span>
+                 <div className="flex gap-3 text-[10px]">
+                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400"></span> Trống</span>
+                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-500"></span> Có khách thuê</span>
+                 </div>
+               </div>
+               <div className="grid grid-cols-7 gap-px bg-slate-200">
+                  {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(d => <div key={d} className="bg-white p-2 text-center text-xs font-bold text-slate-500">{d}</div>)}
+                  {Array.from({length: 31}).map((_, i) => {
+                    const isRented = [5, 6, 12, 13, 20, 21, 22].includes(i+1);
+                    return (
+                      <div key={i} className={`bg-white p-1 sm:p-2 h-14 sm:h-20 flex flex-col ${isRented ? 'bg-indigo-50/50' : ''}`}>
+                         <span className={`text-xs font-bold ${isRented ? 'text-indigo-700' : 'text-slate-700'}`}>{i+1}</span>
+                         {isRented && <div className="mt-auto bg-indigo-500 text-white text-[8px] sm:text-[9px] font-black py-0.5 rounded text-center">KÍN</div>}
+                      </div>
+                    )
+                  })}
+               </div>
+             </div>
+          </div>
+        )}
+        </div></div></div>}
       <style jsx>{`th{text-align:left;padding:.85rem 1rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}td{padding:.9rem 1rem;border-top:1px solid #f1f5f9;vertical-align:middle}.tab{display:flex;flex:1;min-width:0;gap:.5rem;align-items:center;justify-content:center;padding:.75rem .5rem;font-weight:700;color:#64748b;border-bottom:2px solid transparent;white-space:nowrap}.tab :global(svg){width:1.25rem;height:1.25rem;flex:none}.tab.active{color:#4f46e5;border-color:#4f46e5}.tab-label{font-size:inherit;line-height:1.25;background:transparent;padding:0;color:inherit}.tab-count,.badge{background:#f1f5f9;border-radius:.5rem;padding:.2rem .45rem;font-size:.72rem;color:#475569;flex:none}`}</style>
     </div>
   );

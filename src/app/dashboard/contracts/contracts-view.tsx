@@ -28,7 +28,8 @@ import {
   ArrowUp,
   Trash2,
   X,
-  Package
+  Package,
+  User
 } from "lucide-react";
 
 import RecordPaymentDialog from "./record-payment-dialog";
@@ -65,6 +66,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc'|'desc'}>({ key: 'created_at', direction: 'desc' });
   const [quickFilter, setQuickFilter] = useState('');
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   
   const [isContractTypeModalOpen, setIsContractTypeModalOpen] = useState(false);
   
@@ -178,70 +180,93 @@ export default function ContractsView({ initialContracts, initialStats, customer
   };
 
   return (
-    <div className="space-y-6 pt-2">
+    <div className="space-y-3 sm:space-y-6 pt-2">
       {/* KPI Summary Cards & Action Button */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 flex-1">
-        <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+      <div className="flex flex-col lg:flex-row gap-4 px-3 sm:px-0">
+        <div className="flex overflow-x-auto snap-x snap-mandatory lg:grid lg:grid-cols-4 gap-2 sm:gap-4 flex-1 pb-1 scrollbar-hide">
+        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+          </div>
+          <div className="flex flex-col sm:block">
+            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               Đang Hiệu Lực
             </span>
-            <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-              <CheckCircle2 className="w-5 h-5" />
+            <div className="flex items-baseline gap-1 sm:mt-2">
+              <span className="text-sm sm:text-2xl font-bold font-mono text-slate-900 leading-none">
+                {initialStats.effective_count}
+              </span>
+              <span className="text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
+                <span className="sm:hidden uppercase font-bold text-slate-600">HĐ Hiệu lực</span>
+                <span className="hidden sm:inline">HĐ</span>
+              </span>
             </div>
-          </div>
-          <div className="text-2xl font-bold font-mono text-slate-900 mt-2">
-            {initialStats.effective_count} <span className="text-xs text-slate-500 font-normal">HĐ</span>
           </div>
         </div>
 
-        <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+          </div>
+          <div className="flex flex-col sm:block">
+            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               Công Nợ Còn Lại
             </span>
-            <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-              <DollarSign className="w-5 h-5" />
+            <div className="flex items-baseline gap-1 sm:mt-2">
+              <span className="text-sm sm:text-xl font-bold font-mono text-blue-600 leading-none">
+                {new Intl.NumberFormat("vi-VN").format(initialStats.total_debt)} ₫
+              </span>
+              <span className="text-[10px] sm:hidden text-slate-500 font-bold uppercase whitespace-nowrap">
+                Nợ
+              </span>
             </div>
-          </div>
-          <div className="text-xl font-bold font-mono text-blue-600 mt-2">
-            {new Intl.NumberFormat("vi-VN").format(initialStats.total_debt)} ₫
           </div>
         </div>
 
-        <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
+            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+          </div>
+          <div className="flex flex-col sm:block">
+            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               Lịch 7 Ngày Tới
             </span>
-            <div className="w-9 h-9 rounded-lg bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600">
-              <Calendar className="w-5 h-5" />
+            <div className="flex items-baseline gap-1 sm:mt-2">
+              <span className="text-sm sm:text-2xl font-bold font-mono text-slate-900 leading-none">
+                {initialStats.upcoming_7days_count}
+              </span>
+              <span className="text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
+                <span className="sm:hidden uppercase font-bold text-slate-600">Lịch Tới</span>
+                <span className="hidden sm:inline">sự kiện</span>
+              </span>
             </div>
-          </div>
-          <div className="text-2xl font-bold font-mono text-slate-900 mt-2">
-            {initialStats.upcoming_7days_count} <span className="text-xs text-slate-500 font-normal">sự kiện</span>
           </div>
         </div>
 
-        <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0">
+            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
+          </div>
+          <div className="flex flex-col sm:block">
+            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               Quá Hạn Thanh Toán
             </span>
-            <div className="w-9 h-9 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-600">
-              <AlertTriangle className="w-5 h-5" />
+            <div className="flex items-baseline gap-1 sm:mt-2">
+              <span className="text-sm sm:text-2xl font-bold font-mono text-red-600 leading-none">
+                {initialStats.overdue_count}
+              </span>
+              <span className="text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
+                <span className="sm:hidden uppercase font-bold text-red-600">Quá Hạn</span>
+                <span className="hidden sm:inline">HĐ</span>
+              </span>
             </div>
-          </div>
-          <div className="text-2xl font-bold font-mono text-red-600 mt-2">
-            {initialStats.overdue_count} <span className="text-xs text-slate-500 font-normal">HĐ</span>
           </div>
         </div>
         </div>
         
         {/* Create Contract Button Card */}
         {canCreate && (
-          <div className="flex shrink-0 lg:w-[180px]">
+          <div className="hidden sm:flex shrink-0 lg:w-[180px]">
             <button
               onClick={() => setIsContractTypeModalOpen(true)}
               className="group relative overflow-hidden bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 rounded-xl transition-all duration-300 flex flex-col items-center justify-center gap-2.5 p-4 w-full h-full shadow-[0_8px_20px_rgb(245,158,11,0.25)] hover:shadow-[0_8px_25px_rgb(245,158,11,0.4)] hover:-translate-y-1 border border-amber-400/50"
@@ -264,21 +289,41 @@ export default function ContractsView({ initialContracts, initialStats, customer
       {/* Main Container Card */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         {/* Search & Filter Bar */}
-        <div className="p-4 border-b border-slate-200 bg-slate-50/50 space-y-3">
+        <div className="p-3 sm:p-4 border-b border-slate-200 bg-slate-50/50 space-y-3 relative">
           <div className="flex flex-col md:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm theo Mã CAMA-xxxx, Số HĐ giấy (0012492), Tên Cô dâu, Chú rể, SĐT..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400 shadow-sm"
-              />
+            <div className="flex gap-2 flex-1 w-full">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo Mã CAMA-xxxx, SĐT..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400 shadow-sm"
+                />
+              </div>
+              
+              {/* Mobile Action Buttons */}
+              <div className="flex sm:hidden gap-1.5 shrink-0">
+                <button
+                  onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+                  className={`flex items-center justify-center w-9 h-9 rounded-lg border ${isMobileFilterOpen || contractTypeFilter || contractStatusFilter || paymentStatusFilter || quickFilter ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600'}`}
+                >
+                  <Filter className="w-4 h-4" />
+                </button>
+                {canCreate && (
+                  <button
+                    onClick={() => setIsContractTypeModalOpen(true)}
+                    className="flex items-center justify-center w-9 h-9 bg-blue-600 text-white rounded-lg shadow-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
 
-            
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Desktop Filters */}
+            <div className="hidden sm:flex flex-wrap items-center gap-2">
               <select
                 value={contractTypeFilter}
                 onChange={(e) => setContractTypeFilter(e.target.value)}
@@ -294,7 +339,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 onChange={(e) => setContractStatusFilter(e.target.value)}
                 className="bg-white text-slate-700 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-500 shadow-sm"
               >
-                <option value="">Tất cả Trạng thái HĐ</option>
+                <option value="">Tất cả Trạng thái</option>
                 <option value="DRAFT">Nháp</option>
                 <option value="CONFIRMED">Đã xác nhận</option>
                 <option value="EFFECTIVE">Đang hiệu lực</option>
@@ -309,12 +354,12 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 className="bg-white text-slate-700 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-500 shadow-sm"
               >
                 <option value="">Tất cả Thanh toán</option>
-                <option value="UNPAID">Chưa thanh toán</option>
-                <option value="VALUE_UNDETERMINED">Chưa XĐ Giá Trị</option>
-                <option value="DEPOSITED">Đã đặt cọc</option>
-                <option value="PARTIALLY_PAID">Thanh toán 1 phần</option>
-                <option value="FULLY_PAID">Đã thanh toán đủ</option>
-                <option value="OVERDUE">Quá hạn thanh toán</option>
+                <option value="UNPAID">Chưa TT</option>
+                <option value="VALUE_UNDETERMINED">Chưa XĐ</option>
+                <option value="DEPOSITED">Đã cọc</option>
+                <option value="PARTIALLY_PAID">TT 1 phần</option>
+                <option value="FULLY_PAID">Đã đủ</option>
+                <option value="OVERDUE">Quá hạn</option>
               </select>
 
               {(searchQuery || contractStatusFilter || paymentStatusFilter || debtOnlyFilter || overdueOnlyFilter || quickFilter !== '') && (
@@ -330,13 +375,13 @@ export default function ContractsView({ initialContracts, initialStats, customer
             </div>
           </div>
           
-          {/* Quick Filters */}
-          <div className="flex flex-wrap gap-2 pt-1">
+          {/* Desktop Quick Filters */}
+          <div className="hidden sm:flex flex-wrap gap-2 pt-1">
              {[
                { id: '', label: 'Tất cả' },
-               { id: 'NEW', label: 'Mới tạo gần đây' },
+               { id: 'NEW', label: 'Mới tạo' },
                { id: 'HIGH_DEBT', label: 'Công nợ > 10Tr' },
-               { id: 'DUE_SOON', label: 'Sắp đến hạn thanh toán' },
+               { id: 'DUE_SOON', label: 'Sắp đến hạn' },
                { id: 'OVERDUE', label: 'Quá hạn trước' },
                { id: 'UNASSIGNED', label: 'Chưa có phụ trách' }
              ].map(q => (
@@ -349,11 +394,62 @@ export default function ContractsView({ initialContracts, initialStats, customer
                </button>
              ))}
           </div>
+
+          {/* Mobile Filter Panel */}
+          {isMobileFilterOpen && (
+            <div className="sm:hidden absolute top-full left-0 right-0 z-40 bg-white border border-slate-200 p-4 shadow-xl rounded-b-xl flex flex-col gap-3">
+              <select
+                value={contractTypeFilter}
+                onChange={(e) => setContractTypeFilter(e.target.value)}
+                className="w-full bg-white text-slate-700 border border-slate-200 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Tất cả Loại HĐ</option>
+                <option value="SERVICE">HĐ Dịch Vụ</option>
+                <option value="SALES">HĐ Bán Hàng</option>
+              </select>
+              <select
+                value={contractStatusFilter}
+                onChange={(e) => setContractStatusFilter(e.target.value)}
+                className="w-full bg-white text-slate-700 border border-slate-200 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Tất cả Trạng thái</option>
+                <option value="DRAFT">Nháp</option>
+                <option value="CONFIRMED">Đã xác nhận</option>
+                <option value="EFFECTIVE">Đang hiệu lực</option>
+                <option value="COMPLETED">Đã hoàn tất</option>
+                <option value="CANCELLED">Đã hủy</option>
+              </select>
+              <select
+                value={paymentStatusFilter}
+                onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                className="w-full bg-white text-slate-700 border border-slate-200 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Tất cả Thanh toán</option>
+                <option value="UNPAID">Chưa TT</option>
+                <option value="DEPOSITED">Đã cọc</option>
+                <option value="PARTIALLY_PAID">TT 1 phần</option>
+                <option value="FULLY_PAID">Đã đủ</option>
+                <option value="OVERDUE">Quá hạn</option>
+              </select>
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                {['', 'NEW', 'HIGH_DEBT', 'DUE_SOON', 'OVERDUE'].map(q => (
+                  <button
+                    key={q}
+                    onClick={() => setQuickFilter(q)}
+                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full border ${quickFilter === q ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border-slate-200'}`}
+                  >
+                    {q || 'Tất cả'}
+                  </button>
+                ))}
+              </div>
+              <button onClick={handleResetFilters} className="w-full mt-2 py-2 text-center text-sm text-red-600 bg-red-50 rounded-lg font-medium">Đặt lại bộ lọc</button>
+            </div>
+          )}
         </div>
 
         {/* Table View (Clean Light Theme) */}
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left whitespace-nowrap">
+          <table className="w-full text-xs text-left whitespace-nowrap hidden md:table">
             <thead className="uppercase bg-slate-50 text-slate-500 border-b border-slate-200 font-bold tracking-wider">
               <tr>
                 <th className="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-[130px]" onClick={() => handleSort('created_at')}>
@@ -542,6 +638,123 @@ export default function ContractsView({ initialContracts, initialStats, customer
               )}
             </tbody>
           </table>
+        </div>
+        
+        {/* Mobile Cards View */}
+        <div className="md:hidden flex flex-col gap-3 p-3 bg-slate-50">
+          {filteredContracts.length === 0 ? (
+             <div className="p-6 text-center text-slate-500 text-sm bg-white rounded-xl">Không tìm thấy hợp đồng nào.</div>
+          ) : (
+             filteredContracts.map((contract) => {
+                const total = contract.total_amount || 0;
+                let paid = contract.paid_amount || 0;
+                let displayDueDate = contract.payment_due_date;
+
+                // Fallback for existing contracts that were saved before the new logic
+                if (paid === 0 && contract.notes) {
+                  try {
+                    const parsedNotes = typeof contract.notes === 'string' ? JSON.parse(contract.notes) : contract.notes;
+                    if (parsedNotes.legacy_installments && Array.isArray(parsedNotes.legacy_installments)) {
+                      paid = parsedNotes.legacy_installments
+                        .filter((i: any) => i.status === "PAID")
+                        .reduce((sum: number, item: any) => sum + (Number(item.amount) || 0), 0);
+                      
+                      const nextUnpaid = parsedNotes.legacy_installments.find((i: any) => i.status !== "PAID" && i.payment_date);
+                      if (nextUnpaid && !displayDueDate) {
+                        displayDueDate = nextUnpaid.payment_date;
+                      }
+                    }
+                  } catch (e) {
+                    // ignore parse errors
+                  }
+                }
+
+                const remaining = Math.max(0, total - paid);
+                
+                // Trích xuất tên dịch vụ chính
+                let mainService = "Chưa có DV";
+                let extraServices = 0;
+                if (contract.contract_items && contract.contract_items.length > 0) {
+                  mainService = contract.contract_items[0].service_name;
+                  extraServices = contract.contract_items.length - 1;
+                }
+                
+                // Trích xuất PIC
+                const picNames = contract.assigned_staff_names && contract.assigned_staff_names.length > 0 
+                  ? contract.assigned_staff_names.join(', ') 
+                  : (contract.assigned_staff_name || "---");
+                
+                return (
+                  <div key={contract.id} className="bg-white rounded-xl shadow-sm border border-slate-200 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+                    <div className="p-2.5 pl-3.5 flex flex-col gap-1.5">
+                      {/* Row 1: Name & Badges */}
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="font-bold text-slate-900 text-[13px] truncate flex-1 leading-tight">
+                          {contract.customers?.bride_name || "---"} {contract.customers?.groom_name ? `& ${contract.customers.groom_name}` : ""}
+                        </div>
+                        <div className="shrink-0 flex gap-1">
+                          {contract.contract_type === "SALES" ? (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-blue-100 text-blue-700">Bán</span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-100 text-amber-700">Thuê</span>
+                          )}
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-700">
+                            {contract.contract_status === "COMPLETED" ? "Xong" : contract.contract_status === "CANCELLED" ? "Hủy" : "H.Lực"}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Row 2: Service & PIC & Date */}
+                      <div className="text-[10px] text-slate-500 flex items-center gap-1.5 truncate">
+                        <span className="text-slate-700 font-medium truncate max-w-[120px]">{mainService}</span>
+                        {extraServices > 0 && <span className="text-emerald-600 font-medium text-[9px] shrink-0">+{extraServices}</span>}
+                        <span className="text-slate-300 shrink-0">•</span>
+                        <span className="truncate max-w-[70px]">{picNames}</span>
+                        <span className="text-slate-300 shrink-0">•</span>
+                        <span className={displayDueDate ? "text-amber-600 font-semibold shrink-0" : "shrink-0"}>
+                          {displayDueDate ? new Date(displayDueDate).toLocaleDateString('vi-VN').substring(0, 5) : "---"}
+                        </span>
+                      </div>
+                      
+                      {/* Row 3: Financials & Actions */}
+                      <div className="flex items-end justify-between pt-1.5 mt-0.5 border-t border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div>
+                            <span className="text-[9px] text-slate-400 block leading-none mb-0.5">Tổng tiền</span>
+                            <span className="font-mono font-bold text-slate-700 text-xs">{new Intl.NumberFormat("vi-VN").format(total)}</span>
+                          </div>
+                          <div className="w-px h-5 bg-slate-200"></div>
+                          <div>
+                            <span className="text-[9px] text-slate-400 block leading-none mb-0.5">Còn nợ</span>
+                            {remaining > 0 ? (
+                              <span className="font-mono font-bold text-amber-600 text-xs">{new Intl.NumberFormat("vi-VN").format(remaining)}</span>
+                            ) : (
+                              <span className="font-mono font-bold text-emerald-600 text-xs">0</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <Link href={`/dashboard/contracts/${contract.id}`} className="w-6 h-6 flex items-center justify-center bg-slate-50 text-slate-600 rounded shadow-sm border border-slate-200">
+                            <Eye className="w-3.5 h-3.5"/>
+                          </Link>
+                          {canUpdate && (
+                            <Link href={`/dashboard/contracts/${contract.id}/edit`} className="w-6 h-6 flex items-center justify-center bg-slate-50 text-slate-600 rounded shadow-sm border border-slate-200">
+                              <Edit3 className="w-3.5 h-3.5"/>
+                            </Link>
+                          )}
+                          {canDelete && (
+                            <button onClick={() => setSelectedForCancel(contract)} className="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded shadow-sm border border-red-100">
+                              <Trash2 className="w-3.5 h-3.5"/>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+             })
+          )}
         </div>
       </div>
 

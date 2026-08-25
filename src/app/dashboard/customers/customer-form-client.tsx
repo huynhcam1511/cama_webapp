@@ -95,8 +95,8 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-200 pb-12">
-      <div className="flex items-center justify-between">
+    <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 animate-in fade-in duration-200 pb-12 px-3 md:px-0 mt-2 md:mt-0">
+      <div className="hidden md:flex items-center justify-between">
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-medium text-sm"
@@ -108,22 +108,15 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
 
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col text-slate-900 text-xs">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-              <UserPlus className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold font-serif text-slate-900">
-                {customer ? "Chỉnh Sửa Thông Tin Khách Hàng" : "Thêm Khách Hàng Mới"}
-              </h2>
-              <p className="text-[11px] text-slate-500">Quản lý hồ sơ cô dâu chú rể</p>
-            </div>
-          </div>
+        <div className="p-4 md:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+          <h3 className="text-lg md:text-xl font-bold text-slate-800 flex items-center gap-2">
+            <UserPlus className="w-5 h-5 text-blue-600" />
+            {customer ? 'Chỉnh Sửa Thông Tin Khách Hàng' : 'Thêm Khách Hàng Mới'}
+          </h3>
         </div>
 
         {/* Body Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 flex-1">
+        <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6 flex-1">
           {errorMsg && (
             <div className="p-3 text-xs rounded-lg bg-red-50 border border-red-200 text-red-600 font-medium">
               {errorMsg}
@@ -132,14 +125,15 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
 
           {/* Thông tin Khách hàng Section */}
           <div>
-            <h3 className="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
-              <User className="w-5 h-5 text-blue-500" /> Thông tin khách hàng
-            </h3>
+            <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs">1</span>
+              Thông tin khách hàng
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Tên Cô dâu */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                  <Heart className="w-3.5 h-3.5 text-blue-600" /> Tên Cô Dâu <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
+                  Tên Cô Dâu <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -147,28 +141,28 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
                   placeholder="Ví dụ: Nguyễn Thị Hoa"
                   value={formData.bride_name}
                   onChange={(e) => setFormData({ ...formData, bride_name: e.target.value })}
-                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                  className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors"
                 />
               </div>
 
               {/* Tên Chú rể */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                  <Heart className="w-3.5 h-3.5 text-indigo-600" /> Tên Chú Rể
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
+                  Tên Chú Rể
                 </label>
                 <input
                   type="text"
                   placeholder="Ví dụ: Trần Văn Bình"
                   value={formData.groom_name}
                   onChange={(e) => setFormData({ ...formData, groom_name: e.target.value })}
-                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                  className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors"
                 />
               </div>
 
               {/* Số điện thoại */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-emerald-600" /> Số Điện Thoại <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
+                  Số Điện Thoại <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -176,32 +170,32 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
                   placeholder="0901234567"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                  className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors"
                 />
               </div>
 
               {/* Ngày đám cưới */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-purple-600" /> Ngày Cưới Dự Kiến
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
+                  Ngày Cưới Dự Kiến
                 </label>
                 <input
                   type="date"
                   value={formData.wedding_date}
                   onChange={(e) => setFormData({ ...formData, wedding_date: e.target.value })}
-                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                  className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors"
                 />
               </div>
 
               {/* Nguồn khách */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-blue-600" /> Nguồn Tiếp Cận
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
+                  Nguồn Tiếp Cận
                 </label>
                 <select
                   value={formData.source}
                   onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                  className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors"
                 >
                   <option value="CAMA HAUTE COUTURE">CAMA HAUTE COUTURE</option>
                   <option value="CAMA WEDDING">CAMA WEDDING</option>
@@ -216,35 +210,36 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
             
             {/* Ghi chú */}
             <div className="mt-4">
-              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-slate-500" /> Ghi Chú Chi Tiết
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
+                Ghi Chú Chi Tiết
               </label>
               <textarea
                 rows={3}
                 placeholder="Yêu cầu đặc biệt, phong cách mong muốn, lưu ý thêm..."
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all resize-none shadow-sm"
+                className="w-full p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors resize-none"
               />
             </div>
           </div>
 
           {/* Theo Dõi Tình Trạng (Pipeline) Section */}
           <div className="pt-4">
-            <h3 className="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
-              <FileText className="w-5 h-5 text-orange-500" /> Theo Dõi Tình Trạng (Pipeline)
-            </h3>
+            <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 border-t border-slate-100 pt-4 md:pt-6">
+              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs">2</span>
+              Theo Dõi Tình Trạng (Pipeline)
+            </h4>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Trạng thái Lead */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-orange-600" /> Trạng Thái Lead
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
+                  Trạng Thái Lead
                 </label>
                 <select
                   value={formData.lead_status}
                   onChange={(e) => setFormData({ ...formData, lead_status: e.target.value })}
-                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                  className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors"
                 >
                   <option value="Mới">Mới (Chưa liên hệ)</option>
                   <option value="Đang tư vấn">Đang tư vấn</option>
@@ -256,15 +251,15 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
 
               {/* Ngân sách */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-green-600" /> Ngân Sách Dự Kiến
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
+                  Ngân Sách Dự Kiến
                 </label>
                 <input
                   type="text"
                   placeholder="VD: 15-20 triệu"
                   value={formData.budget}
                   onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                  className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors"
                 />
               </div>
 
@@ -274,7 +269,7 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
                   type="date"
                   value={formData.lead_date}
                   onChange={(e) => setFormData({ ...formData, lead_date: e.target.value })}
-                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                  className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors"
                 />
               </div>
               <div>
@@ -294,7 +289,7 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
                   type="date"
                   value={formData.last_contact}
                   onChange={(e) => setFormData({ ...formData, last_contact: e.target.value })}
-                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                  className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors"
                 />
               </div>
               <div>
@@ -303,7 +298,7 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
                   type="date"
                   value={formData.next_followup}
                   onChange={(e) => setFormData({ ...formData, next_followup: e.target.value })}
-                  className="w-full bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-blue-600 outline-none transition-all shadow-sm"
+                  className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors"
                 />
               </div>
             </div>

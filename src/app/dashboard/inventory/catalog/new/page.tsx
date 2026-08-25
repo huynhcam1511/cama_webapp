@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Camera, ChevronDown, ImagePlus, Loader2, MapPin, Plus, QrCode, Shirt, Trash2 } from "lucide-react";
 import QRScanner from "@/components/qr-scanner";
+import WarehouseMapSelector from "@/components/warehouse-map-selector";
 import { completeInventoryDeclaration, getInventoryFormOptions, uploadGarmentImage } from "../actions";
 
 type Master = { type: string; code: string; name: string; parent_code: string | null };
@@ -68,6 +69,7 @@ export default function InventoryDeclarationPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [locationScannerOpen, setLocationScannerOpen] = useState(false);
+  const [isMobileMapOpen, setIsMobileMapOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [locationLocked, setLocationLocked] = useState(false);
   const [missingFactoryCode, setMissingFactoryCode] = useState(false);
@@ -207,6 +209,10 @@ export default function InventoryDeclarationPage() {
     router.push("/dashboard/inventory/catalog/new?step=product");
   };
 
+  const handleMapSelect = (floor: string, shelf: string, tier: string) => {
+    setForm(prev => ({ ...prev, location_floor: floor, location_shelf: shelf, location_tier: tier }));
+    setIsMobileMapOpen(false);
+  };
   const applyScannedLocation = (decodedText: string) => {
     try {
       const url = new URL(decodedText, window.location.origin);
@@ -258,7 +264,8 @@ export default function InventoryDeclarationPage() {
   if (loading) return <div className="p-12 flex justify-center"><Loader2 className="animate-spin text-indigo-600" /></div>;
 
   return (
-    <div className="p-2.5 sm:p-4 md:p-8 max-w-6xl mx-auto pb-28">
+    <div className="lg:grid lg:grid-cols-2 h-[calc(100vh-64px)] bg-slate-50 overflow-hidden">
+      <div className="overflow-y-auto p-2.5 sm:p-4 md:p-8 pb-28 h-full">
       {message && <div className={`mb-5 px-4 py-3 rounded-xl border ${message.startsWith("Đã hoàn tất") ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>{message}</div>}
       <form onSubmit={submit} className="bg-white rounded-2xl md:rounded-[2rem] border border-slate-200 shadow-sm p-3 md:p-8 space-y-5 md:space-y-9 relative overflow-hidden">
         <section>
@@ -266,12 +273,31 @@ export default function InventoryDeclarationPage() {
           <h2 className="font-black text-base md:text-lg text-slate-800 mb-3 flex items-center gap-2"><MapPin className="text-indigo-600" size={20} /> Chọn vị trí làm việc một lần</h2>
           <div className="grid gap-2 bg-indigo-50/60 border border-indigo-100 p-3 md:p-4 rounded-xl md:rounded-2xl">
             <button type="button" onClick={() => setLocationScannerOpen(true)} className="py-3 rounded-xl bg-slate-900 text-white font-black flex items-center justify-center gap-2"><QrCode size={19} /> Quét QR vị trí kệ</button>
-            <div className="text-center text-[11px] font-bold text-slate-400">HOẶC CHỌN THỦ CÔNG</div>
-            <select required value={form.location_floor} onChange={e => setForm({ ...form, location_floor: e.target.value, location_shelf: "", location_tier: "" })} className="field"><option value="">Chọn Lầu/Tầng...</option>{floors.map(x => <option key={x}>{x}</option>)}</select>
-            <select required value={form.location_shelf} onChange={e => setForm({ ...form, location_shelf: e.target.value, location_tier: "" })} className="field"><option value="">Chọn Kệ/Sào...</option>{shelves.map(x => <option key={x}>{x}</option>)}</select>
-            {shelfHasTiers && <select required value={form.location_tier} onChange={e => setForm({ ...form, location_tier: e.target.value })} className="field"><option value="">Chọn Ngăn/Móc...</option>{tiers.map(x => <option key={x}>{x}</option>)}</select>}
-            {form.location_shelf && !shelfHasTiers && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-semibold text-emerald-700">Sào/kệ này không chia Ngăn/Móc.</div>}
-            <button type="button" onClick={lockLocation} className="py-3 rounded-xl bg-indigo-600 text-white font-black">Xác nhận & bắt đầu nhập</button>
+            <div className="text-center text-[11px] font-bold text-slate-400">HOẶC CHỌN TỪ SƠ ĐỒ KHO (MOBILE)</div>
+            <button type="button" onClick={() => setIsMobileMapOpen(true)} className="py-3 rounded-xl bg-white border-2 border-indigo-200 text-indigo-700 font-bold flex items-center justify-center gap-2 shadow-sm lg:hidden">
+               📍 Mở Sơ đồ kho để chọn
+            </button>
+            <div className="hidden lg:block text-center text-[11px] font-bold text-indigo-400 bg-indigo-100/50 p-2 rounded-lg">
+               👉 Hãy click chọn một vị trí trên sơ đồ kho ở màn hình bên phải
+            </div>
+            
+            {/* Show selected location explicitly */}
+            <div className="flex gap-2">
+              <input readOnly value={form.location_floor} placeholder="Tầng..." className="field flex-1 bg-white cursor-not-allowed text-xs" />
+              <input readOnly value={form.location_shelf} placeholder="Kệ..." className="field flex-1 bg-white cursor-not-allowed text-xs" />
+              {shelfHasTiers && <input readOnly value={form.location_tier} placeholder="Ngăn..." className="field flex-1 bg-white cursor-not-allowed text-xs" />}
+            </div>
+            
+            <button type="button" onClick={lockLocation} className="py-3 rounded-xl bg-indigo-600 text-white font-black mt-2">Xác nhận & bắt đầu nhập</button>
+            <button type="button" onClick={() => { 
+              setForm(prev => ({...prev, location_floor: 'Kho Ảo', location_shelf: '', location_tier: ''})); 
+              // Wait for state update then lock
+              setTimeout(() => {
+                window.localStorage.setItem("cama-inventory-work-location", JSON.stringify({ location_floor: 'Kho Ảo', location_shelf: '', location_tier: '' }));
+                setLocationLocked(true); 
+                router.push("/dashboard/inventory/catalog/new-v2?step=product");
+              }, 100);
+            }} className="py-2.5 rounded-xl bg-slate-200 text-slate-600 font-bold mt-1 text-sm">Bỏ qua (Cho vào Kho Ảo)</button>
           </div>
           </>}
         </section>
@@ -335,6 +361,39 @@ export default function InventoryDeclarationPage() {
         <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-2 p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] bg-white/95 backdrop-blur border-t border-slate-200 shadow-[0_-8px_24px_rgba(15,23,42,.08)] md:static md:p-0 md:bg-transparent md:border-0 md:shadow-none md:justify-end md:pt-5 md:border-t"><Link href="/dashboard/inventory/catalog" className="hidden md:block px-6 py-3 rounded-xl bg-slate-100 font-bold text-slate-600">Thoát</Link><button disabled={saving || uploading} className="w-full md:w-auto px-5 md:px-8 py-3 rounded-xl bg-indigo-600 text-white font-black shadow-lg disabled:opacity-50 flex justify-center gap-2 items-center">{saving || uploading ? <Loader2 className="animate-spin" /> : <Shirt size={19} />} {uploading ? "Đang tải ảnh..." : saving ? "Đang lưu..." : "Lưu sản phẩm"}</button></div>
         </>}
       </form>
+      </div>
+
+      {/* RIGHT PANE: Map Selector (Desktop) */}
+      <div className="hidden lg:block h-full border-l border-slate-200 bg-white p-4">
+        <h2 className="font-black text-lg text-slate-800 mb-4 flex items-center gap-2"><MapPin className="text-indigo-600" /> Sơ đồ kho</h2>
+        <div className="h-[calc(100%-2rem)]">
+          <WarehouseMapSelector 
+            onSelectLocation={handleMapSelect} 
+            selectedFloor={form.location_floor}
+            selectedShelf={form.location_shelf}
+            selectedTier={form.location_tier}
+          />
+        </div>
+      </div>
+      
+      {/* Mobile Map Modal */}
+      {isMobileMapOpen && (
+        <div className="fixed inset-0 z-[100] bg-white lg:hidden flex flex-col">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between shadow-sm">
+            <h2 className="font-bold text-lg text-slate-800 flex items-center gap-2"><MapPin className="text-indigo-600 w-5 h-5" /> Chọn vị trí</h2>
+            <button type="button" onClick={() => setIsMobileMapOpen(false)} className="text-slate-500 font-bold px-3 py-1 bg-slate-100 rounded-lg">Đóng</button>
+          </div>
+          <div className="flex-1 overflow-hidden p-2">
+            <WarehouseMapSelector 
+              onSelectLocation={handleMapSelect} 
+              selectedFloor={form.location_floor}
+              selectedShelf={form.location_shelf}
+              selectedTier={form.location_tier}
+            />
+          </div>
+        </div>
+      )}
+
       {locationScannerOpen && <QRScanner title="Quét QR vị trí kệ" instruction="Đưa mã QR dán tại kệ hoặc ngăn vào khung hình." onClose={() => setLocationScannerOpen(false)} onScanSuccess={applyScannedLocation} />}
       <style jsx>{`.field{width:100%;margin-top:.25rem;padding:.62rem .7rem;border:1px solid #e2e8f0;border-radius:.65rem;background:white;outline:none;min-width:0;font-size:.82rem}.field:focus{border-color:#6366f1;box-shadow:0 0 0 3px #e0e7ff}.label{display:block;font-size:.75rem;font-weight:700;color:#475569}@media(min-width:768px){.field{padding:.7rem .85rem;border-radius:.75rem;font-size:.875rem}.label{font-size:.82rem}}`}</style>
     </div>

@@ -77,7 +77,7 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
           {canCreate && (
             <Link
               href="/dashboard/customers/create"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shrink-0"
+              className="hidden sm:flex bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shrink-0"
             >
               <UserPlus className="w-4 h-4" />
               Thêm Khách Hàng Mới
@@ -86,20 +86,47 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo Tên cô dâu, Chú rể, SĐT, Mã KH..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
-            />
+        <div className="p-3 sm:p-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row gap-3">
+          <div className="flex gap-2 flex-1 w-full">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Tìm theo Tên, SĐT, Mã KH..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
+              />
+            </div>
+            
+            {/* Mobile Action Buttons */}
+            <div className="flex sm:hidden gap-1.5 shrink-0">
+              <div className="relative">
+                 <select
+                    value={sourceFilter}
+                    onChange={(e) => setSourceFilter(e.target.value)}
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                 >
+                   <option value="">Tất cả</option>
+                   {uniqueSources.map(source => (
+                     <option key={source} value={source}>{source}</option>
+                   ))}
+                 </select>
+                 <div className={`flex items-center justify-center w-9 h-9 rounded-lg border ${sourceFilter ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600'}`}>
+                   <Filter className="w-4 h-4" />
+                 </div>
+              </div>
+              
+              {canCreate && (
+                <Link href="/dashboard/customers/create" className="flex items-center justify-center w-9 h-9 bg-blue-600 text-white rounded-lg shadow-sm">
+                  <UserPlus className="w-4 h-4" />
+                </Link>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-400 hidden sm:block" />
+          <div className="hidden sm:flex items-center gap-2">
+            <Filter className="w-4 h-4 text-slate-400" />
             <select
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
@@ -115,7 +142,7 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
 
         {/* Table View */}
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+          <table className="w-full text-xs text-left hidden md:table">
             <thead className="uppercase bg-white text-slate-500 border-b border-slate-200 font-bold tracking-wider text-[10px]">
               <tr>
                 <th className="px-4 py-3 whitespace-nowrap">Mã KH</th>
@@ -259,6 +286,66 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
               )}
             </tbody>
           </table>
+        </div>
+      
+        {/* Mobile Cards View */}
+        <div className="md:hidden flex flex-col gap-3 p-3 bg-slate-50">
+          {filteredCustomers.length === 0 ? (
+             <div className="p-6 text-center text-slate-500 text-sm bg-white rounded-xl">Chưa có khách hàng nào.</div>
+          ) : (
+             filteredCustomers.map((customer) => (
+                <div key={customer.id} className="p-3.5 bg-white rounded-xl shadow-sm border border-slate-200 space-y-3 relative overflow-hidden">
+                   {/* Top edge highlight */}
+                   <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
+                   
+                   <div className="flex justify-between items-start gap-2 pt-1">
+                     <div className="min-w-0">
+                       <div className="font-bold text-slate-900 text-[15px] truncate flex items-center gap-1.5">
+                         {customer.bride_name || "---"}
+                         {customer.groom_name && <span className="font-normal text-slate-500 text-sm">&amp; {customer.groom_name}</span>}
+                       </div>
+                       <div className="font-mono font-medium text-slate-500 text-[11px] mt-1">{customer.customer_code} • {customer.phone}</div>
+                     </div>
+                     <div className="shrink-0">
+                       <span className="px-2 py-1 bg-slate-100 text-slate-700 text-[10px] uppercase font-bold rounded-full border border-slate-200">{customer.status}</span>
+                     </div>
+                   </div>
+                   
+                   <div className="bg-slate-50 border border-slate-100 rounded-lg p-2.5 flex items-center justify-between text-xs">
+                     <div className="flex items-center gap-1.5 text-slate-600">
+                       <Calendar className="w-4 h-4 text-slate-400" />
+                       <span className="font-medium text-slate-500 text-[11px] uppercase">Cưới:</span>
+                       <span className="font-bold text-slate-800">{customer.wedding_date ? new Date(customer.wedding_date).toLocaleDateString('vi-VN') : 'Chưa chốt'}</span>
+                     </div>
+                     <div className="flex items-center gap-1 text-slate-500">
+                       <span className="text-[10px] uppercase">Nguồn:</span>
+                       <span className="font-semibold text-slate-700">{customer.source || 'Khác'}</span>
+                     </div>
+                   </div>
+
+                   <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                     <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5 text-slate-400"/> Follow-up: <span className="font-medium text-slate-700">{customer.next_follow_up || '---'}</span>
+                     </div>
+                     <div className="flex gap-1.5">
+                       <Link href={`/dashboard/contracts?newFor=${customer.id}`} className="w-7 h-7 flex items-center justify-center bg-white text-slate-600 rounded-md shadow-sm border border-slate-200 hover:bg-slate-50">
+                         <FileText className="w-3.5 h-3.5" />
+                       </Link>
+                       {canUpdate && (
+                         <Link href={`/dashboard/customers/${customer.id}/edit`} className="w-7 h-7 flex items-center justify-center bg-white text-slate-600 rounded-md shadow-sm border border-slate-200 hover:bg-slate-50">
+                           <Edit className="w-3.5 h-3.5" />
+                         </Link>
+                       )}
+                       {canDelete && (
+                         <button onClick={() => handleDelete(customer.id)} disabled={deletingId === customer.id} className="w-7 h-7 flex items-center justify-center bg-white text-red-600 rounded-md shadow-sm border border-red-100 hover:bg-red-50">
+                           <Trash2 className="w-3.5 h-3.5" />
+                         </button>
+                       )}
+                     </div>
+                   </div>
+                </div>
+             ))
+          )}
         </div>
       </div>
     </div>

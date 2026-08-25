@@ -40,22 +40,22 @@ export default function BookingFormClient({
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8">
-      <Link href="/dashboard/appointments" className="inline-flex items-center text-sm text-slate-500 hover:text-blue-600 mb-6 gap-1 font-medium">
+    <div className="max-w-4xl mx-auto py-4 md:py-8 px-3 md:px-0">
+      <Link href="/dashboard/appointments" className="hidden md:inline-flex items-center text-sm text-slate-500 hover:text-blue-600 mb-6 gap-1 font-medium">
         <icons.ArrowLeft className="w-4 h-4" />
         Quay lại Lịch Hẹn Khách
       </Link>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
-          <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+        <div className="p-4 md:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+          <h3 className="text-lg md:text-xl font-bold text-slate-800 flex items-center gap-2">
             <icons.CalendarDays className="w-5 h-5 text-blue-600" />
             {formData.id ? 'Cập nhật Lịch Hẹn' : 'Thêm Lịch Hẹn Mới'}
           </h3>
         </div>
         
-        <form onSubmit={handleSave} className="p-6 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <form onSubmit={handleSave} className="p-4 md:p-6 space-y-6 md:space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {/* Thông tin thời gian */}
             <div className="col-span-1 md:col-span-3">
               <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -118,7 +118,7 @@ export default function BookingFormClient({
 
             {/* Thông tin dịch vụ */}
             <div className="col-span-1 md:col-span-3">
-              <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 border-t border-slate-100 pt-6">
+              <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 border-t border-slate-100 pt-4 md:pt-6">
                 <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs">2</span>
                 Nhu cầu & Dịch vụ
               </h4>
@@ -185,7 +185,7 @@ export default function BookingFormClient({
 
             {/* Theo dõi & Kết quả */}
             <div className="col-span-1 md:col-span-3">
-              <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 border-t border-slate-100 pt-6">
+              <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 border-t border-slate-100 pt-4 md:pt-6">
                 <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs">3</span>
                 Theo dõi & Kết quả
               </h4>
