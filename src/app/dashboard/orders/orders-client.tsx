@@ -8,6 +8,7 @@ import { Order, OrderStatus, updateOrderStatus, updateOrderChecklist, createOrde
 import { format, differenceInDays } from "date-fns";
 import { vi } from "date-fns/locale";
 import { CustomDatePicker } from "@/components/ui/date-picker";
+import QRScanner from "@/components/qr-scanner";
 
 interface Props {
   initialOrders: Order[];
@@ -46,6 +47,22 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
 
   const [isUpdatingPic, setIsUpdatingPic] = useState<string | null>(null);
 
+  // QR Pick Scanning
+  const [pickOrder, setPickOrder] = useState<Order | null>(null);
+  const handleScanPickSuccess = async (decodedText: string) => {
+    if (pickOrder) {
+      alert(`Đã quét xác nhận lấy hàng tại vị trí: ${decodedText}`);
+      // In real scenario, we'll verify decodedText matches the garment's location
+      try {
+        const { updateOrderStatus } = await import('./actions');
+        await updateOrderStatus(pickOrder.id, 'PREPARING');
+        setOrders(orders.map(o => o.id === pickOrder.id ? { ...o, completion_status: 'PREPARING' } : o));
+      } catch (e) {
+        console.error(e);
+      }
+      setPickOrder(null);
+    }
+  };
 
   const filteredOrders = orders.filter(o => {
     if (filterStatus !== "ALL") {
@@ -363,6 +380,13 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                         <td className="px-4 py-3 align-top pt-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button 
+                              onClick={(e) => { e.stopPropagation(); setPickOrder(order); }}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                              title="Quét lấy đồ"
+                            >
+                              <icons.ScanBarcode className="w-4 h-4" />
+                            </button>
+                            <button 
                               onClick={(e) => { e.stopPropagation(); router.push('/dashboard/orders/' + order.id); }}
                               className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded"
                               title="Sửa đơn hàng"
@@ -580,6 +604,19 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
       </div>
 
 
-      </div>
+        {/* Pick Scanner Modal */}
+      {pickOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+           <div className="w-full max-w-sm overflow-hidden bg-white rounded-3xl shadow-2xl relative">
+              <QRScanner 
+                onScanSuccess={handleScanPickSuccess}
+                onClose={() => setPickOrder(null)}
+                title="Quét Mã Vị Trí"
+                instruction={`Đến đúng Vị trí của sản phẩm trong đơn ${pickOrder.order_code} và quét mã QR để nhận hàng.`}
+              />
+           </div>
+        </div>
+      )}
+    </div>
   );
 }
