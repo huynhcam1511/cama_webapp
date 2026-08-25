@@ -151,7 +151,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
   };
 
   return (
-    <div className="gap-6 flex h-[calc(100vh-100px)] overflow-hidden">
+    <div className="gap-6 flex flex-col md:flex-row md:h-[calc(100vh-100px)] md:overflow-hidden min-h-[calc(100dvh-80px)]">
       {/* Left: Main List */}
       <div className="flex-1 flex flex-col gap-4 w-full px-3 md:px-0">
 
@@ -302,7 +302,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
         </Link>
 
         {/* List Container */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 md:overflow-y-auto">
           {/* Desktop Table View */}
           <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm min-w-full">
             <table className="w-full text-left text-sm border-collapse">
