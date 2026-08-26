@@ -100,6 +100,7 @@ export default function LocationExplorerPage() {
   const [isSearching, setIsSearching] = useState(false);
   
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [previewQrUrl, setPreviewQrUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!globalSearch.trim()) {
@@ -757,7 +758,13 @@ export default function LocationExplorerPage() {
                             <div className="flex flex-col items-center gap-2">
                               {qrDataUrl ? (
                                 <>
-                                  <img src={qrDataUrl} alt={locCode} className="w-24 object-contain rounded border border-slate-200 shadow-sm bg-white" />
+                                  <img 
+                                    src={qrDataUrl} 
+                                    alt={locCode} 
+                                    onClick={() => setPreviewQrUrl(qrDataUrl)}
+                                    title="Nhấn để phóng to"
+                                    className="w-24 object-contain rounded border border-slate-200 shadow-sm bg-white cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all" 
+                                  />
                                   <a href={qrDataUrl} download={`QR-${locCode}.png`} className="px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg text-[11px] flex items-center gap-1 font-bold text-indigo-600 hover:bg-indigo-100 transition-colors">
                                     <Download className="w-3.5 h-3.5" /> Tải về
                                   </a>
@@ -1105,6 +1112,27 @@ export default function LocationExplorerPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Image Preview Modal */}
+      {previewQrUrl && (
+        <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setPreviewQrUrl(null)}>
+          <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-slate-800 text-lg">Mã QR Vị trí</h3>
+              <button onClick={() => setPreviewQrUrl(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            <img src={previewQrUrl} className="w-full object-contain rounded-xl border border-slate-100 shadow-sm bg-white" />
+            <button 
+              onClick={() => setPreviewQrUrl(null)} 
+              className="mt-6 w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
+            >
+              Đóng
+            </button>
           </div>
         </div>
       )}
