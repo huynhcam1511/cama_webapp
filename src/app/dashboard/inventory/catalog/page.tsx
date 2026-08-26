@@ -59,7 +59,6 @@ export default function InventoryCatalogPage() {
                        <strong className="text-slate-900 leading-tight line-clamp-2">{item.model?.name || "Sản phẩm đã xoá"}</strong>
                        <Eye size={18} className="text-indigo-500 shrink-0 mt-0.5" />
                     </div>
-                    <code className="block text-[11px] font-mono text-indigo-700 mt-1 bg-indigo-50 w-max px-1.5 py-0.5 rounded">{item.model?.base_sku}</code>
                   </div>
                   
                   <div>
@@ -71,6 +70,7 @@ export default function InventoryCatalogPage() {
                       <span className="flex items-center gap-1"><Clock3 size={13} /> {dateTime(item.completed_at)}</span>
                       <span className="flex items-center gap-1 truncate"><MapPin size={13} /> {[item.location_floor, item.location_shelf, item.location_tier].filter(Boolean).join(" › ")}</span>
                     </div>
+                    <code className="block text-[11px] font-mono text-indigo-700 mt-2 bg-indigo-50 w-max px-1.5 py-0.5 rounded">{item.model?.base_sku}</code>
                   </div>
                 </div>
               </button>
