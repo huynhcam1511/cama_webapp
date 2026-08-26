@@ -52,26 +52,34 @@ const ImageWithFallback = ({ src, alt, className, fallbackIcon: FallbackIcon = S
 
 const ProductCard = ({ p, onClick }: { p: any, onClick?: () => void }) => (
   <div onClick={onClick} className="bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden shadow-sm hover:shadow-md transition-all hover:border-indigo-300 cursor-pointer group">
-    <div className="h-40 bg-slate-100 flex items-center justify-center relative overflow-hidden">
+    <div className="h-48 bg-slate-100 flex items-center justify-center relative overflow-hidden">
       <ImageWithFallback src={p.image_url} alt={p.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
       {p.status === 'RENTED' && (
         <div className="absolute top-2 right-2 px-2 py-1 bg-rose-500 text-white text-[10px] font-bold uppercase rounded-md shadow-sm">
           Đang thuê
         </div>
       )}
+      {p.status === 'MAINTENANCE' && (
+        <div className="absolute top-2 right-2 px-2 py-1 bg-amber-500 text-white text-[10px] font-bold uppercase rounded-md shadow-sm">
+          Bảo trì
+        </div>
+      )}
+      <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold rounded-md">
+        {p.qr_code}
+      </div>
     </div>
-    <div className="p-4 flex-1 flex flex-col gap-1.5">
-      <div className="flex justify-between items-start gap-2">
-        <h4 className="font-bold text-slate-800 text-sm line-clamp-2 group-hover:text-indigo-600 transition-colors">{p.name}</h4>
+    <div className="p-3 flex-1 flex flex-col gap-1.5">
+      <h4 className="font-bold text-slate-900 text-sm line-clamp-2 group-hover:text-indigo-600 transition-colors leading-tight">
+        {p.name}
+      </h4>
+      <div className="mt-1 flex items-center flex-wrap gap-1 text-[11px] font-medium text-slate-500">
+        <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">{p.group_type || 'Khác'}</span>
+        <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">Size: <strong className="text-slate-800">{p.size || '—'}</strong></span>
+        <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">SL: <strong className="text-slate-800">1</strong></span>
       </div>
-      <div className="flex items-center flex-wrap gap-2 text-xs font-medium text-slate-500">
-        <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-slate-200 font-mono text-[10px]">{p.qr_code}</span>
-        <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-slate-200 text-[10px]">{p.group_type || 'Khác'}</span>
-      </div>
-      <div className="mt-auto pt-3 grid grid-cols-2 gap-2 text-[11px] font-medium text-slate-500">
-        <div>Size: <span className="font-bold text-slate-700">{p.size || '—'}</span></div>
-        <div className="text-right">Số lượng: <span className="font-bold text-slate-700">1</span></div>
-        <div className="col-span-2 text-slate-400 truncate mt-1">SKU: {p.sku || '—'}</div>
+      <div className="mt-auto pt-2 text-[11px] font-medium text-slate-400 truncate flex items-center gap-1">
+        <MapPin className="w-3 h-3" />
+        {p.location ? `${p.location.floor || ''} ${p.location.shelf ? '- ' + p.location.shelf : ''} ${p.location.tier ? '- ' + p.location.tier : ''}` : 'Chưa xếp kho'}
       </div>
     </div>
   </div>
@@ -611,11 +619,30 @@ export default function LocationExplorerPage() {
                     <ChevronLeft className="w-4 h-4" /> <span className="hidden sm:inline">Quay lại</span>
                   </button>
                 )}
-                <h2 className="text-xl md:text-2xl font-black text-slate-800 ml-1 truncate">
-                  {selectedParts.length === 0 ? (viewMode === 'table' ? "Danh sách Mã QR" : "Sơ đồ Không gian kho") : 
-                   selectedParts.length === 2 ? `${selectedParts[0]} - Vị trí ${selectedParts[1]}` :
-                   selectedParts.join(' - ')}
-                </h2>
+                {selectedParts.length === 0 && viewMode === 'tree' ? (
+                  <div className="relative flex-1 min-w-[250px] md:min-w-[400px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      value={globalSearch}
+                      onChange={(e) => setGlobalSearch(e.target.value)}
+                      placeholder="Tìm kiếm SP, QR, SKU..."
+                      className="w-full pl-9 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm shadow-sm transition-colors"
+                    />
+                    {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-500 w-4 h-4 animate-spin" />}
+                    {!isSearching && globalSearch && (
+                      <button onClick={() => setGlobalSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <h2 className="text-xl md:text-2xl font-black text-slate-800 ml-1 truncate">
+                    {viewMode === 'table' ? "Danh sách Mã QR" : 
+                     selectedParts.length === 2 ? `${selectedParts[0]} - Vị trí ${selectedParts[1]}` :
+                     selectedParts.join(' - ')}
+                  </h2>
+                )}
               </div>
 
               {/* Show Notes if available */}
@@ -684,27 +711,7 @@ export default function LocationExplorerPage() {
           </div>
         </div>
 
-        {/* Global Search Bar */}
-        {viewMode === 'tree' && (
-          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 print:hidden">
-            <div className="relative max-w-2xl">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-              <input
-                type="text"
-                value={globalSearch}
-                onChange={(e) => setGlobalSearch(e.target.value)}
-                placeholder="Tìm kiếm sản phẩm trên toàn hệ thống kho (Tên, Mã QR, SKU)..."
-                className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm shadow-sm transition-colors"
-              />
-              {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-500 w-5 h-5 animate-spin" />}
-              {!isSearching && globalSearch && (
-                <button onClick={() => setGlobalSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                  ✕
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Removed global search bar (moved to header) */}
 
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 print:overflow-visible print:p-0 print:bg-white">
           

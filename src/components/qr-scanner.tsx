@@ -32,9 +32,7 @@ export default function QRScanner({
     html5QrCode.start(
       { facingMode: "environment" }, // Prefer back camera
       {
-        fps: 25, // Tăng tốc độ khung hình quét để nhạy hơn
-        aspectRatio: 1.0, // Ép camera dùng tỉ lệ vuông hoặc tùy ý để tận dụng tối đa khung ảnh
-        // No qrbox = scan the entire video frame, which is better for sensitivity without constraints
+        fps: 15,
       },
       (decodedText) => {
         const now = Date.now();
