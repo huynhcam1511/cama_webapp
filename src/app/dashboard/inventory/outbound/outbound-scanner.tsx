@@ -11,7 +11,7 @@ export default function OutboundScannerModal({ onClose, onSuccess }: { onClose: 
   const router = useRouter();
   
   // App states
-  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(true);
   const [scanMode, setScanMode] = useState<"LOCATION" | "PRODUCT">("LOCATION");
   const [scannedLocation, setScannedLocation] = useState<{ floor: string; shelf: string; tier: string } | null>(null);
   
@@ -33,12 +33,28 @@ export default function OutboundScannerModal({ onClose, onSuccess }: { onClose: 
   const handleScanSuccess = async (decodedText: string) => {
     try {
       if (scanMode === "LOCATION") {
-        const url = new URL(decodedText, window.location.origin);
-        const floor = url.searchParams.get("floor") || "";
-        const shelf = url.searchParams.get("shelf") || "";
-        const tier = url.searchParams.get("tier") || "";
+        let floor = "";
+        let shelf = "";
+        let tier = "";
         
-        if (!floor || !shelf) throw new Error("Mã QR không phải là mã vị trí kho hợp lệ.");
+        try {
+          // Attempt to parse as URL
+          const url = new URL(decodedText, window.location.origin);
+          floor = url.searchParams.get("floor") || "";
+          shelf = url.searchParams.get("shelf") || "";
+          tier = url.searchParams.get("tier") || "";
+        } catch (e) {
+          // Ignore URL parse error
+        }
+        
+        // Fallback if not a URL or missing floor
+        if (!floor) {
+           // Maybe it's a raw locCode string like "TANG-1-KE-A"
+           // We'll just pass the whole string to getProductsByLocation and let the backend handle it, or we try to extract
+           // But since getProductsByLocation expects exact floor/shelf/tier, this might fail unless we parse it.
+           // For now, if floor is still empty, throw the error
+           throw new Error("Mã QR không phải là URL mã vị trí kho hợp lệ.");
+        }
         
         setScannerOpen(false);
         setScannedLocation({ floor, shelf, tier });
