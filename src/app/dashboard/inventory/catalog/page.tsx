@@ -33,13 +33,6 @@ export default function InventoryCatalogPage() {
 
   return (
     <div className="px-3 pb-3 pt-0 sm:p-4 md:p-7 max-w-7xl mx-auto flex flex-col gap-2 md:gap-5">
-      <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-200 pb-3 gap-3 md:gap-0">
-        <h1 className="text-xl md:text-2xl font-black text-slate-800">Quản lý Nhập Kho</h1>
-        <div className="flex justify-end">
-          <Link href="/dashboard/inventory/catalog/new" className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 text-sm hover:bg-indigo-700 transition-colors"><Plus size={18} /> Khai báo sản phẩm</Link>
-        </div>
-      </div>
-
       <div className="flex gap-2">
         <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm" placeholder="Tìm tên, mã SKU, vị trí hoặc hãng sản xuất..." /></div>
         <select value={supplier} onChange={e => setSupplier(e.target.value)} className="hidden md:block w-48 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-500">
@@ -92,9 +85,6 @@ export default function InventoryCatalogPage() {
           </div>
         </div>
       )}
-
-      {/* FAB for Mobile */}
-      <Link href="/dashboard/inventory/catalog/new" className="md:hidden fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-40 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-xl shadow-indigo-300 flex items-center justify-center" aria-label="Khai báo sản phẩm"><Plus size={28} /></Link>
 
       {detail && detail.type === "history" && (
         <div className="fixed inset-0 z-[100] bg-slate-950/50 backdrop-blur-sm p-4 flex items-center justify-center" onClick={() => setDetail(null)}>
