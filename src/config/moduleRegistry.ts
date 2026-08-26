@@ -275,7 +275,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   },
   {
     moduleCode: "INVENTORY_OUTBOUND",
-    label: "Xuất kho & Thanh lý",
+    label: "Quản lý xuất kho",
     shortLabel: "Xuất kho",
     route: "/dashboard/inventory/outbound",
     icon: "PackageMinus",
