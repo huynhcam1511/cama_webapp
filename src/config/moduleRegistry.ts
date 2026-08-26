@@ -260,7 +260,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     isActive: true,
   },
   {
-    moduleCode: "GARMENT_CATALOG",
+    moduleCode: "OLD_GARMENT_CATALOG",
     label: "Quản lý Sản phẩm (Cũ)",
     shortLabel: "Sản phẩm",
     route: "/dashboard/inventory/catalog",
@@ -274,7 +274,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     isActive: true,
   },
   {
-    moduleCode: "INVENTORY_INBOUND",
+    moduleCode: "GARMENT_CATALOG",
     label: "Quản lý Nhập Kho",
     shortLabel: "Nhập kho",
     route: "/dashboard/inventory/inbound",
