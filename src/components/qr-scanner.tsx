@@ -69,7 +69,6 @@ export default function QRScanner({
                console.warn("Scanner error:", error);
             }}
             components={{
-              audio: false, 
               finder: true,
             }}
             styles={{

@@ -120,7 +120,7 @@ export default function UniversalScanner({ onClose }: { onClose: () => void }) {
         <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50">
           {scannerOpen && (
             <div className="rounded-2xl overflow-hidden shadow-lg border-2 border-slate-200 bg-black relative max-w-md mx-auto aspect-[3/4]">
-              <QRScanner onScanSuccess={handleScanSuccess} />
+              <QRScanner onScanSuccess={handleScanSuccess} onClose={() => setScannerOpen(false)} />
             </div>
           )}
 

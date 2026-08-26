@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getInboundHistory } from "./actions";
-import { PackagePlus, Search, Calendar, Plus, Package } from "lucide-react";
+import { PackagePlus, Search, Calendar, Plus, Package, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
