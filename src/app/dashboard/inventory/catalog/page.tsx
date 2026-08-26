@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Clock3, Eye, Loader2, MapPin, Plus, Search, X } from "lucide-react";
+import { Clock3, Eye, Loader2, MapPin, Plus, Search, X, ImageIcon, QrCode } from "lucide-react";
+import UniversalScanner from "@/components/universal-scanner";
 import { getInventoryIntakeHistory } from "./actions";
 
 const dateTime = (value: string) => new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "medium", hour12: false }).format(new Date(value));
@@ -14,6 +15,7 @@ export default function InventoryCatalogPage() {
   const [search, setSearch] = useState("");
   const [supplier, setSupplier] = useState("ALL");
   const [detail, setDetail] = useState<any>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const load = async () => {
     setLoading(true); setHistoryError("");
@@ -33,7 +35,7 @@ export default function InventoryCatalogPage() {
 
   return (
     <div className="px-3 pb-3 pt-0 sm:p-4 md:p-7 max-w-7xl mx-auto flex flex-col gap-2 md:gap-5">
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-3">
         <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm" placeholder="Tìm tên, mã SKU, vị trí hoặc hãng sản xuất..." /></div>
         <select value={supplier} onChange={e => setSupplier(e.target.value)} className="hidden md:block w-48 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-500">
            <option value="ALL">Tất cả hãng sản xuất</option>
@@ -47,16 +49,29 @@ export default function InventoryCatalogPage() {
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="md:hidden divide-y divide-slate-100">
             {historyFiltered.map(item => (
-              <button type="button" key={item.id} onClick={() => setDetail({ type: "history", data: item })} className="w-full p-4 text-left active:bg-slate-50">
-                <div className="flex justify-between gap-3"><strong className="text-slate-900 line-clamp-2">{item.model?.name || "Sản phẩm đã xoá"}</strong><Eye size={18} className="text-indigo-500 shrink-0" /></div>
-                <code className="block text-xs text-indigo-700 mt-1">{item.model?.base_sku}</code>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {(item.lines || []).map((line: any) => <span className="badge" key={line.id}>{line.size_code}: <b>{line.quantity}</b></span>)}
-                  <span className="badge !bg-emerald-50 !text-emerald-700">Tổng {item.total_quantity}</span>
+              <button type="button" key={item.id} onClick={() => setDetail({ type: "history", data: item })} className="w-full p-4 text-left active:bg-slate-50 flex gap-4">
+                <div className="w-20 h-28 shrink-0 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-sm flex items-center justify-center">
+                   {item.model?.image_url ? <img src={item.model.image_url} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="text-slate-300" />}
                 </div>
-                <div className="grid grid-cols-1 gap-1 mt-3 text-xs text-slate-500">
-                  <span className="flex items-center gap-1"><Clock3 size={13} /> {dateTime(item.completed_at)}</span>
-                  <span className="flex items-center gap-1 truncate"><MapPin size={13} /> {[item.location_floor, item.location_shelf, item.location_tier].filter(Boolean).join(" › ")}</span>
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between gap-2 items-start">
+                       <strong className="text-slate-900 leading-tight line-clamp-2">{item.model?.name || "Sản phẩm đã xoá"}</strong>
+                       <Eye size={18} className="text-indigo-500 shrink-0 mt-0.5" />
+                    </div>
+                    <code className="block text-[11px] font-mono text-indigo-700 mt-1 bg-indigo-50 w-max px-1.5 py-0.5 rounded">{item.model?.base_sku}</code>
+                  </div>
+                  
+                  <div>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {(item.lines || []).map((line: any) => <span className="badge" key={line.id}>{line.size_code}: <b>{line.quantity}</b></span>)}
+                      <span className="badge !bg-emerald-50 !text-emerald-700">Tổng {item.total_quantity}</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1 mt-2 text-xs text-slate-500">
+                      <span className="flex items-center gap-1"><Clock3 size={13} /> {dateTime(item.completed_at)}</span>
+                      <span className="flex items-center gap-1 truncate"><MapPin size={13} /> {[item.location_floor, item.location_shelf, item.location_tier].filter(Boolean).join(" › ")}</span>
+                    </div>
+                  </div>
                 </div>
               </button>
             ))}
@@ -72,7 +87,17 @@ export default function InventoryCatalogPage() {
                 {historyFiltered.map(item => (
                   <tr key={item.id}>
                     <td><span className="flex gap-2 items-center whitespace-nowrap"><Clock3 size={15} className="text-indigo-500" /> {dateTime(item.completed_at)}</span></td>
-                    <td><strong>{item.model?.name || "Sản phẩm đã xoá"}</strong><div className="text-xs text-slate-400">{item.model?.base_sku}</div></td>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-16 shrink-0 bg-slate-100 rounded-lg overflow-hidden border border-slate-200 flex items-center justify-center">
+                          {item.model?.image_url ? <img src={item.model.image_url} alt="" className="w-full h-full object-cover" /> : <ImageIcon size={20} className="text-slate-300" />}
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 line-clamp-1">{item.model?.name || "Sản phẩm đã xoá"}</strong>
+                          <div className="text-xs font-mono text-indigo-600 mt-1 bg-indigo-50 w-max px-1.5 py-0.5 rounded">{item.model?.base_sku}</div>
+                        </div>
+                      </div>
+                    </td>
                     <td><div className="flex flex-wrap gap-1">{(item.lines || []).map((line: any) => <span className="badge" key={line.id}>{line.size_code}: <b>{line.quantity}</b></span>)}</div><b className="text-emerald-600 text-xs block mt-1">Tổng {item.total_quantity}</b></td>
                     <td>{[item.location_floor, item.location_shelf, item.location_tier].filter(Boolean).join(" › ")}</td>
                     <td>{item.supplier || "—"}</td>
@@ -97,6 +122,11 @@ export default function InventoryCatalogPage() {
           </div>
         </div>
       )}
+      <button onClick={() => setScannerOpen(true)} className="md:hidden fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-40 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-xl shadow-indigo-300 flex items-center justify-center transition-transform active:scale-95" aria-label="Quét Vị trí">
+         <QrCode size={24} />
+      </button>
+
+      {scannerOpen && <UniversalScanner onClose={() => setScannerOpen(false)} />}
       <style jsx>{`th{text-align:left;padding:.85rem 1rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}td{padding:.9rem 1rem;border-top:1px solid #f1f5f9;vertical-align:middle}.badge{background:#f1f5f9;border-radius:.5rem;padding:.2rem .45rem;font-size:.72rem;color:#475569;flex:none}`}</style>
     </div>
   );
