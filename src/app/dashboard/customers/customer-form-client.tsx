@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { UserPlus, Save, Loader2, Heart, Phone, MapPin, Calendar, Globe, FileText, User, ArrowLeft } from "lucide-react";
-import { createCustomer, updateCustomer, CustomerFormData } from "./actions";
+import { createCustomer, updateCustomer, CustomerFormData, getStaffs } from "./actions";
 
 import { useRouter } from "next/navigation";
 
@@ -34,7 +34,17 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
     next_followup: "",
     priority_task: "",
     general_notes: "",
+    appointment_date: "",
+    appointment_time: "",
+    appointment_type: "",
+    primary_assignee_id: "",
   });
+
+  const [staffs, setStaffs] = useState<any[]>([]);
+
+  useEffect(() => {
+    getStaffs().then(setStaffs);
+  }, []);
 
   useEffect(() => {
     if (customer) {
@@ -58,6 +68,10 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
         next_followup: customer.next_followup ? customer.next_followup.split("T")[0] : "",
         priority_task: customer.priority_task || "",
         general_notes: customer.general_notes || "",
+        appointment_date: customer.appointment_data?.date ? customer.appointment_data.date.split("T")[0] : "",
+        appointment_time: customer.appointment_data?.start_time ? customer.appointment_data.start_time.substring(0, 5) : "",
+        appointment_type: customer.appointment_data?.service_content || "",
+        primary_assignee_id: customer.appointment_data?.primary_assignee_id || "",
       });
     }
     setErrorMsg("");
@@ -96,16 +110,6 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 animate-in fade-in duration-200 pb-12 px-3 md:px-0 mt-2 md:mt-0">
-      <div className="hidden md:flex items-center justify-between">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-medium text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Quay lại danh sách
-        </button>
-      </div>
-
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col text-slate-900 text-xs">
         {/* Header */}
         <div className="p-4 md:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
@@ -223,10 +227,80 @@ export default function CustomerFormClient({ customer }: CustomerFormClientProps
             </div>
           </div>
 
-          {/* Theo Dõi Tình Trạng (Pipeline) Section */}
+          {/* CỤM 2: LỊCH HẸN TƯ VẤN (MỚI) */}
           <div className="pt-4">
             <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 border-t border-slate-100 pt-4 md:pt-6">
               <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs">2</span>
+              Lịch Hẹn Tư Vấn (Tuỳ chọn)
+            </h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Ngày hẹn</label>
+                <input 
+                  type="date"
+                  value={formData.appointment_date || ''} 
+                  onChange={e => setFormData({...formData, appointment_date: e.target.value})} 
+                  className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Giờ hẹn</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="08" 
+                    maxLength={2}
+                    value={formData.appointment_time ? formData.appointment_time.split(':')[0] : ''} 
+                    onChange={e => {
+                      const h = e.target.value.replace(/\D/g, '');
+                      const m = formData.appointment_time ? formData.appointment_time.split(':')[1] || '00' : '00';
+                      setFormData({...formData, appointment_time: `${h}:${m}`});
+                    }} 
+                    className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm text-center outline-none transition-colors" 
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="00" 
+                    maxLength={2}
+                    value={formData.appointment_time ? (formData.appointment_time.split(':')[1] || '') : ''} 
+                    onChange={e => {
+                      const m = e.target.value.replace(/\D/g, '');
+                      const h = formData.appointment_time ? formData.appointment_time.split(':')[0] || '08' : '08';
+                      setFormData({...formData, appointment_time: `${h}:${m}`});
+                    }} 
+                    className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm text-center outline-none transition-colors" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Loại lịch</label>
+                <select value={formData.appointment_type || ''} onChange={e => setFormData({...formData, appointment_type: e.target.value})} className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors">
+                  <option value="">Chọn Loại lịch</option>
+                  <option value="Tư vấn">Tư vấn</option>
+                  <option value="Thuê váy">Thuê váy</option>
+                  <option value="Thử váy">Thử váy</option>
+                  <option value="Lấy váy">Lấy váy</option>
+                  <option value="Trả váy">Trả váy</option>
+                  <option value="Chụp hình">Chụp hình</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">PIC Giữ khách</label>
+                <select value={formData.primary_assignee_id || ''} onChange={e => setFormData({...formData, primary_assignee_id: e.target.value})} className="w-full h-10 p-2 border border-slate-300 focus:border-blue-500 rounded-lg text-sm outline-none transition-colors">
+                  <option value="">Chọn PIC</option>
+                  {staffs.map(s => (
+                    <option key={s.id} value={s.id}>{s.full_name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Theo Dõi Tình Trạng (Pipeline) Section */}
+          <div className="pt-4">
+            <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 border-t border-slate-100 pt-4 md:pt-6">
+              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs">3</span>
               Theo Dõi Tình Trạng (Pipeline)
             </h4>
             

@@ -1900,6 +1900,7 @@ export async function reserveContractInventory(payload: {
       model_id: model.id,
       garment_code: `${model.base_sku}-${payload.sizeCode}-${String(sequence).padStart(3, "0")}`,
       product_name: model.name,
+      product_image_url: model.image_url || null,
       product_type: model.category || model.group_type,
       size: payload.sizeCode,
       deliver_date: payload.startDate || null,

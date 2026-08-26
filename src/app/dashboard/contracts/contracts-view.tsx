@@ -190,7 +190,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
           </div>
           <div className="flex flex-col sm:block">
             <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Đang Hiệu Lực
+              Hợp Đồng Hiệu Lực
             </span>
             <div className="flex items-baseline gap-1 sm:mt-2">
               <span className="text-sm sm:text-2xl font-bold font-mono text-slate-900 leading-none">
@@ -210,14 +210,14 @@ export default function ContractsView({ initialContracts, initialStats, customer
           </div>
           <div className="flex flex-col sm:block">
             <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Công Nợ Còn Lại
+              Tổng Nợ Cần Thu
             </span>
             <div className="flex items-baseline gap-1 sm:mt-2">
               <span className="text-sm sm:text-xl font-bold font-mono text-blue-600 leading-none">
                 {new Intl.NumberFormat("vi-VN").format(initialStats.total_debt)} ₫
               </span>
               <span className="text-[10px] sm:hidden text-slate-500 font-bold uppercase whitespace-nowrap">
-                Nợ
+                Nợ Cần Thu
               </span>
             </div>
           </div>
@@ -229,14 +229,14 @@ export default function ContractsView({ initialContracts, initialStats, customer
           </div>
           <div className="flex flex-col sm:block">
             <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Lịch 7 Ngày Tới
+              Sự Kiện 7 Ngày Tới
             </span>
             <div className="flex items-baseline gap-1 sm:mt-2">
               <span className="text-sm sm:text-2xl font-bold font-mono text-slate-900 leading-none">
                 {initialStats.upcoming_7days_count}
               </span>
               <span className="text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
-                <span className="sm:hidden uppercase font-bold text-slate-600">Lịch Tới</span>
+                <span className="sm:hidden uppercase font-bold text-slate-600">Sự kiện tới</span>
                 <span className="hidden sm:inline">sự kiện</span>
               </span>
             </div>
@@ -249,14 +249,14 @@ export default function ContractsView({ initialContracts, initialStats, customer
           </div>
           <div className="flex flex-col sm:block">
             <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Quá Hạn Thanh Toán
+              Hợp Đồng Quá Hạn
             </span>
             <div className="flex items-baseline gap-1 sm:mt-2">
               <span className="text-sm sm:text-2xl font-bold font-mono text-red-600 leading-none">
                 {initialStats.overdue_count}
               </span>
               <span className="text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
-                <span className="sm:hidden uppercase font-bold text-red-600">Quá Hạn</span>
+                <span className="sm:hidden uppercase font-bold text-red-600">HĐ Quá hạn</span>
                 <span className="hidden sm:inline">HĐ</span>
               </span>
             </div>
@@ -623,6 +623,14 @@ export default function ContractsView({ initialContracts, initialStats, customer
       >
         <Eye className="w-3.5 h-3.5"/>
       </Link>
+
+      <button
+        onClick={() => setSelectedForPrint(contract)}
+        className="p-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 rounded-md transition-colors"
+        title="In hợp đồng"
+      >
+        <Printer className="w-3.5 h-3.5"/>
+      </button>
       
       {canUpdate && (
         <Link 
@@ -670,7 +678,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
         </div>
         
         {/* Mobile Cards View */}
-        <div className="md:hidden flex flex-col gap-3 p-3 bg-slate-50">
+        <div className="md:hidden flex flex-col gap-3 p-3 pb-24 bg-slate-50">
           {filteredContracts.length === 0 ? (
              <div className="p-6 text-center text-slate-500 text-sm bg-white rounded-xl">Không tìm thấy hợp đồng nào.</div>
           ) : (
@@ -706,78 +714,98 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 if (contract.items && contract.items.length > 0) {
                   mainService = contract.items[0].item_name;
                   extraServices = contract.items.length - 1;
+                } else if (typeof contract.notes === 'string' && !contract.notes.startsWith('{') && contract.notes.trim() !== '') {
+                  mainService = contract.notes;
                 }
                 
                 // Trích xuất PIC
                 const picNames = contract.assigned_staff_names && contract.assigned_staff_names.length > 0 
                   ? contract.assigned_staff_names.join(', ') 
-                  : (contract.assigned_staff_name || "---");
-                
+                  : (contract.assigned_staff_name || "Chưa có PIC");
+                  
+                let statusBg = "bg-blue-50 text-blue-600";
+                let statusText = "Đang H.Lực";
+                if (contract.contract_status === "COMPLETED") {
+                  statusBg = "bg-emerald-50 text-emerald-600";
+                  statusText = "Hoàn tất";
+                } else if (contract.contract_status === "CANCELLED") {
+                  statusBg = "bg-red-50 text-red-600";
+                  statusText = "Đã Hủy";
+                } else if (contract.payment_status === "DEPOSITED" || contract.payment_status === "PARTIALLY_PAID") {
+                  statusBg = "bg-orange-50 text-orange-600";
+                }
+
                 return (
-                  <div key={contract.id} className="bg-white rounded-xl shadow-sm border border-slate-200 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
-                    <div className="p-2.5 pl-3.5 flex flex-col gap-1.5">
-                      {/* Row 1: Name & Badges */}
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="font-bold text-slate-900 text-[13px] truncate flex-1 leading-tight">
-                          {contract.customers?.bride_name || "---"} {contract.customers?.groom_name ? `& ${contract.customers.groom_name}` : ""}
-                        </div>
-                        <div className="shrink-0 flex gap-1">
-                          {contract.contract_type === "SALES" ? (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-blue-100 text-blue-700">Bán</span>
-                          ) : (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-100 text-amber-700">Thuê</span>
-                          )}
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-700">
-                            {contract.contract_status === "COMPLETED" ? "Xong" : contract.contract_status === "CANCELLED" ? "Hủy" : "H.Lực"}
-                          </span>
-                        </div>
+                  <div key={contract.id} className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                    {/* Khu vực 1: Header */}
+                    <div className="p-3.5 pb-2 flex justify-between items-start gap-3">
+                      <div className="font-bold text-slate-900 text-[14.5px] truncate flex-1 leading-tight">
+                        {contract.customers?.bride_name || "---"} {contract.customers?.groom_name ? `& ${contract.customers.groom_name}` : ""}
                       </div>
-                      
-                      {/* Row 2: Service & PIC & Date */}
-                      <div className="text-[10px] text-slate-500 flex items-center gap-1.5 truncate">
-                        <span className="text-slate-700 font-medium truncate max-w-[120px]">{mainService}</span>
-                        {extraServices > 0 && <span className="text-emerald-600 font-medium text-[9px] shrink-0">+{extraServices}</span>}
-                        <span className="text-slate-300 shrink-0">•</span>
-                        <span className="truncate max-w-[70px]">{picNames}</span>
-                        <span className="text-slate-300 shrink-0">•</span>
-                        <span className={displayDueDate ? "text-amber-600 font-semibold shrink-0" : "shrink-0"}>
-                          {displayDueDate ? new Date(displayDueDate).toLocaleDateString('vi-VN').substring(0, 5) : "---"}
+                      <div className="shrink-0 flex flex-col items-end">
+                        <span className="text-[10.5px] text-slate-400 font-bold uppercase mb-0.5 leading-none">Còn Nợ</span>
+                        {remaining > 0 ? (
+                          <span className="font-mono font-bold text-red-500 text-[14.5px] tabular-nums leading-none">{new Intl.NumberFormat("vi-VN").format(remaining)}</span>
+                        ) : (
+                          <span className="font-mono font-bold text-emerald-500 text-[14.5px] tabular-nums flex items-center gap-0.5 leading-none"><CheckCircle2 className="w-3.5 h-3.5"/> 0</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Khu vực 2: Info */}
+                    <div className="px-3.5 py-2.5 border-t border-slate-100 flex flex-col gap-2">
+                      <div className="flex justify-between items-center">
+                        <div className="text-[12.5px] text-slate-500 flex items-center gap-1.5">
+                          <span>Tổng HĐ:</span>
+                          <span className="font-mono font-bold text-slate-700 tabular-nums">{new Intl.NumberFormat("vi-VN").format(total)}</span>
+                        </div>
+                        <span className={`px-2 py-1 rounded-md text-[10.5px] font-semibold uppercase ${statusBg}`}>
+                          {statusText}
                         </span>
                       </div>
                       
-                      {/* Row 3: Financials & Actions */}
-                      <div className="flex items-end justify-between pt-1.5 mt-0.5 border-t border-slate-100">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <span className="text-[9px] text-slate-400 block leading-none mb-0.5">Tổng tiền</span>
-                            <span className="font-mono font-bold text-slate-700 text-xs">{new Intl.NumberFormat("vi-VN").format(total)}</span>
-                          </div>
-                          <div className="w-px h-5 bg-slate-200"></div>
-                          <div>
-                            <span className="text-[9px] text-slate-400 block leading-none mb-0.5">Còn nợ</span>
-                            {remaining > 0 ? (
-                              <span className="font-mono font-bold text-amber-600 text-xs">{new Intl.NumberFormat("vi-VN").format(remaining)}</span>
-                            ) : (
-                              <span className="font-mono font-bold text-emerald-600 text-xs">0</span>
-                            )}
-                          </div>
+                      <div className="flex justify-between items-center gap-3">
+                        <div className="text-[12.5px] font-medium text-slate-800 truncate flex-1">
+                          {mainService} {extraServices > 0 && <span className="text-emerald-600 font-bold text-[10px] ml-1">+{extraServices}</span>}
                         </div>
-                        <div className="flex gap-1.5">
-                          <Link href={`/dashboard/contracts/${contract.id}`} className="w-6 h-6 flex items-center justify-center bg-slate-50 text-slate-600 rounded shadow-sm border border-slate-200">
-                            <Eye className="w-3.5 h-3.5"/>
+                        <div className="text-[11.5px] text-slate-500 flex items-center gap-1 shrink-0">
+                          <User className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="font-medium truncate max-w-[100px]">{picNames}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Khu vực 3: Footer & Actions */}
+                    <div className="px-3.5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-b-xl">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5 text-[12px]">
+                          <span className="font-mono font-bold text-slate-600">{contract.contract_code}</span>
+                          <span className="text-slate-300">•</span>
+                          {contract.customers?.phone ? (
+                            <a href={`tel:${contract.customers.phone}`} className="font-mono text-blue-600 font-semibold hover:underline">
+                              {contract.customers.phone}
+                            </a>
+                          ) : (
+                            <span className="font-mono text-slate-400 font-semibold">Không SĐT</span>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-medium text-slate-400">
+                          Hợp đồng {contract.contract_type === "SALES" ? "Bán hàng" : "Dịch vụ"}
+                        </span>
+                      </div>
+                      
+                      <div className="flex gap-2 shrink-0">
+                        <Link href={`/dashboard/contracts/${contract.id}`} className="w-9 h-9 flex items-center justify-center bg-white text-slate-600 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors">
+                          <Eye className="w-4 h-4"/>
+                        </Link>
+                        <button onClick={() => setSelectedForPrint(contract)} className="w-9 h-9 flex items-center justify-center bg-white text-slate-600 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors">
+                          <Printer className="w-4 h-4"/>
+                        </button>
+                        {canUpdate && (
+                          <Link href={`/dashboard/contracts/${contract.id}/edit`} className="w-9 h-9 flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg shadow-sm border border-blue-200 hover:bg-blue-100 transition-colors">
+                            <Edit3 className="w-4 h-4"/>
                           </Link>
-                          {canUpdate && (
-                            <Link href={`/dashboard/contracts/${contract.id}/edit`} className="w-6 h-6 flex items-center justify-center bg-slate-50 text-slate-600 rounded shadow-sm border border-slate-200">
-                              <Edit3 className="w-3.5 h-3.5"/>
-                            </Link>
-                          )}
-                          {canDelete && (
-                            <button onClick={() => setSelectedForCancel(contract)} className="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded shadow-sm border border-red-100">
-                              <Trash2 className="w-3.5 h-3.5"/>
-                            </button>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -805,10 +833,31 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
       {/* Print Contract Modal */}
       {selectedForPrint && (
-        <PrintableContract
-          contract={selectedForPrint}
-          onClose={() => setSelectedForPrint(null)}
-        />
+        <div className="fixed inset-0 z-[9999] flex flex-col bg-slate-900/50 backdrop-blur-sm print:bg-white print:backdrop-blur-none">
+          <div className="flex-1 overflow-auto p-0 md:p-4 pb-24 print:p-0 print:overflow-visible">
+            <div className="bg-white mx-auto shadow-xl w-full max-w-[210mm] min-h-[297mm] print:shadow-none print:w-auto print:max-w-none">
+              <PrintableContract
+                contract={selectedForPrint}
+                forceShow={true}
+              />
+            </div>
+          </div>
+          <div className="bg-white border-t border-slate-200 p-4 flex justify-end gap-3 print:hidden fixed bottom-0 left-0 right-0 z-[9999]">
+            <button
+              onClick={() => setSelectedForPrint(null)}
+              className="px-6 py-2.5 rounded-lg border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition-colors"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="px-6 py-2.5 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
+            >
+              <Printer className="w-4 h-4" />
+              In Hợp Đồng
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Contract Type Selection Modal */}

@@ -52,27 +52,13 @@ export default function AppointmentsClient({ initialData, users }: { initialData
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      {/* Header */}
-      <div className="p-4 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="hidden sm:flex p-4 sm:p-6 border-b border-slate-200 flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <icons.CalendarDays className="w-5 h-5 text-blue-600" />
             LỊCH HẸN KHÁCH
           </h2>
           <p className="text-sm text-slate-500 mt-1">Quản lý lịch hẹn, theo dõi tình trạng tư vấn và chốt sales</p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/dashboard/schedules/operation" className="hidden sm:flex bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors items-center gap-2 shrink-0">
-            <icons.Calendar className="w-4 h-4" />
-            Xem Calendar Lịch
-          </Link>
-          <Link
-            href="/dashboard/appointments/booking/create"
-            className="hidden sm:flex bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors items-center gap-2 shrink-0"
-          >
-            <icons.Plus className="w-4 h-4" />
-            Thêm Lịch Mới
-          </Link>
         </div>
       </div>
 
@@ -107,14 +93,6 @@ export default function AppointmentsClient({ initialData, users }: { initialData
                  <icons.Filter className="w-4 h-4" />
                </div>
             </div>
-            
-            <Link href="/dashboard/schedules/operation" className="flex items-center justify-center w-9 h-9 bg-slate-100 text-slate-600 rounded-lg border border-slate-200">
-              <icons.Calendar className="w-4 h-4" />
-            </Link>
-            
-            <Link href="/dashboard/appointments/booking/create" className="flex items-center justify-center w-9 h-9 bg-blue-600 text-white rounded-lg shadow-sm">
-              <icons.Plus className="w-4 h-4" />
-            </Link>
           </div>
         </div>
 
@@ -205,8 +183,12 @@ export default function AppointmentsClient({ initialData, users }: { initialData
                     {b.wedding_date ? new Date(b.wedding_date).toLocaleDateString('vi-VN') : '—'}
                   </td>
                   <td className="px-3 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link href={`/dashboard/appointments/booking/${b.id}/edit`} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Chỉnh sửa">
+                    <div className="flex items-center gap-1">
+                      <Link 
+                        href={`/dashboard/customers/${b.customer_id}/edit`}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Xem/Sửa khách hàng"
+                      >
                         <icons.Edit className="w-4 h-4" />
                       </Link>
                       <button 
@@ -226,50 +208,64 @@ export default function AppointmentsClient({ initialData, users }: { initialData
         </table>
       
         {/* Mobile Cards View */}
-        <div className="md:hidden flex flex-col gap-3 p-3 bg-slate-50">
+        <div className="md:hidden flex flex-col gap-2 p-3 bg-slate-50">
           {filteredBookings.length === 0 ? (
              <div className="p-6 text-center text-slate-500 text-sm bg-white rounded-xl">Chưa có lịch hẹn nào.</div>
           ) : (
              filteredBookings.map((b) => (
-                <div key={b.id} className="p-3.5 bg-white rounded-xl shadow-sm border border-slate-200 space-y-3 relative overflow-hidden">
-                   <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
-                   <div className="flex justify-between items-start gap-2 pt-1">
-                     <div className="min-w-0">
-                       <div className="font-bold text-slate-900 text-[15px] truncate">
+                <div key={b.id} className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                    {/* Khu vực 1: Header */}
+                    <div className="p-3.5 pb-2 flex justify-between items-start gap-3">
+                       <div className="font-bold text-slate-900 text-[14.5px] truncate flex-1 leading-tight">
                          {b.customer_name}
                        </div>
-                       <div className="font-mono font-medium text-slate-500 text-[11px] mt-1">BK-{b.id ? b.id.substring(0, 5).toUpperCase() : "0000"} • {b.customer_phone}</div>
-                     </div>
-                     <div className="shrink-0">
-                       <span className={`px-2 py-1 text-[10px] uppercase font-bold rounded-full border ${getStatusColor(b.status)} bg-white shadow-sm`}>{b.status}</span>
-                     </div>
-                   </div>
+                       <div className="shrink-0 flex flex-col items-end gap-0.5">
+                         <div className="text-[12.5px] font-bold text-emerald-600 shrink-0">
+                           {new Date(b.date).toLocaleDateString('vi-VN')} {b.start_time?.substring(0, 5)}
+                         </div>
+                       </div>
+                    </div>
                    
-                   <div className="bg-slate-50 border border-slate-100 rounded-lg p-2.5 flex items-center justify-between text-xs">
-                     <div className="flex items-center gap-1.5 text-emerald-700">
-                       <icons.CalendarDays className="w-4 h-4 text-emerald-500" />
-                       <span className="font-medium text-emerald-600/80 text-[11px] uppercase">Hẹn:</span>
-                       <span className="font-bold whitespace-nowrap">{new Date(b.date).toLocaleDateString('vi-VN')} {b.start_time?.substring(0, 5)}</span>
-                     </div>
-                     <div className="flex items-center gap-1 text-slate-500 truncate max-w-[120px]">
-                       <span className="font-semibold text-slate-700 truncate">{b.service_content}</span>
-                     </div>
-                   </div>
+                    {/* Khu vực 2: Info */}
+                    <div className="px-3.5 py-2.5 border-t border-slate-100 flex flex-col gap-2">
+                       <div className="flex justify-between items-center">
+                         <div className="text-[12.5px] font-medium text-slate-700 truncate">
+                           {b.service_content || 'Chưa chọn dịch vụ'}
+                         </div>
+                         <span className={`px-2 py-1 rounded-md text-[10.5px] font-bold uppercase leading-none ${
+                             b.result?.toLowerCase() === 'chốt' || b.result?.toLowerCase() === 'won' ? 'bg-emerald-50 text-emerald-600' :
+                             b.result?.toLowerCase() === 'fail' || b.result?.toLowerCase() === 'lost' ? 'bg-red-50 text-red-600' :
+                             b.result ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'
+                         }`}>
+                           {b.status}
+                         </span>
+                       </div>
+                       <div className="text-[11.5px] text-slate-500 flex items-center gap-1 shrink-0">
+                         <icons.User className="w-3.5 h-3.5 text-slate-400" />
+                         <span className="font-medium truncate max-w-[150px]">{b.users?.full_name || 'Chưa có PIC'}</span>
+                       </div>
+                    </div>
 
-                   <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                     <div className="text-[11px] text-slate-500 flex flex-col gap-0.5">
-                        <span>PIC: <span className="font-medium text-slate-700">{b.users?.full_name || '—'}</span></span>
-                        <span>KQ: <span className={getResultColor(b.result)}>{b.result}</span></span>
-                     </div>
-                     <div className="flex gap-1.5 shrink-0">
-                       <Link href={`/dashboard/appointments/booking/${b.id}/edit`} className="w-7 h-7 flex items-center justify-center bg-white text-slate-600 rounded-md shadow-sm border border-slate-200">
-                         <icons.Edit className="w-3.5 h-3.5" />
-                       </Link>
-                       <button onClick={() => handleDelete(b.id)} disabled={deletingId === b.id} className="w-7 h-7 flex items-center justify-center bg-white text-red-600 rounded-md shadow-sm border border-red-100">
-                         <icons.Trash2 className="w-3.5 h-3.5" />
-                       </button>
-                     </div>
-                   </div>
+                    {/* Khu vực 3: Footer & Actions */}
+                    <div className="px-3.5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-b-xl">
+                       <div className="flex items-center gap-1.5 text-[12px]">
+                         {b.customer_phone ? (
+                           <a href={`tel:${b.customer_phone}`} className="font-mono text-blue-600 font-semibold hover:underline">
+                             {b.customer_phone}
+                           </a>
+                         ) : (
+                           <span className="font-mono text-slate-400 font-semibold">Không SĐT</span>
+                         )}
+                       </div>
+                       <div className="flex gap-2 shrink-0">
+                         <Link href={`/dashboard/customers/${b.customer_id}/edit`} className="w-9 h-9 flex items-center justify-center bg-white text-slate-600 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors">
+                           <icons.Edit className="w-4 h-4" />
+                         </Link>
+                         <button onClick={() => handleDelete(b.id)} disabled={deletingId === b.id} className="w-9 h-9 flex items-center justify-center bg-white text-red-600 rounded-lg shadow-sm border border-red-100 hover:bg-red-50 transition-colors">
+                           <icons.Trash2 className="w-4 h-4" />
+                         </button>
+                       </div>
+                    </div>
                 </div>
              ))
           )}

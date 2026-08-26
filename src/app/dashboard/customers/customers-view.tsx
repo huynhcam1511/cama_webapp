@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UserPlus, Search, Filter, Edit, Trash2, FileText, Phone, Calendar, Heart, Sparkles, RefreshCw } from "lucide-react";
+import { UserPlus, Search, Filter, Edit, Trash2, FileText, Phone, Calendar, Heart, Sparkles, RefreshCw, Plus } from "lucide-react";
 import { deleteCustomer } from "./actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -65,7 +65,7 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
       {/* Main Container */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         {/* Header inside table */}
-        <div className="p-4 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="hidden sm:flex p-4 sm:p-6 border-b border-slate-200 flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 uppercase">
               <Heart className="w-5 h-5 text-blue-600 fill-blue-500/20" /> CAMA CRM SALES | Leads Pipeline
@@ -119,7 +119,7 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
               
               {canCreate && (
                 <Link href="/dashboard/customers/create" className="flex items-center justify-center w-9 h-9 bg-blue-600 text-white rounded-lg shadow-sm">
-                  <UserPlus className="w-4 h-4" />
+                  <Plus className="w-5 h-5" />
                 </Link>
               )}
             </div>
@@ -294,55 +294,75 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
              <div className="p-6 text-center text-slate-500 text-sm bg-white rounded-xl">Chưa có khách hàng nào.</div>
           ) : (
              filteredCustomers.map((customer) => (
-                <div key={customer.id} className="p-3.5 bg-white rounded-xl shadow-sm border border-slate-200 space-y-3 relative overflow-hidden">
-                   {/* Top edge highlight */}
-                   <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
+                <div key={customer.id} className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                    {/* Khu vực 1: Header */}
+                    <div className="p-3.5 pb-2 flex justify-between items-start gap-3">
+                      <div className="font-bold text-slate-900 text-[14.5px] truncate flex-1 leading-tight">
+                        {customer.bride_name || "---"}
+                        {customer.groom_name && <span className="font-normal text-slate-500 text-sm"> &amp; {customer.groom_name}</span>}
+                      </div>
+                      <div className="shrink-0 flex flex-col items-end gap-0.5">
+                        <span className={`px-2 py-1 rounded-md text-[10.5px] font-bold uppercase leading-none ${
+                            customer.lead_status === 'WON' ? 'bg-emerald-50 text-emerald-600' :
+                            customer.lead_status === 'APPOINTMENT' ? 'bg-blue-50 text-blue-600' :
+                            customer.lead_status === 'VISITED' ? 'bg-purple-50 text-purple-600' :
+                            customer.lead_status === 'CONTACTED' ? 'bg-amber-50 text-amber-600' :
+                            customer.lead_status === 'LOST' ? 'bg-rose-50 text-rose-600' :
+                            'bg-slate-100 text-slate-500'
+                        }`}>
+                           {customer.lead_status === 'WON' ? 'Đã chốt' :
+                            customer.lead_status === 'APPOINTMENT' ? 'Đã hẹn' :
+                            customer.lead_status === 'VISITED' ? 'Đã đến' :
+                            customer.lead_status === 'CONTACTED' ? 'Đã tư vấn' :
+                            customer.lead_status === 'LOST' ? 'Rớt' : 'Mới'}
+                        </span>
+                      </div>
+                    </div>
                    
-                   <div className="flex justify-between items-start gap-2 pt-1">
-                     <div className="min-w-0">
-                       <div className="font-bold text-slate-900 text-[15px] truncate flex items-center gap-1.5">
-                         {customer.bride_name || "---"}
-                         {customer.groom_name && <span className="font-normal text-slate-500 text-sm">&amp; {customer.groom_name}</span>}
-                       </div>
-                       <div className="font-mono font-medium text-slate-500 text-[11px] mt-1">{customer.customer_code} • {customer.phone}</div>
-                     </div>
-                     <div className="shrink-0">
-                       <span className="px-2 py-1 bg-slate-100 text-slate-700 text-[10px] uppercase font-bold rounded-full border border-slate-200">{customer.status}</span>
-                     </div>
-                   </div>
-                   
-                   <div className="bg-slate-50 border border-slate-100 rounded-lg p-2.5 flex items-center justify-between text-xs">
-                     <div className="flex items-center gap-1.5 text-slate-600">
-                       <Calendar className="w-4 h-4 text-slate-400" />
-                       <span className="font-medium text-slate-500 text-[11px] uppercase">Cưới:</span>
-                       <span className="font-bold text-slate-800">{customer.wedding_date ? new Date(customer.wedding_date).toLocaleDateString('vi-VN') : 'Chưa chốt'}</span>
-                     </div>
-                     <div className="flex items-center gap-1 text-slate-500">
-                       <span className="text-[10px] uppercase">Nguồn:</span>
-                       <span className="font-semibold text-slate-700">{customer.source || 'Khác'}</span>
-                     </div>
-                   </div>
+                    {/* Khu vực 2: Info */}
+                    <div className="px-3.5 py-2.5 border-t border-slate-100 flex flex-col gap-2">
+                      <div className="flex justify-between items-center">
+                        <div className="text-[12.5px] font-bold text-slate-700 uppercase truncate">
+                          {customer.source || "Khác"}
+                        </div>
+                        <div className="text-[11.5px] font-medium text-slate-500">
+                           {customer.next_follow_up ? `Follow-up: ${customer.next_follow_up}` : 'Chưa có lịch'}
+                        </div>
+                      </div>
+                    </div>
 
-                   <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                     <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5 text-slate-400"/> Follow-up: <span className="font-medium text-slate-700">{customer.next_follow_up || '---'}</span>
-                     </div>
-                     <div className="flex gap-1.5">
-                       <Link href={`/dashboard/contracts?newFor=${customer.id}`} className="w-7 h-7 flex items-center justify-center bg-white text-slate-600 rounded-md shadow-sm border border-slate-200 hover:bg-slate-50">
-                         <FileText className="w-3.5 h-3.5" />
-                       </Link>
-                       {canUpdate && (
-                         <Link href={`/dashboard/customers/${customer.id}/edit`} className="w-7 h-7 flex items-center justify-center bg-white text-slate-600 rounded-md shadow-sm border border-slate-200 hover:bg-slate-50">
-                           <Edit className="w-3.5 h-3.5" />
-                         </Link>
-                       )}
-                       {canDelete && (
-                         <button onClick={() => handleDelete(customer.id)} disabled={deletingId === customer.id} className="w-7 h-7 flex items-center justify-center bg-white text-red-600 rounded-md shadow-sm border border-red-100 hover:bg-red-50">
-                           <Trash2 className="w-3.5 h-3.5" />
-                         </button>
-                       )}
-                     </div>
-                   </div>
+                    {/* Khu vực 3: Footer & Actions */}
+                    <div className="px-3.5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-b-xl">
+                      <div className="flex items-center gap-1.5 text-[12px]">
+                         <span className="font-mono font-bold text-slate-600">{customer.customer_code}</span>
+                         <span className="text-slate-300">•</span>
+                         {customer.phone ? (
+                           <a href={`tel:${customer.phone}`} className="font-mono text-blue-600 font-semibold hover:underline">
+                             {customer.phone}
+                           </a>
+                         ) : (
+                           <span className="font-mono text-slate-400 font-semibold">Không SĐT</span>
+                         )}
+                      </div>
+                      
+                      <div className="flex gap-2 shrink-0">
+                        {customer.contracts && customer.contracts.length > 0 && (
+                          <Link href={`/dashboard/contracts?search=${customer.phone}`} className="w-9 h-9 flex items-center justify-center bg-white text-blue-600 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors">
+                            <FileText className="w-4 h-4" />
+                          </Link>
+                        )}
+                        {canUpdate && (
+                          <Link href={`/dashboard/customers/${customer.id}/edit`} className="w-9 h-9 flex items-center justify-center bg-white text-slate-600 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors">
+                            <Edit className="w-4 h-4" />
+                          </Link>
+                        )}
+                        {canDelete && (
+                          <button onClick={() => handleDelete(customer.id)} disabled={deletingId === customer.id} className="w-9 h-9 flex items-center justify-center bg-white text-red-600 rounded-lg shadow-sm border border-red-100 hover:bg-red-50 transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
                 </div>
              ))
           )}

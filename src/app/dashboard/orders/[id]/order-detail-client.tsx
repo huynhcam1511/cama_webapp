@@ -297,9 +297,9 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
         ...currentOrder,
         notes: JSON.stringify({ text: notesTextObj, images: updatedImages })
       });
-    } catch (err) {
-      console.error(err);
-      alert("Lỗi upload ảnh QC");
+    } catch (err: any) {
+      console.error("Upload QC Image Error:", err);
+      alert(`Lỗi upload ảnh QC: ${err.message || 'Xin vui lòng thử lại'}`);
     } finally {
       setUploadingImageId(null);
     }
@@ -326,9 +326,9 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
         .getPublicUrl(filePath);
 
       setIncidentForm({...incidentForm, bill_image: publicUrl});
-    } catch (err) {
-      console.error(err);
-      alert("Lỗi upload ảnh Bill");
+    } catch (err: any) {
+      console.error("Upload Bill Error:", err);
+      alert(`Lỗi upload ảnh Bill: ${err.message || 'Xin vui lòng thử lại'}`);
     } finally {
       setIsUploadingBill(false);
     }
@@ -552,30 +552,8 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                               </div>
                             </td>
                             <td className="px-3 py-3 align-middle">
-                              <div className="flex min-h-16 flex-wrap items-center justify-center gap-2">
-                                {images.length > 0 && (
-                                  <div className="flex flex-wrap justify-center gap-2">
-                                    {images.map((img: string, iIdx: number) => (
-                                      <div key={iIdx} onClick={() => setSelectedImage(img)} className="relative w-12 h-12 rounded border border-slate-200 overflow-hidden group/img bg-slate-100 cursor-pointer">
-                                        <img src={img} alt="QC" className="w-full h-full object-cover" />
-                                        {!isReadOnly && (
-                                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                            <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="p-1 text-white hover:text-rose-400">
-                                              <icons.X className="w-3.5 h-3.5" />
-                                            </button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                {!isReadOnly && (
-                                  <label className={`cursor-pointer inline-flex w-fit items-center gap-1.5 px-2 py-1 text-xs font-bold rounded transition-colors ${isUploading ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'}`}>
-                                    {isUploading ? <icons.Loader2 className="w-3 h-3 animate-spin" /> : <icons.ImagePlus className="w-3 h-3" />}
-                                    {isUploading ? "Đang up..." : "Thêm ảnh"}
-                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, rowId)} disabled={isUploading} />
-                                  </label>
-                                )}
+                              <div className="flex h-16 items-center justify-center text-slate-300 font-bold">
+                                -
                               </div>
                             </td>
                             <td className="py-3 align-middle text-center font-bold text-slate-700">

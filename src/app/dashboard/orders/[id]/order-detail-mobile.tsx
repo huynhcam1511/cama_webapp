@@ -103,9 +103,9 @@ export default function OrderDetailMobile({
         .getPublicUrl(filePath);
 
       setIncidentForm({...incidentForm, bill_image: publicUrl});
-    } catch (err) {
-      console.error(err);
-      alert("Lỗi upload ảnh Bill");
+    } catch (err: any) {
+      console.error("Upload Bill Error:", err);
+      alert(`Lỗi upload ảnh Bill: ${err.message || 'Xin vui lòng thử lại'}`);
     } finally {
       setIsUploadingBill(false);
     }
@@ -317,7 +317,7 @@ export default function OrderDetailMobile({
         </div>
       </div>
 
-      <div>
+      <div className="px-3 pb-6">
         <h2 className="text-sm font-bold text-slate-800 mb-3 px-1">Sản Phẩm & Dịch Vụ</h2>
         <div className={`${items.length > 0 || garments.length > 0 ? 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden divide-y divide-slate-100' : 'space-y-3'}`}>
           {items.length === 0 && garments.length === 0 && (
@@ -341,22 +341,7 @@ export default function OrderDetailMobile({
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
-                  {images.map((img: string, iIdx: number) => (
-                    <div key={iIdx} onClick={() => onImageClick && onImageClick(img)} className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer">
-                        <img src={img} alt="QC" className="w-full h-full object-cover" />
-                        {!isReadOnly && (
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(rowId, img); }} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5">
-                            <icons.X className="w-3 h-3" />
-                          </button>
-                        )}
-                    </div>
-                  ))}
-                  {!isReadOnly && (
-                    <label className={`cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg ${isUploading ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-600'}`}>
-                      {isUploading ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.ImagePlus className="w-4 h-4" />}
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, rowId)} disabled={isUploading} />
-                    </label>
-                  )}
+                  <div className="text-[10px] text-slate-400 italic">Ảnh QC chỉ áp dụng cho sản phẩm kho.</div>
                 </div>
                 {!isReadOnly && viewingStepIndex === 2 && (
                   <button onClick={() => setIsIncidentModalOpen(true)} className="mt-3 w-full py-2.5 bg-rose-50 text-rose-600 border border-rose-200 font-bold text-xs rounded-xl flex items-center justify-center gap-2">

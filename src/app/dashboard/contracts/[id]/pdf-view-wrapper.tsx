@@ -30,33 +30,43 @@ export default function PdfViewWrapper({ contract }: PdfViewWrapperProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium"
           >
             <Printer className="w-4 h-4" />
-            <span>In PDF</span>
+            <span className="hidden sm:inline">In PDF</span>
           </button>
           
           <Link
             href={`/dashboard/contracts/${contract.id}/edit`}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium"
           >
             <Edit className="w-4 h-4" />
-            <span>Chỉnh Sửa</span>
+            <span className="hidden sm:inline">Chỉnh Sửa</span>
           </Link>
 
           <button
             onClick={() => setIsCancelOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
           >
             <Trash2 className="w-4 h-4" />
-            <span>Hủy Hợp Đồng</span>
+            <span className="hidden sm:inline">Hủy Hợp Đồng</span>
           </button>
         </div>
       </div>
 
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          .mobile-print-wrapper {
+            zoom: 0.51;
+          }
+        }
+      `}} />
+
       {/* Main Content Area */}
-      <div className="max-w-[210mm] mx-auto mt-8">
-        <PrintableContract contract={contract} forceShow={true} />
+      <div className="w-full flex justify-center overflow-x-auto md:overflow-visible pb-24 md:pb-8">
+        <div className="mobile-print-wrapper w-[210mm] min-w-[210mm] shrink-0 bg-white shadow-2xl md:shadow-xl mt-4 sm:mt-8">
+          <PrintableContract contract={contract} forceShow={true} />
+        </div>
       </div>
 
       {/* Cancel Dialog */}

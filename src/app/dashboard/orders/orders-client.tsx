@@ -39,7 +39,7 @@ const STATUS_MAP: Record<OrderStatus, { label: string, color: string, icon: any 
 
 export default function OrdersClient({ initialOrders, users, contracts = [], teams = [] }: Props) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
-  const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterStatus, setFilterStatus] = useState<string>("ACTIVE");
   const [filterTeam, setFilterTeam] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -65,7 +65,22 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
   };
 
   const filteredOrders = orders.filter(o => {
-    if (filterStatus !== "ALL") {
+    // Nếu có tìm kiếm bằng Text, hệ thống bỏ qua bộ lọc để tìm kiếm toàn bộ kho dữ liệu
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!o.order_code?.toLowerCase().includes(q) && 
+          !o.contract?.customer?.bride_name?.toLowerCase().includes(q) &&
+          !o.contract?.customer?.phone?.includes(q)) {
+        return false;
+      }
+      return true;
+    }
+
+    if (filterStatus === "ACTIVE") {
+      if (o.completion_status === "COMPLETED" || o.completion_status === "CANCELLED") {
+        return false;
+      }
+    } else if (filterStatus !== "ALL") {
       // Find the UI step that matches filterStatus
       const step = UI_STEPS.find(s => s.id === filterStatus);
       if (step) {
@@ -85,14 +100,6 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
       }
     }
     
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      if (!o.order_code?.toLowerCase().includes(q) && 
-          !o.contract?.customer?.bride_name?.toLowerCase().includes(q) &&
-          !o.contract?.customer?.phone?.includes(q)) {
-        return false;
-      }
-    }
     return true;
   }).sort((a, b) => {
     if (!a.event_date) return 1;
@@ -199,6 +206,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
               <option value="UNASSIGNED">Chưa phân công</option>
             </select>
             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="bg-white text-slate-700 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500">
+              <option value="ACTIVE">Đang xử lý</option>
               <option value="ALL">Tất cả trạng thái</option>
               {UI_STEPS.map(step => <option key={step.id} value={step.id}>{step.label}</option>)}
               <option value="CANCELLED">Đã hủy</option>
@@ -245,6 +253,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                     onChange={(e) => setFilterStatus(e.target.value)}
                     className="mt-1 w-full bg-white text-slate-700 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none"
                   >
+                    <option value="ACTIVE">Đang xử lý</option>
                     <option value="ALL">Tất cả trạng thái</option>
                     {UI_STEPS.map((step) => (
                       <option key={step.id} value={step.id}>{step.label}</option>
@@ -428,49 +437,41 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                   <div 
                     key={order.id}
                     onClick={() => router.push('/dashboard/orders/' + order.id)}
-                    className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 cursor-pointer active:scale-[0.98] transition-transform relative overflow-hidden"
+                    className="bg-white rounded-xl shadow-sm border border-slate-200 cursor-pointer active:scale-[0.98] transition-transform flex flex-col overflow-hidden"
                   >
-                    {/* Left border accent for status */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${statusInfo.color.split(' ')[0]}`}></div>
-                    
-                    {/* Tầng 1: Customer & Status */}
-                    <div className="flex justify-between items-center mb-2 pl-2">
-                      <div className="flex items-center gap-2 overflow-hidden mr-2">
+                    {/* Khu vực 1: Header */}
+                    <div className="p-3.5 pb-2 flex justify-between items-start gap-3">
+                      <div className="font-bold text-slate-900 text-[14.5px] truncate flex-1 leading-tight">
                         {order.contract?.customer ? (
                           <>
-                            <div className="font-extrabold text-slate-900 text-[13px] uppercase tracking-tight truncate max-w-[130px] sm:max-w-[150px]">{order.contract.customer.bride_name}</div>
-                            <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1 shrink-0"><icons.Phone className="w-3 h-3"/> {order.contract.customer.phone}</div>
+                            {order.contract.customer.bride_name}
+                            {order.contract.customer.groom_name && <span className="font-normal text-slate-500 text-sm"> &amp; {order.contract.customer.groom_name}</span>}
                           </>
                         ) : (
-                          <div className="font-bold text-slate-400 text-[13px] italic">Khách lẻ / Trống</div>
+                          <span className="italic text-slate-500">Khách lẻ / Trống</span>
                         )}
                       </div>
-                      <div className={`shrink-0 px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-widest ${statusInfo.color}`}>
-                        {statusInfo.label}
+                      <div className="shrink-0 flex flex-col items-end gap-0.5">
+                        <span className={`px-2 py-1 rounded-md text-[10.5px] font-bold uppercase leading-none ${statusInfo.color}`}>
+                          {statusInfo.label}
+                        </span>
                       </div>
                     </div>
-                    
-                    {/* Tầng 2: Operations Context */}
-                    <div className="mb-2.5 ml-1 bg-slate-50/80 p-2 rounded-xl border border-slate-100/60 flex justify-between items-center">
-                      {/* Left Column */}
-                      <div className="flex flex-col gap-0.5 overflow-hidden">
-                        <div className="text-[11px] font-semibold text-slate-700 truncate">{order.service_type || 'Đơn lẻ'}</div>
-                        <div className="text-blue-600 font-mono text-[10px] font-bold"><icons.Link className="w-3 h-3 inline mr-1 -mt-0.5"/>{order.contract?.contract_code || order.order_code}</div>
-                      </div>
-                      
-                      {/* Right Column */}
-                      <div className="flex flex-col items-end shrink-0 pl-3 border-l border-slate-200/60 justify-center">
-                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 w-full justify-end">
-                          <icons.User className="w-3 h-3 shrink-0" />
-                          <div className="font-bold text-slate-700 text-[10px] text-right max-w-[100px] truncate">
-                            {order.pic?.full_name || 'Chưa PIC'}
-                          </div>
+
+                    {/* Khu vực 2: Body (Timeline & Details) */}
+                    <div className="px-3.5 py-2.5 border-t border-slate-100 flex flex-col gap-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[12.5px] font-bold text-slate-700 uppercase truncate">
+                          {order.service_type || 'Đơn lẻ'}
+                        </span>
+                        <div className="text-[11.5px] text-slate-500 flex items-center gap-1 shrink-0 ml-2">
+                           <icons.User className="w-3.5 h-3.5 text-slate-400" />
+                           <span className="font-medium truncate max-w-[100px]">{order.pic?.full_name || 'Chưa PIC'}</span>
                         </div>
                       </div>
-                    </div>
-                    
-                    {/* Tầng 4: Realtime Timeline */}
-                    <div className="pt-2 border-t border-slate-100 ml-1">
+                      
+                      {/* Tầng 4: Realtime Timeline */}
+                      <div className="pt-2 mt-1 border-t border-slate-100/50">
                       {(() => {
                         if (!order.event_date) {
                           return (
@@ -599,6 +600,25 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                           </div>
                         );
                       })()}
+                    </div>
+                    </div>
+                    
+                    {/* Khu vực 3: Footer & Actions */}
+                    <div className="px-3.5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-b-xl">
+                       <div className="flex items-center gap-1.5 text-[12px]">
+                         <span className="font-mono font-bold text-slate-600 truncate max-w-[100px]">{order.contract?.contract_code || order.order_code}</span>
+                         <span className="text-slate-300">•</span>
+                         {order.contract?.customer?.phone ? (
+                           <span className="font-mono text-slate-600 font-semibold">{order.contract.customer.phone}</span>
+                         ) : (
+                           <span className="font-mono text-slate-400 font-semibold italic text-[11px]">Không SĐT</span>
+                         )}
+                       </div>
+                       <div className="flex gap-2 shrink-0">
+                         <div className="w-8 h-8 flex items-center justify-center bg-white text-slate-400 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 hover:text-indigo-600 transition-colors pointer-events-none">
+                           <icons.Eye className="w-3.5 h-3.5" />
+                         </div>
+                       </div>
                     </div>
                   </div>
                 );

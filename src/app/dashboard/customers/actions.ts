@@ -69,11 +69,16 @@ export interface CustomerFormData {
   next_followup?: string;
   priority_task?: string;
   general_notes?: string;
+  // Bổ sung các trường đồng bộ Lịch Hẹn Tư Vấn
+  appointment_date?: string;
+  appointment_time?: string;
+  appointment_type?: string;
+  primary_assignee_id?: string;
 }
 
 export async function getCustomers() {
   const supabase = createAdminClient();
-  const { data, error } = await supabase.from("customers").select("*").order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("customers").select("*, contracts(id)").order("created_at", { ascending: false });
   if (error) {
     console.error("Error fetching customers:", error);
     return [];
@@ -83,22 +88,80 @@ export async function getCustomers() {
 
 export async function getCustomerById(id: string) {
   const supabase = createAdminClient();
-  const { data, error } = await supabase.from("customers").select("*").eq("id", id).single();
-  if (error) {
+  const { data: customer, error } = await supabase.from("customers").select("*").eq("id", id).single();
+  if (error || !customer) {
     console.error("Error fetching customer by id:", error);
     return null;
   }
-  return data;
+  
+  // Lấy thêm thông tin lịch hẹn Sale Booking nếu có
+  const { data: schedule } = await supabase.from("operation_schedules")
+    .select("*")
+    .eq("customer_id", id)
+    .eq("schedule_category", "SALE_BOOKING")
+    .maybeSingle();
+
+  if (schedule) {
+    customer.appointment_data = schedule;
+  }
+
+  return customer;
+}
+
+async function syncAppointment(supabase: any, customerId: string, customerData: any, appointmentData: any) {
+  const { data: existing } = await supabase.from('operation_schedules')
+    .select('id').eq('customer_id', customerId).eq('schedule_category', 'SALE_BOOKING').maybeSingle();
+
+  // Nếu không có ngày hẹn, kiểm tra nếu lịch cũ tồn tại thì xóa đi (khách hủy/bỏ lịch)
+  if (!appointmentData.appointment_date) {
+    if (existing) {
+      await supabase.from('operation_schedules').delete().eq('id', existing.id);
+    }
+    return;
+  }
+    
+  const schedulePayload = {
+    customer_id: customerId,
+    customer_name: customerData.bride_name + (customerData.groom_name ? ` & ${customerData.groom_name}` : ''),
+    customer_phone: customerData.phone,
+    date: appointmentData.appointment_date,
+    start_time: appointmentData.appointment_time || null,
+    service_content: appointmentData.appointment_type || 'Tư vấn',
+    status: 'IN_PROGRESS',
+    schedule_category: 'SALE_BOOKING',
+    source: customerData.source || 'CRM',
+    primary_assignee_id: appointmentData.primary_assignee_id || null,
+    event_type: 'CUSTOMER_APPOINTMENT'
+  };
+
+  if (existing) {
+    await supabase.from('operation_schedules').update(schedulePayload).eq('id', existing.id);
+  } else {
+    await supabase.from('operation_schedules').insert(schedulePayload);
+  }
 }
 
 export async function createCustomer(customer: CustomerFormData) {
   try {
     await requirePermission("CUSTOMERS", "create");
     const supabase = createAdminClient();
-    if (!customer.customer_code || customer.customer_code.startsWith("KH-")) {
-      customer.customer_code = await generateSequentialCode(supabase, "customers", "customer_code", "CUST");
+    
+    // Tách phần appointment data
+    const { appointment_date, appointment_time, appointment_type, primary_assignee_id, ...customerCore } = customer;
+
+    const sanitizedCustomer = Object.fromEntries(
+      Object.entries(customerCore).map(([k, v]) => [k, v === "" ? null : v])
+    );
+
+    if (!sanitizedCustomer.customer_code || String(sanitizedCustomer.customer_code).startsWith("KH-")) {
+      sanitizedCustomer.customer_code = await generateSequentialCode(supabase, "customers", "customer_code", "CUST");
     }
-    const { data, error } = await supabase.from("customers").insert(customer).select().single();
+    const { data, error } = await supabase.from("customers").insert(sanitizedCustomer).select().single();
+    
+    if (data && appointment_date) {
+      await syncAppointment(supabase, data.id, sanitizedCustomer, { appointment_date, appointment_time, appointment_type, primary_assignee_id });
+    }
+    
     return { success: !error, data, error: error?.message };
   } catch (err: any) {
     console.error("Error in createCustomer:", err);
@@ -109,10 +172,32 @@ export async function createCustomer(customer: CustomerFormData) {
 export async function updateCustomer(id: string, customer: CustomerFormData) {
   await requirePermission("CUSTOMERS", "update");
   const supabase = createAdminClient();
-  const { data, error } = await supabase.from("customers").update(customer).eq("id", id).select().single();
+  
+  // Tách phần appointment data
+  const { appointment_date, appointment_time, appointment_type, primary_assignee_id, ...customerCore } = customer;
+
+  const sanitizedCustomer = Object.fromEntries(
+    Object.entries(customerCore).map(([k, v]) => [k, v === "" ? null : v])
+  );
+
+  const { data, error } = await supabase.from("customers").update(sanitizedCustomer).eq("id", id).select().single();
+  
+  if (data && appointment_date) {
+    await syncAppointment(supabase, data.id, sanitizedCustomer, { appointment_date, appointment_time, appointment_type, primary_assignee_id });
+  }
+  
   return { success: !error, data, error: error?.message };
 }
 
+export async function getStaffs() {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.from("users").select("id, full_name").order("full_name");
+  if (error) {
+    console.error("Error fetching staffs:", error);
+    return [];
+  }
+  return data;
+}
 export async function deleteCustomer(id: string) {
   await requirePermission("CUSTOMERS", "delete");
   const supabase = createAdminClient();
