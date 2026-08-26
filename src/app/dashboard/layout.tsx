@@ -214,10 +214,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </button>
             {/* Detail pages retain a back action in addition to the mobile menu. */}
             {(() => {
-              const pathSegments = pathname.split('/').filter(Boolean);
-              // Path /dashboard/[module] has length 2
-              const isRootPage = pathSegments.length <= 2;
+              // A module root can be nested (for example /dashboard/inventory/locations).
+              // Only show Back when the current URL is deeper than its registered route.
+              const isRootPage = Boolean(currentModule && pathname === currentModule.route);
               if (isRootPage) return null;
+              const pathSegments = pathname.split('/').filter(Boolean);
               return (
                 <Link
                   href={"/" + pathSegments.slice(0, -1).join("/")}

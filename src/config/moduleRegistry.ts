@@ -10,6 +10,7 @@ export type ModuleCode =
   | "POLICIES"
   | "GARMENT_CATALOG"
   | "INVENTORY_LOCATIONS"
+  | "INVENTORY_POSITION_QR"
   | "INVENTORY_INBOUND"
   | "INVENTORY_OUTBOUND"
   | "EMPLOYEES"
@@ -254,6 +255,20 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "INVENTORY_GROUP",
     parentCode: null,
     sortOrder: 1,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true,
+  },
+  {
+    moduleCode: "INVENTORY_POSITION_QR",
+    label: "Vị trí",
+    shortLabel: "Vị trí",
+    route: "/dashboard/inventory/locations/qr",
+    icon: "MapPinned",
+    group: "INVENTORY_GROUP",
+    parentCode: null,
+    sortOrder: 2,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",
