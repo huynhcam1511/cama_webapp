@@ -1,7 +1,13 @@
 "use client";
 
-import { X, QrCode } from "lucide-react";
-import { Scanner } from "@yudiel/react-qr-scanner";
+import { X, QrCode, AlertTriangle } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
+
+const Scanner = dynamic(() => import("@yudiel/react-qr-scanner").then((mod) => mod.Scanner), { 
+  ssr: false,
+  loading: () => <div className="text-white">Đang tải camera...</div> 
+});
 
 interface QRScannerProps {
   onScanSuccess: (decodedText: string) => void;
@@ -16,6 +22,14 @@ export default function QRScanner({
   title = "Quét Mã QR",
   instruction = "Đưa mã QR trên tem vào khung hình để quét.",
 }: QRScannerProps) {
+  const [isSecure, setIsSecure] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsSecure(window.isSecureContext);
+    }
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col animate-in fade-in duration-200">
       
@@ -34,31 +48,41 @@ export default function QRScanner({
 
       {/* Full screen Video Stream using yudiel/react-qr-scanner */}
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-        <Scanner
-          onScan={(result) => {
-            if (result && result.length > 0) {
-              // The library returns an array of results, we just take the first one
-              onScanSuccess(result[0].rawValue);
-            }
-          }}
-          onError={(error) => {
-             // Handle gracefully, don't crash
-             console.warn("Scanner error:", error);
-          }}
-          components={{
-            audio: false, 
-            finder: true, // Use built-in finder
-          }}
-          styles={{
-            container: {
-              width: "100%",
-              height: "100%",
-            },
-            video: {
-              objectFit: "cover",
-            }
-          }}
-        />
+        {!isSecure ? (
+          <div className="flex flex-col items-center justify-center p-6 text-center max-w-sm">
+            <AlertTriangle className="w-16 h-16 text-amber-500 mb-4" />
+            <h4 className="text-white font-bold text-xl mb-2">Không có quyền Camera</h4>
+            <p className="text-slate-300 text-sm">
+              Trình duyệt đã chặn Camera vì bạn đang truy cập qua kết nối không bảo mật (HTTP).
+              <br/><br/>
+              Vui lòng chuyển sang dùng <strong>HTTPS</strong> hoặc truy cập bằng <strong>localhost</strong>.
+            </p>
+          </div>
+        ) : (
+          <Scanner
+            onScan={(result) => {
+              if (result && result.length > 0) {
+                onScanSuccess(result[0].rawValue);
+              }
+            }}
+            onError={(error) => {
+               console.warn("Scanner error:", error);
+            }}
+            components={{
+              audio: false, 
+              finder: true,
+            }}
+            styles={{
+              container: {
+                width: "100%",
+                height: "100%",
+              },
+              video: {
+                objectFit: "cover",
+              }
+            }}
+          />
+        )}
       </div>
 
       {/* Instruction floating at bottom */}
