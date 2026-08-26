@@ -368,6 +368,18 @@ export default function CustomersView({ initialCustomers }: CustomersViewProps) 
           )}
         </div>
       </div>
+
+      {/* Mobile FAB for adding customer */}
+      {canCreate && (
+        <div className="md:hidden fixed bottom-20 right-4 z-50">
+          <Link
+            href="/dashboard/customers/create"
+            className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+          >
+            <UserPlus className="w-6 h-6" />
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

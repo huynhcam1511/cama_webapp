@@ -11,7 +11,7 @@ export default function SimplifiedOutboundPage() {
   const router = useRouter();
   
   // App states
-  const [scannerOpen, setScannerOpen] = useState(true);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [scanMode, setScanMode] = useState<"LOCATION" | "PRODUCT">("LOCATION");
   const [scannedLocation, setScannedLocation] = useState<{ floor: string; shelf: string; tier: string } | null>(null);
   

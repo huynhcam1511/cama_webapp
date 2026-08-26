@@ -184,35 +184,35 @@ export default function ContractsView({ initialContracts, initialStats, customer
       {/* KPI Summary Cards & Action Button */}
       <div className="flex flex-col lg:flex-row gap-4 px-3 sm:px-0">
         <div className="flex overflow-x-auto snap-x snap-mandatory lg:grid lg:grid-cols-4 gap-2 sm:gap-4 flex-1 pb-1 scrollbar-hide">
-        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0">
+        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0 relative group">
           <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
             <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="flex flex-col sm:block">
-            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-2">
               Hợp Đồng Hiệu Lực
             </span>
-            <div className="flex items-baseline gap-1 sm:mt-2">
+            <div className="flex items-baseline gap-1 sm:mt-1">
               <span className="text-sm sm:text-2xl font-bold font-mono text-slate-900 leading-none">
                 {initialStats.effective_count}
               </span>
               <span className="text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
                 <span className="sm:hidden uppercase font-bold text-slate-600">HĐ Hiệu lực</span>
-                <span className="hidden sm:inline">HĐ</span>
+                <span className="hidden sm:inline">HĐ đang chạy</span>
               </span>
             </div>
           </div>
         </div>
 
-        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0">
+        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0 relative group">
           <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
             <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="flex flex-col sm:block">
-            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-2">
               Tổng Nợ Cần Thu
             </span>
-            <div className="flex items-baseline gap-1 sm:mt-2">
+            <div className="flex items-baseline gap-1 sm:mt-1">
               <span className="text-sm sm:text-xl font-bold font-mono text-blue-600 leading-none">
                 {new Intl.NumberFormat("vi-VN").format(initialStats.total_debt)} ₫
               </span>
@@ -220,18 +220,19 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 Nợ Cần Thu
               </span>
             </div>
+            <div className="hidden sm:block text-[9px] text-slate-400 mt-0.5 leading-tight">Tiền khách còn nợ (Chưa thu)</div>
           </div>
         </div>
 
-        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0">
+        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0 relative group">
           <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
             <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="flex flex-col sm:block">
-            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-2">
               Sự Kiện 7 Ngày Tới
             </span>
-            <div className="flex items-baseline gap-1 sm:mt-2">
+            <div className="flex items-baseline gap-1 sm:mt-1">
               <span className="text-sm sm:text-2xl font-bold font-mono text-slate-900 leading-none">
                 {initialStats.upcoming_7days_count}
               </span>
@@ -240,26 +241,28 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 <span className="hidden sm:inline">sự kiện</span>
               </span>
             </div>
+            <div className="hidden sm:block text-[9px] text-slate-400 mt-0.5 leading-tight">Lịch thử, chụp, giao đồ... sắp diễn ra</div>
           </div>
         </div>
 
-        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0">
+        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0 relative group">
           <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0">
             <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="flex flex-col sm:block">
-            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Hợp Đồng Quá Hạn
+            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-2">
+              Việc Cần Xử Lý
             </span>
-            <div className="flex items-baseline gap-1 sm:mt-2">
+            <div className="flex items-baseline gap-1 sm:mt-1">
               <span className="text-sm sm:text-2xl font-bold font-mono text-red-600 leading-none">
                 {initialStats.overdue_count}
               </span>
               <span className="text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
-                <span className="sm:hidden uppercase font-bold text-red-600">HĐ Quá hạn</span>
-                <span className="hidden sm:inline">HĐ</span>
+                <span className="sm:hidden uppercase font-bold text-red-600">Quá hạn</span>
+                <span className="hidden sm:inline">Việc</span>
               </span>
             </div>
+            <div className="hidden sm:block text-[9px] text-slate-400 mt-0.5 leading-tight">Số HĐ trễ lịch trả đồ, thanh toán...</div>
           </div>
         </div>
         </div>
@@ -278,13 +281,24 @@ export default function ContractsView({ initialContracts, initialStats, customer
               <div className="relative z-10 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] border border-white/30 group-hover:scale-110 group-hover:rotate-90">
                 <Plus className="w-5 h-5 text-white drop-shadow-sm" />
               </div>
-              <span className="relative z-10 text-[13px] font-extrabold text-white tracking-wider drop-shadow-md uppercase">
-                Tạo Hợp Đồng
-              </span>
+              <div className="relative z-10 font-black text-white text-sm tracking-wide group-hover:drop-shadow-md transition-all">
+                Thêm Hợp Đồng
+              </div>
             </button>
           </div>
         )}
       </div>
+      
+      {/* Mobile Add Contract FAB */}
+      {canCreate && (
+        <button
+          onClick={() => setIsContractTypeModalOpen(true)}
+          className="sm:hidden fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-40 w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-xl shadow-amber-300/50 flex items-center justify-center"
+          aria-label="Thêm hợp đồng"
+        >
+          <Plus size={28} />
+        </button>
+      )}
 
       {/* Main Container Card */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
@@ -834,8 +848,8 @@ export default function ContractsView({ initialContracts, initialStats, customer
       {/* Print Contract Modal */}
       {selectedForPrint && (
         <div className="fixed inset-0 z-[9999] flex flex-col bg-slate-900/50 backdrop-blur-sm print:bg-white print:backdrop-blur-none">
-          <div className="flex-1 overflow-auto p-0 md:p-4 pb-24 print:p-0 print:overflow-visible">
-            <div className="bg-white mx-auto shadow-xl w-full max-w-[210mm] min-h-[297mm] print:shadow-none print:w-auto print:max-w-none">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-0 md:p-4 pb-24 print:p-0 print:overflow-visible">
+            <div className="bg-white mx-auto shadow-xl w-full max-w-[100vw] md:max-w-[210mm] min-h-screen md:min-h-[297mm] print:shadow-none print:w-auto print:max-w-none">
               <PrintableContract
                 contract={selectedForPrint}
                 forceShow={true}

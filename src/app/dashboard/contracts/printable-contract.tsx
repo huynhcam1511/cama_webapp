@@ -79,9 +79,9 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
         `}} />
         {/* Continuous A4 document: chapters paginate naturally when printing. */}
         <div 
-          className="contract-print-document bg-white text-slate-900 w-full max-w-[210mm] min-h-[297mm] mx-auto shadow-2xl print:shadow-none relative box-border flex flex-col"
+          className="contract-print-document bg-white text-slate-900 w-full max-w-[100vw] md:max-w-[210mm] min-h-screen md:min-h-[297mm] mx-auto shadow-2xl print:shadow-none relative box-border flex flex-col"
         >
-          <div className="contract-print-content p-10 md:p-12 print:px-[12mm] print:pt-[4mm] print:pb-[18mm]">
+          <div className="contract-print-content p-4 md:p-12 print:px-[12mm] print:pt-[4mm] print:pb-[18mm]">
             {/* Header Page 1 */}
             <div className="flex justify-between items-start mb-2 pb-2">
               <div className="flex items-center gap-3">
