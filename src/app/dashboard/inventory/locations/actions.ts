@@ -99,7 +99,7 @@ export async function getLocationOrder() {
 
 export async function getProductsByLocation(floor: string, shelf: string, tier: string) {
   const supabase = await createClient();
-  let query = supabase.from('garments_inventory').select('id, name, sku, qr_code, size, status, image_url, model:garment_models(image_url)').eq('location_floor', floor);
+  let query = supabase.from('garments_inventory').select('id, name, sku, qr_code, size, status, image_url, model:garment_models(image_url, group_type)').eq('location_floor', floor);
   
   if (shelf) query = query.eq('location_shelf', shelf);
   else query = query.or('location_shelf.is.null,location_shelf.eq.""');
@@ -110,15 +110,21 @@ export async function getProductsByLocation(floor: string, shelf: string, tier: 
   const { data, error } = await query;
   if (error) return { success: false, error: error.message };
   
-  const formattedData = (data || []).map(p => {
+  const formattedData = await Promise.all((data || []).map(async (p) => {
     const modelData = Array.isArray(p.model) ? p.model[0] : p.model;
     const invUrl = (p.image_url && p.image_url !== 'null' && p.image_url !== 'undefined') ? p.image_url : null;
     const modUrl = (modelData?.image_url && modelData.image_url !== 'null' && modelData.image_url !== 'undefined') ? modelData.image_url : null;
+    let finalUrl = invUrl || modUrl || null;
+    if (finalUrl && !finalUrl.startsWith("http") && !finalUrl.startsWith("data:")) {
+      const { data: signData } = await supabase.storage.from("garment-images").createSignedUrl(finalUrl, 3600);
+      if (signData?.signedUrl) finalUrl = signData.signedUrl;
+    }
     return {
       ...p,
-      image_url: invUrl || modUrl || null
+      image_url: finalUrl,
+      group_type: modelData?.group_type || null
     };
-  });
+  }));
   
   return { success: true, products: formattedData };
 }
@@ -143,4 +149,33 @@ export async function generateSequentialLocations(floor: string, startNumber: nu
      return { success: false, error: error.message };
   }
   return { success: true };
+}
+
+export async function searchProducts(query: string) {
+  if (!query) return { success: true, products: [] };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from('garments_inventory')
+    .select('id, name, sku, qr_code, size, status, image_url, location_floor, location_shelf, location_tier, model:garment_models(image_url, group_type)')
+    .or(`name.ilike.%${query}%,qr_code.ilike.%${query}%,sku.ilike.%${query}%`)
+    .limit(20);
+
+  if (error) return { success: false, error: error.message };
+  
+  const formattedData = await Promise.all((data || []).map(async (p) => {
+    const modelData = Array.isArray(p.model) ? p.model[0] : p.model;
+    const invUrl = (p.image_url && p.image_url !== 'null' && p.image_url !== 'undefined') ? p.image_url : null;
+    const modUrl = (modelData?.image_url && modelData.image_url !== 'null' && modelData.image_url !== 'undefined') ? modelData.image_url : null;
+    let finalUrl = invUrl || modUrl || null;
+    if (finalUrl && !finalUrl.startsWith("http") && !finalUrl.startsWith("data:")) {
+      const { data: signData } = await supabase.storage.from("garment-images").createSignedUrl(finalUrl, 3600);
+      if (signData?.signedUrl) finalUrl = signData.signedUrl;
+    }
+    return {
+      ...p,
+      image_url: finalUrl,
+      group_type: modelData?.group_type || null
+    };
+  }));
+  
+  return { success: true, products: formattedData };
 }

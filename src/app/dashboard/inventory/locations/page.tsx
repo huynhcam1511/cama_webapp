@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Layers, Plus, MapPin, ChevronRight, ChevronDown, Package, Box, Search, Trash2, Shirt, Pencil, PackagePlus, QrCode, Table, Download, Loader2, ChevronLeft, Info, Printer } from 'lucide-react';
+import { Layers, Plus, MapPin, ChevronRight, ChevronDown, Package, Box, Search, Trash2, Shirt, Pencil, PackagePlus, QrCode, Table, Download, Loader2, ChevronLeft, Info, Printer, Calendar as CalendarIcon, X } from 'lucide-react';
 import QRCode from 'qrcode';
-import { getCustomLocations, addLocation, deleteLocation, saveLocationOrder, getLocationOrder, updateLocationNotes, renameLocation, getProductsByLocation } from './actions';
+import { getCustomLocations, addLocation, deleteLocation, saveLocationOrder, getLocationOrder, updateLocationNotes, renameLocation, getProductsByLocation, searchProducts } from './actions';
 
 const smartLocationSort = (aName: string, bName: string) => {
   // Always pin Kho Ảo to the top
@@ -50,6 +50,33 @@ const ImageWithFallback = ({ src, alt, className, fallbackIcon: FallbackIcon = S
   return <img src={src} alt={alt} className={className} onError={() => setError(true)} />;
 };
 
+const ProductCard = ({ p, onClick }: { p: any, onClick?: () => void }) => (
+  <div onClick={onClick} className="bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden shadow-sm hover:shadow-md transition-all hover:border-indigo-300 cursor-pointer group">
+    <div className="h-40 bg-slate-100 flex items-center justify-center relative overflow-hidden">
+      <ImageWithFallback src={p.image_url} alt={p.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+      {p.status === 'RENTED' && (
+        <div className="absolute top-2 right-2 px-2 py-1 bg-rose-500 text-white text-[10px] font-bold uppercase rounded-md shadow-sm">
+          Đang thuê
+        </div>
+      )}
+    </div>
+    <div className="p-4 flex-1 flex flex-col gap-1.5">
+      <div className="flex justify-between items-start gap-2">
+        <h4 className="font-bold text-slate-800 text-sm line-clamp-2 group-hover:text-indigo-600 transition-colors">{p.name}</h4>
+      </div>
+      <div className="flex items-center flex-wrap gap-2 text-xs font-medium text-slate-500">
+        <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-slate-200 font-mono text-[10px]">{p.qr_code}</span>
+        <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-slate-200 text-[10px]">{p.group_type || 'Khác'}</span>
+      </div>
+      <div className="mt-auto pt-3 grid grid-cols-2 gap-2 text-[11px] font-medium text-slate-500">
+        <div>Size: <span className="font-bold text-slate-700">{p.size || '—'}</span></div>
+        <div className="text-right">Số lượng: <span className="font-bold text-slate-700">1</span></div>
+        <div className="col-span-2 text-slate-400 truncate mt-1">SKU: {p.sku || '—'}</div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function LocationExplorerPage() {
     const [customOrder, setCustomOrder] = useState<Record<string, string[]>>({});
 
@@ -59,6 +86,26 @@ export default function LocationExplorerPage() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [viewMode, setViewMode] = useState<'tree' | 'table'>('tree');
   const [qrImages, setQrImages] = useState<Record<string, string>>({});
+  
+  const [globalSearch, setGlobalSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+
+  useEffect(() => {
+    if (!globalSearch.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      setIsSearching(true);
+      const res = await searchProducts(globalSearch.trim());
+      if (res.success) setSearchResults(res.products || []);
+      setIsSearching(false);
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [globalSearch]);
 
   // Generate QR images with text below when in table view
   useEffect(() => {
@@ -547,13 +594,17 @@ export default function LocationExplorerPage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
             <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 flex-1 min-w-0">
               
-              {/* Breadcrumb / Back button (if inside a folder) */}
+              {/* Breadcrumb / Back button (if inside a folder or in table view) */}
               <div className="flex items-center gap-2">
-                {selectedParts.length > 0 && (
+                {(selectedParts.length > 0 || viewMode === 'table') && (
                   <button 
                     onClick={() => {
-                      const newParts = selectedParts.slice(0, -1);
-                      setSelectedPath(newParts.join('|'));
+                      if (viewMode === 'table') {
+                        setViewMode('tree');
+                      } else {
+                        const newParts = selectedParts.slice(0, -1);
+                        setSelectedPath(newParts.join('|'));
+                      }
                     }}
                     className="flex shrink-0 items-center gap-1 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors bg-slate-100 hover:bg-indigo-50 px-3 py-1.5 rounded-lg"
                   >
@@ -561,7 +612,7 @@ export default function LocationExplorerPage() {
                   </button>
                 )}
                 <h2 className="text-xl md:text-2xl font-black text-slate-800 ml-1 truncate">
-                  {selectedParts.length === 0 ? "Tổng quan kho" : 
+                  {selectedParts.length === 0 ? (viewMode === 'table' ? "Danh sách Mã QR" : "Sơ đồ Không gian kho") : 
                    selectedParts.length === 2 ? `${selectedParts[0]} - Vị trí ${selectedParts[1]}` :
                    selectedParts.join(' - ')}
                 </h2>
@@ -588,22 +639,23 @@ export default function LocationExplorerPage() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => setViewMode(v => v === 'tree' ? 'table' : 'tree')}
-                className={`p-2 font-semibold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 ${viewMode === 'table' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
-                title={viewMode === 'tree' ? 'Danh sách in mã QR' : 'Xem sơ đồ cây'}
-              >
-                {viewMode === 'tree' ? <QrCode className="w-5 h-5 md:w-4 md:h-4" /> : <Layers className="w-5 h-5 md:w-4 md:h-4" />}
-                <span className="hidden md:inline">{viewMode === 'tree' ? 'Danh sách in mã QR' : 'Xem sơ đồ cây'}</span>
-              </button>
+              {viewMode === 'tree' ? (
+                <button
+                  onClick={() => setViewMode('table')}
+                  className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-colors shadow-sm flex items-center justify-center gap-2 text-sm"
+                  title="Xem danh sách QR"
+                >
+                  <QrCode className="w-4 h-4" /> <span>Xem danh sách QR</span>
+                </button>
+              ) : null}
 
               {viewMode === 'table' && (
                 <button
                   onClick={() => window.print()}
-                  className="p-2 md:px-4 md:py-2 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 transition-colors shadow-sm flex items-center justify-center gap-2"
+                  className="px-4 py-2 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 transition-colors shadow-sm flex items-center justify-center gap-2 text-sm"
                   title="In hàng loạt mã QR đang hiển thị"
                 >
-                  <Printer className="w-5 h-5 md:w-4 md:h-4" /> <span className="hidden md:inline">In mã QR</span>
+                  <Printer className="w-4 h-4" /> <span>Xem bảng in mã</span>
                 </button>
               )}
               
@@ -631,6 +683,28 @@ export default function LocationExplorerPage() {
             </div>
           </div>
         </div>
+
+        {/* Global Search Bar */}
+        {viewMode === 'tree' && (
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 print:hidden">
+            <div className="relative max-w-2xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <input
+                type="text"
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
+                placeholder="Tìm kiếm sản phẩm trên toàn hệ thống kho (Tên, Mã QR, SKU)..."
+                className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm shadow-sm transition-colors"
+              />
+              {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-500 w-5 h-5 animate-spin" />}
+              {!isSearching && globalSearch && (
+                <button onClick={() => setGlobalSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 print:overflow-visible print:p-0 print:bg-white">
           
@@ -737,6 +811,23 @@ export default function LocationExplorerPage() {
                </div>
             </div>
             </>
+          ) : globalSearch.trim() ? (
+            <div className="print:hidden">
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Search className="w-4 h-4" /> Kết quả tìm kiếm ({searchResults.length})
+              </h3>
+              {searchResults.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {searchResults.map(p => (
+                    <ProductCard key={p.id} p={p} onClick={() => setSelectedProduct(p)} />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500 shadow-sm flex items-center justify-center min-h-[200px]">
+                  Không tìm thấy sản phẩm nào khớp với "{globalSearch}".
+                </div>
+              )}
+            </div>
           ) : (
             <>
               <div className="print:hidden">
@@ -821,24 +912,7 @@ export default function LocationExplorerPage() {
               ) : products.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {products.map(p => (
-                    <div key={p.id} className="bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                      <div className="h-40 bg-slate-100 flex items-center justify-center relative">
-                        <ImageWithFallback src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
-                        {p.status === 'RENTED' && (
-                          <div className="absolute top-2 right-2 px-2 py-1 bg-rose-500 text-white text-[10px] font-bold uppercase rounded-md shadow-sm">
-                            Đang thuê
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-4 flex-1 flex flex-col">
-                        <h4 className="font-bold text-slate-800 text-sm line-clamp-2">{p.name}</h4>
-                        <p className="text-xs text-indigo-600 font-mono mt-1">{p.qr_code}</p>
-                        <div className="mt-auto pt-3 flex items-center justify-between text-xs font-medium text-slate-500">
-                          <span>Size: {p.size || '—'}</span>
-                          <span className="text-slate-400 truncate ml-2">SKU: {p.sku || '—'}</span>
-                        </div>
-                      </div>
-                    </div>
+                    <ProductCard key={p.id} p={p} onClick={() => setSelectedProduct(p)} />
                   ))}
                 </div>
               ) : (
@@ -964,14 +1038,68 @@ export default function LocationExplorerPage() {
         </div>
       )}
 
-      {/* Mobile FAB for Add */}
-      {selectedParts.length < 3 && viewMode === 'tree' && (
+      {/* Mobile Add Location FAB */}
+      {!isMobileTreeOpen && selectedParts.length < 2 && viewMode === 'tree' && (
         <button
           onClick={() => setIsAddingLocation(true)}
-          className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-600/30 flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all z-40"
+          className="md:hidden absolute bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-700 transition-colors z-30 print:hidden"
         >
           <Plus className="w-6 h-6" />
         </button>
+      )}
+
+      {/* Item Journey Popup */}
+      {selectedProduct && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50">
+              <h2 className="font-bold text-slate-800 flex items-center gap-2"><CalendarIcon size={18} className="text-indigo-600"/> Lịch trình hoạt động 30 ngày</h2>
+              <button onClick={() => setSelectedProduct(null)} className="p-2 bg-white rounded-full hover:bg-slate-200 text-slate-500"><X size={16} /></button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto">
+              <div className="flex gap-4 items-center mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                 <div className="w-16 h-20 bg-white rounded-lg overflow-hidden shrink-0 border border-slate-200 relative">
+                   <ImageWithFallback src={selectedProduct.image_url} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                 </div>
+                 <div>
+                   <h3 className="font-bold text-slate-800 line-clamp-2 leading-tight">{selectedProduct.name}</h3>
+                   <div className="text-sm font-mono text-indigo-600 mt-1">{selectedProduct.qr_code}</div>
+                   <div className="text-xs text-slate-500 mt-1">SKU: {selectedProduct.sku} • Size: {selectedProduct.size || '—'}</div>
+                 </div>
+              </div>
+
+              <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl flex items-start gap-3 mb-6">
+                <CalendarIcon className="text-indigo-500 shrink-0 mt-0.5" size={20} />
+                <div>
+                  <strong className="text-indigo-900 block text-sm">Chế độ giả lập (Mock Data)</strong>
+                  <p className="text-xs text-indigo-700 mt-1">Khi module Hợp đồng hoàn tất, lịch thuê thực tế sẽ được fill vào bảng này.</p>
+                </div>
+              </div>
+
+              <div className="border border-slate-200 rounded-xl overflow-hidden">
+                <div className="bg-slate-50 p-3 border-b border-slate-200 font-bold text-sm text-slate-700 flex justify-between items-center">
+                  <span>Tháng {new Date().getMonth() + 1}/{new Date().getFullYear()}</span>
+                  <div className="flex gap-3 text-[10px]">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-300"></span> Trống</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-500"></span> Đã xếp lịch</span>
+                  </div>
+                </div>
+                <div className="p-4 grid grid-cols-7 gap-2 text-center text-xs">
+                  {["T2","T3","T4","T5","T6","T7","CN"].map(d => <div key={d} className="font-bold text-slate-400 mb-2">{d}</div>)}
+                  {Array.from({length: 31}).map((_, i) => {
+                    const isRented = [5, 6, 12, 13, 25].includes(i + 1);
+                    return (
+                      <div key={i} className={`aspect-square flex items-center justify-center rounded-lg font-medium cursor-help transition-transform hover:scale-110 ${isRented ? 'bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm font-bold' : 'bg-slate-50 text-slate-600 hover:bg-slate-200 border border-slate-100'}`} title={isRented ? "Lịch Hợp đồng HĐ-1029" : "Trống"}>
+                        {i + 1}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

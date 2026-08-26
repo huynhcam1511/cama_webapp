@@ -9,7 +9,7 @@ export async function getInventoryCatalog() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("garment_models")
-    .select("*, instances:garments_inventory(id,status,size_code,size_system,location_floor,location_shelf,location_tier)")
+    .select("*, instances:garments_inventory(id,sku,qr_code,status,size_code,size_system,location_floor,location_shelf,location_tier)")
     .order("updated_at", { ascending: false });
 
   if (error) return { success: false, error: error.message, models: [] };

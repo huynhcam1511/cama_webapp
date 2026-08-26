@@ -36,28 +36,45 @@ export default function InventoryCatalogPage() {
   };
   useEffect(() => { load(); }, []);
 
-  const colors = useMemo(() => Array.from(new Map(models.filter(x => x.color_code || x.color_name).map(x => [x.color_code || x.color_name, x.color_name || x.color_code])).entries()), [models]);
-  const floors = useMemo(() => Array.from(new Set(models.map(x => x.default_location_floor).filter(Boolean))) as string[], [models]);
-  const shelves = useMemo(() => Array.from(new Set(models.filter(x => floor === "ALL" || x.default_location_floor === floor).map(x => x.default_location_shelf).filter(Boolean))) as string[], [models, floor]);
-  const tiers = useMemo(() => Array.from(new Set(models.filter(x => (floor === "ALL" || x.default_location_floor === floor) && (shelf === "ALL" || x.default_location_shelf === shelf)).map(x => x.default_location_tier).filter(Boolean))) as string[], [models, floor, shelf]);
-  const sizes = useMemo(() => Array.from(new Set(models.flatMap(x => (x.instances || []).map((item: any) => item.size_code).filter(Boolean))).values()).sort(), [models]);
-  const suppliers = useMemo(() => Array.from(new Set([...models.map(x => x.supplier), ...history.map(x => x.supplier)].filter(Boolean))) as string[], [models, history]);
+  const allInstances = useMemo(() => {
+    return models.flatMap(model => 
+      (model.instances || []).map((inst: any) => ({
+        ...inst,
+        model_id: model.id,
+        name: model.name,
+        base_sku: model.base_sku,
+        factory_code: model.factory_code,
+        color_name: model.color_name,
+        color_code: model.color_code,
+        group_type: model.group_type,
+        supplier: model.supplier,
+        image_url: model.image_url,
+      }))
+    );
+  }, [models]);
+
+  const colors = useMemo(() => Array.from(new Map(allInstances.filter(x => x.color_code || x.color_name).map(x => [x.color_code || x.color_name, x.color_name || x.color_code])).entries()), [allInstances]);
+  const floors = useMemo(() => Array.from(new Set(allInstances.map(x => x.location_floor).filter(Boolean))) as string[], [allInstances]);
+  const shelves = useMemo(() => Array.from(new Set(allInstances.filter(x => floor === "ALL" || x.location_floor === floor).map(x => x.location_shelf).filter(Boolean))) as string[], [allInstances, floor]);
+  const tiers = useMemo(() => Array.from(new Set(allInstances.filter(x => (floor === "ALL" || x.location_floor === floor) && (shelf === "ALL" || x.location_shelf === shelf)).map(x => x.location_tier).filter(Boolean))) as string[], [allInstances, floor, shelf]);
+  const sizes = useMemo(() => Array.from(new Set(allInstances.map(x => x.size_code).filter(Boolean))).sort(), [allInstances]);
+  const suppliers = useMemo(() => Array.from(new Set([...allInstances.map(x => x.supplier), ...history.map(x => x.supplier)].filter(Boolean))) as string[], [allInstances, history]);
   const activeFilterCount = [group, color, floor, shelf, tier, size, stock, supplier].filter(value => value !== "ALL").length;
   const resetFilters = () => { setGroup("ALL"); setColor("ALL"); setFloor("ALL"); setShelf("ALL"); setTier("ALL"); setSize("ALL"); setStock("ALL"); setSupplier("ALL"); };
 
-  const filtered = useMemo(() => models.filter(model => {
-    if (group !== "ALL" && model.group_type !== group) return false;
-    if (color !== "ALL" && (model.color_code || model.color_name) !== color) return false;
-    if (floor !== "ALL" && model.default_location_floor !== floor) return false;
-    if (shelf !== "ALL" && model.default_location_shelf !== shelf) return false;
-    if (tier !== "ALL" && model.default_location_tier !== tier) return false;
-    if (size !== "ALL" && !(model.instances || []).some((item: any) => item.size_code === size)) return false;
-    if (stock === "AVAILABLE" && !(model.instances?.length > 0)) return false;
-    if (stock === "EMPTY" && model.instances?.length > 0) return false;
-    if (supplier !== "ALL" && model.supplier !== supplier) return false;
+  const filtered = useMemo(() => allInstances.filter(inst => {
+    if (group !== "ALL" && inst.group_type !== group) return false;
+    if (color !== "ALL" && (inst.color_code || inst.color_name) !== color) return false;
+    if (floor !== "ALL" && inst.location_floor !== floor) return false;
+    if (shelf !== "ALL" && inst.location_shelf !== shelf) return false;
+    if (tier !== "ALL" && inst.location_tier !== tier) return false;
+    if (size !== "ALL" && inst.size_code !== size) return false;
+    if (stock === "AVAILABLE" && inst.status !== 'AVAILABLE') return false;
+    if (stock === "EMPTY" && inst.status === 'AVAILABLE') return false;
+    if (supplier !== "ALL" && inst.supplier !== supplier) return false;
     const needle = search.toLowerCase();
-    return !needle || [model.name, model.base_sku, model.factory_code, model.color_name, model.color_code, model.default_location_floor, model.default_location_shelf, model.default_location_tier, model.supplier].some(x => x?.toLowerCase().includes(needle));
-  }), [models, group, color, floor, shelf, tier, size, stock, supplier, search]);
+    return !needle || [inst.name, inst.base_sku, inst.sku, inst.qr_code, inst.factory_code, inst.color_name, inst.color_code, inst.location_floor, inst.location_shelf, inst.location_tier, inst.supplier].some(x => x?.toLowerCase().includes(needle));
+  }), [allInstances, group, color, floor, shelf, tier, size, stock, supplier, search]);
   const historyFiltered = useMemo(() => history.filter(item => {
     if (supplier !== "ALL" && item.supplier !== supplier) return false;
     const needle = search.toLowerCase();
@@ -90,28 +107,37 @@ export default function InventoryCatalogPage() {
       {loading ? <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-indigo-600" /></div> : tab === "stock" ? (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="md:hidden divide-y divide-slate-100">
-            {filtered.map(model => { const sizes = Object.entries((model.instances || []).reduce((acc: any, x: any) => { const key = x.size_code || "?"; acc[key] = (acc[key] || 0) + 1; return acc; }, {})); const statusCounts = (model.instances || []).reduce((acc: any, x: any) => { const s = x.status || "AVAILABLE"; acc[s] = (acc[s] || 0) + 1; return acc; }, {} as Record<string, number>); return <button type="button" key={model.id} onClick={() => setDetail({ type: "model", data: model })} className="w-full p-3 text-left flex gap-3 active:bg-slate-50">
-              <div className="w-16 h-20 bg-slate-100 rounded-xl overflow-hidden shrink-0">{model.image_url ? <img src={model.image_url} alt={model.name} className="w-full h-full object-cover" /> : <ImageIcon className="m-5 text-slate-300" />}</div>
-              <div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><strong className="text-slate-900 leading-tight line-clamp-2">{model.name}</strong><Eye size={18} className="text-indigo-500 shrink-0" /></div><code className="block text-xs text-indigo-700 mt-1 truncate">{model.base_sku}</code><div className="flex flex-wrap gap-1 mt-2">{sizes.map(([name, qty]: any) => <span key={name} className="badge">{name}: <b>{qty}</b></span>)}{statusCounts.AVAILABLE > 0 && <span className="badge !bg-emerald-50 !text-emerald-700">Sẵn sàng: {statusCounts.AVAILABLE}</span>}
-   {statusCounts.RENTED > 0 && <span className="badge !bg-indigo-50 !text-indigo-700">Cho thuê: {statusCounts.RENTED}</span>}
-   {statusCounts.MAINTENANCE > 0 && <span className="badge !bg-amber-50 !text-amber-700">Bảo trì: {statusCounts.MAINTENANCE}</span>}</div><div className="flex gap-1 items-center text-xs text-slate-500 mt-2 truncate"><MapPin size={13} className="shrink-0" /> {[model.default_location_floor, model.default_location_shelf, model.default_location_tier].filter(Boolean).join(" › ") || "Chưa có vị trí"}</div></div>
-            </button>; })}
+            {filtered.map(inst => (
+              <button type="button" key={inst.id} onClick={() => setDetail({ type: "model", data: inst })} className="w-full p-3 text-left flex gap-3 active:bg-slate-50">
+                <div className="w-16 h-20 bg-slate-100 rounded-xl overflow-hidden shrink-0">{inst.image_url ? <img src={inst.image_url} alt={inst.name} className="w-full h-full object-cover" /> : <ImageIcon className="m-5 text-slate-300" />}</div>
+                <div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><strong className="text-slate-900 leading-tight line-clamp-2">{inst.name}</strong><Eye size={18} className="text-indigo-500 shrink-0" /></div><code className="block text-xs font-mono text-indigo-700 mt-1 truncate">{inst.qr_code}</code><div className="flex flex-wrap gap-1 mt-2">
+                  <span className="badge">Size: <b>{inst.size_code || "—"}</b></span>
+                  <span className={`badge ${inst.status === 'RENTED' ? '!bg-indigo-50 !text-indigo-700' : inst.status === 'MAINTENANCE' ? '!bg-amber-50 !text-amber-700' : '!bg-emerald-50 !text-emerald-700'}`}>
+                    {inst.status === 'RENTED' ? 'Đang thuê' : inst.status === 'MAINTENANCE' ? 'Bảo trì' : 'Sẵn sàng'}
+                  </span>
+                </div><div className="flex gap-1 items-center text-xs text-slate-500 mt-2 truncate"><MapPin size={13} className="shrink-0" /> {[inst.location_floor, inst.location_shelf, inst.location_tier].filter(Boolean).join(" › ") || "Chưa xếp vị trí"}</div></div>
+              </button>
+            ))}
             {!filtered.length && <div className="px-5 py-12 text-center text-sm text-slate-500">Chưa có sản phẩm phù hợp.<div className="mt-1">Bấm “Khai báo sản phẩm” để bắt đầu.</div></div>}
           </div>
-          <div className="hidden md:block overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th>Sản phẩm</th><th>Mã nhận diện</th><th>Size & tồn</th><th>Vị trí</th><th>Cập nhật</th><th /></tr></thead><tbody>
-            {filtered.map(model => { const sizes = Object.entries((model.instances || []).reduce((acc: any, x: any) => { const key = x.size_code || "?"; acc[key] = (acc[key] || 0) + 1; return acc; }, {})); const statusCounts = (model.instances || []).reduce((acc: any, x: any) => { const s = x.status || "AVAILABLE"; acc[s] = (acc[s] || 0) + 1; return acc; }, {} as Record<string, number>); return <tr key={model.id}>
-              <td><div className="flex items-center gap-3"><div className="w-12 h-16 bg-slate-100 rounded-lg overflow-hidden shrink-0">{model.image_url ? <img src={model.image_url} alt={model.name} className="w-full h-full object-cover" /> : <ImageIcon className="m-3 text-slate-300" />}</div><div><strong className="text-slate-900">{model.name}</strong><div className="text-xs text-slate-400 mt-1">{model.group_type} · {model.color_name || model.color_code}</div></div></div></td>
-              <td><code className="text-indigo-700">{model.base_sku}</code><div className="text-xs text-slate-400 mt-1">Mác: {model.factory_code || "—"}</div><div className="text-xs text-slate-400 mt-0.5">Hãng: {model.supplier || "—"}</div></td>
-              <td><div className="flex flex-wrap gap-1">{sizes.map(([name, qty]: any) => <span key={name} className="badge">{name}: <b>{qty}</b></span>)}</div><div className="flex gap-1 mt-1 flex-wrap">
-      {statusCounts.AVAILABLE > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-md font-bold">Sẵn sàng {statusCounts.AVAILABLE}</span>}
-      {statusCounts.RENTED > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-md font-bold">Cho thuê {statusCounts.RENTED}</span>}
-      {statusCounts.MAINTENANCE > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-md font-bold">Bảo trì {statusCounts.MAINTENANCE}</span>}
-   </div></td>
-              <td><span className="flex gap-1 items-center text-slate-600"><MapPin size={14} /> {[model.default_location_floor, model.default_location_shelf, model.default_location_tier].filter(Boolean).join(" › ")}</span></td>
-              <td className="text-slate-500">{model.updated_at ? dateTime(model.updated_at) : "—"}</td>
-              <td><button onClick={() => setDetail({ type: "model", data: model })} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"><Eye /></button></td>
-            </tr>; })}
-            {!filtered.length && <tr><td colSpan={6} className="text-center py-16 text-slate-500">Chưa có sản phẩm phù hợp. Bấm “Khai báo sản phẩm” để bắt đầu kiểm kê.</td></tr>}
+          <div className="hidden md:block overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th>Sản phẩm</th><th>Mã vạch & SKU</th><th>Size & Trạng thái</th><th>Vị trí</th><th /></tr></thead><tbody>
+            {filtered.map(inst => (
+              <tr key={inst.id}>
+                <td><div className="flex items-center gap-3"><div className="w-12 h-16 bg-slate-100 rounded-lg overflow-hidden shrink-0">{inst.image_url ? <img src={inst.image_url} alt={inst.name} className="w-full h-full object-cover" /> : <ImageIcon className="m-3 text-slate-300" />}</div><div><strong className="text-slate-900">{inst.name}</strong><div className="text-xs text-slate-400 mt-1">{inst.group_type || "Khác"} · {inst.color_name || inst.color_code}</div></div></div></td>
+                <td><code className="text-indigo-700 font-mono text-sm">{inst.qr_code}</code><div className="text-xs text-slate-400 mt-1">SKU: {inst.sku || inst.base_sku || "—"}</div></td>
+                <td>
+                  <div className="font-bold text-slate-700">Size: {inst.size_code || "—"}</div>
+                  <div className="mt-1">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${inst.status === 'RENTED' ? 'bg-indigo-50 text-indigo-700' : inst.status === 'MAINTENANCE' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                      {inst.status === 'RENTED' ? 'Đang thuê' : inst.status === 'MAINTENANCE' ? 'Bảo trì' : 'Sẵn sàng'}
+                    </span>
+                  </div>
+                </td>
+                <td><span className="flex gap-1 items-center text-slate-600"><MapPin size={14} /> {[inst.location_floor, inst.location_shelf, inst.location_tier].filter(Boolean).join(" › ") || "Chưa xếp vị trí"}</span></td>
+                <td><button onClick={() => setDetail({ type: "model", data: inst })} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"><Eye /></button></td>
+              </tr>
+            ))}
+            {!filtered.length && <tr><td colSpan={5} className="text-center py-16 text-slate-500">Chưa có sản phẩm phù hợp. Bấm “Khai báo sản phẩm” để bắt đầu kiểm kê.</td></tr>}
           </tbody></table></div>
         </div>
       ) : (
@@ -136,48 +162,17 @@ export default function InventoryCatalogPage() {
         {detail.type === "model" && (
           <div className="flex px-5 pt-3 border-b border-slate-200 gap-4">
             <button onClick={() => setDetailTab("info")} className={`pb-3 text-sm font-bold border-b-2 ${detailTab === "info" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Thông tin chung</button>
-            <button onClick={() => setDetailTab("instances")} className={`pb-3 text-sm font-bold border-b-2 ${detailTab === "instances" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Danh sách mã vạch</button>
-            <button onClick={() => setDetailTab("calendar")} className={`pb-3 text-sm font-bold border-b-2 ${detailTab === "calendar" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Lịch trình 30 ngày</button>
+            <button onClick={() => setDetailTab("calendar")} className={`pb-3 text-sm font-bold border-b-2 ${detailTab === "calendar" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Lịch trình hoạt động 30 ngày</button>
           </div>
         )}
 
         <div className="p-6 space-y-5">
         {detailTab === "info" && (
           <>
-            {(detail.data.image_url || detail.data.model?.image_url) && <div className="flex gap-3 overflow-x-auto pb-2"><img src={detail.data.image_url || detail.data.model?.image_url} alt="Sản phẩm" className="w-40 aspect-[3/4] object-cover rounded-xl" />{(detail.data.additional_images || []).map((url: string) => <img key={url} src={url} alt="Sản phẩm" className="w-40 aspect-[3/4] object-cover rounded-xl" />)}</div>}
-            {detail.type === "model" ? <div className="grid sm:grid-cols-2 gap-3"><Info label="Tên" value={detail.data.name} /><Info label="Mã mẫu" value={detail.data.base_sku} /><Info label="Mã mác" value={detail.data.factory_code} /><Info label="Nhóm/Form/Chất liệu" value={`${detail.data.group_type} / ${detail.data.style_details} / ${detail.data.material_pattern}`} /><Info label="Màu" value={detail.data.color_name || detail.data.color_code} /><Info label="Vị trí mặc định" value={[detail.data.default_location_floor, detail.data.default_location_shelf, detail.data.default_location_tier].filter(Boolean).join(" › ")} /></div> : <div className="grid sm:grid-cols-2 gap-3"><Info label="Hoàn tất lúc" value={dateTime(detail.data.completed_at)} /><Info label="Tổng số lượng" value={detail.data.total_quantity} /><Info label="Vị trí" value={[detail.data.location_floor, detail.data.location_shelf, detail.data.location_tier].filter(Boolean).join(" › ")} /><Info label="Nhà cung cấp" value={detail.data.supplier} /><Info label="Ghi chú" value={detail.data.notes} /></div>}
+            {(detail.data.image_url || detail.data.model?.image_url) && <div className="flex gap-3 overflow-x-auto pb-2"><img src={detail.data.image_url || detail.data.model?.image_url} alt="Sản phẩm" className="w-40 aspect-[3/4] object-cover rounded-xl border border-slate-200 shadow-sm" /></div>}
+            {detail.type === "model" ? <div className="grid sm:grid-cols-2 gap-3"><Info label="Tên sản phẩm" value={detail.data.name} /><Info label="Mã QR / SKU" value={`${detail.data.qr_code} / ${detail.data.sku || detail.data.base_sku}`} /><Info label="Size & Trạng thái" value={`${detail.data.size_code || "—"} / ${detail.data.status === 'RENTED' ? 'Đang thuê' : detail.data.status === 'MAINTENANCE' ? 'Bảo trì' : 'Sẵn sàng'}`} /><Info label="Nhóm/Màu sắc" value={`${detail.data.group_type || "—"} / ${detail.data.color_name || detail.data.color_code || "—"}`} /><Info label="Nhà cung cấp" value={detail.data.supplier || "—"} /><Info label="Vị trí kho hiện tại" value={[detail.data.location_floor, detail.data.location_shelf, detail.data.location_tier].filter(Boolean).join(" › ") || "Chưa xếp vị trí"} /></div> : <div className="grid sm:grid-cols-2 gap-3"><Info label="Hoàn tất lúc" value={dateTime(detail.data.completed_at)} /><Info label="Tổng số lượng" value={detail.data.total_quantity} /><Info label="Vị trí" value={[detail.data.location_floor, detail.data.location_shelf, detail.data.location_tier].filter(Boolean).join(" › ")} /><Info label="Nhà cung cấp" value={detail.data.supplier} /><Info label="Ghi chú" value={detail.data.notes} /></div>}
             {detail.type === "history" && <div><h3 className="font-bold mb-2">Chi tiết size</h3>{detail.data.lines.map((line: any) => <div key={line.id} className="p-3 border rounded-xl mb-2">Size <b>{line.size_code}</b> · {line.quantity} chiếc · Cao {line.height_note || "—"} · Nặng {line.weight_note || "—"}<div className="text-slate-500 text-sm">{line.fit_note || "Không có ghi chú"}</div></div>)}</div>}
           </>
-        )}
-
-        {detailTab === "instances" && detail.type === "model" && (
-          <div className="space-y-3">
-             <div className="flex items-center justify-between mb-2">
-               <h3 className="font-black text-slate-800">Từng sản phẩm cụ thể ({detail.data.instances?.length || 0})</h3>
-             </div>
-             <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
-               {(detail.data.instances || []).map((inst: any, idx: number) => (
-                 <div key={inst.id} className="p-4 bg-white flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
-                    <div>
-                      <div className="font-bold text-slate-800">Size: {inst.size_code}</div>
-                      <div className="text-xs text-slate-500 mt-1 flex items-center gap-1"><MapPin size={12}/> {[inst.location_floor, inst.location_shelf, inst.location_tier].filter(Boolean).join(" › ") || "Chưa xếp vị trí"}</div>
-                    </div>
-                    <div className="flex gap-2">
-                       <select 
-                         className={`text-xs font-bold px-3 py-2 rounded-lg border ${inst.status === 'RENTED' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : inst.status === 'MAINTENANCE' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}
-                         value={inst.status || "AVAILABLE"}
-                         onChange={(e) => alert("Tính năng thay đổi trạng thái sẽ kết nối API ở bản cập nhật sau. Trạng thái chọn: " + e.target.value)}
-                       >
-                         <option value="AVAILABLE">Sẵn sàng</option>
-                         <option value="RENTED">Đang cho thuê</option>
-                         <option value="MAINTENANCE">Báo hỏng / Đi giặt</option>
-                       </select>
-                    </div>
-                 </div>
-               ))}
-               {!(detail.data.instances?.length > 0) && <div className="p-8 text-center text-slate-500 text-sm">Chưa có sản phẩm vật lý nào trong kho.</div>}
-             </div>
-          </div>
         )}
 
         {detailTab === "calendar" && detail.type === "model" && (
