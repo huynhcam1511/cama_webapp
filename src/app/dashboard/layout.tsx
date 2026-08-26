@@ -8,7 +8,6 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { MODULE_REGISTRY, getModuleByRoute, getModuleByCode, ModuleGroup, ModuleCode } from "@/config/moduleRegistry";
-import UniversalScanner from "@/components/universal-scanner";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [isPinned, setIsPinned] = useState(false);
@@ -16,7 +15,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isCollapsed = !isPinned && !isHovered;
   const [userProfile, setUserProfile] = useState<{name: string, email: string, initial: string} | null>(null);
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { hasPermission, isLoading } = usePermissions();
@@ -256,7 +254,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               />
             </div>
             <button 
-              onClick={() => setIsScannerOpen(true)}
+              onClick={() => router.push("/dashboard/inventory/scan")}
               className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
               title="Quét QR Sản Phẩm"
             >
@@ -286,11 +284,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      {isScannerOpen && (
-        <UniversalScanner 
-          onClose={() => setIsScannerOpen(false)}
-        />
-      )}
     </div>
   );
 }

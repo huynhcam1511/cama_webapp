@@ -8,12 +8,54 @@ export async function getOutboundHistory() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("inventory_outbound_sessions")
-    .select("*, staff:users(id, full_name), lines:inventory_outbound_lines(*, instance:garments_inventory(id, size_code, model:garment_models(name, base_sku)))")
+    .select(`
+      *,
+      staff:users(id, full_name),
+      order:orders(id, order_code, return_date, service_type),
+      contract:contracts(id, contract_code),
+      lines:inventory_outbound_lines(
+        *,
+        instance:garments_inventory(
+          id, name, sku, qr_code, size, image_url,
+          model:garment_models(name, base_sku, image_url)
+        )
+      )
+    `)
     .order("completed_at", { ascending: false })
     .limit(100);
 
   if (error) return { success: false, error: error.message, sessions: [] };
-  return { success: true, sessions: data || [] };
+
+  const sessions = await Promise.all((data || []).map(async (session: any) => ({
+    ...session,
+    lines: await Promise.all((session.lines || []).map(async (line: any) => {
+      const instance = line.instance;
+      const model = Array.isArray(instance?.model) ? instance.model[0] : instance?.model;
+      let imageUrl = instance?.image_url || model?.image_url || null;
+      if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
+        const { data: signed } = await supabase.storage.from("garment-images").createSignedUrl(imageUrl, 3600);
+        imageUrl = signed?.signedUrl || null;
+      }
+      return { ...line, instance: { ...instance, model, image_url: imageUrl } };
+    }))
+  })));
+
+  return { success: true, sessions };
+}
+
+export async function getOutboundOrders() {
+  await requirePermission("GARMENT_CATALOG", "view");
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, order_code, contract_id, return_date, event_date, service_type, completion_status, contract:contracts(contract_code, customer:customers(bride_name, groom_name))")
+    .is("deleted_at", null)
+    .not("completion_status", "in", '(COMPLETED,CANCELLED)')
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) return { success: false, error: error.message, orders: [] };
+  return { success: true, orders: data || [] };
 }
 
 export async function searchGarmentInstance(qrCode: string) {
@@ -53,6 +95,7 @@ export async function submitOutbound(payload: any) {
   const rpcPayload = {
     staff_id: auth.user.id,
     reason: payload.reason,
+    order_id: payload.order_id || null,
     contract_id: payload.contract_id || null,
     notes: payload.notes || "",
     items: payload.items.map((i: any) => ({

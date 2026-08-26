@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, PackageMinus, PackagePlus, MapPin, Search, CheckCircle2, QrCode, ArrowLeft, Shirt, AlertCircle, X, Package } from "lucide-react";
 import QRScanner from "@/components/qr-scanner";
 
-export default function UniversalScanner({ onClose }: { onClose: () => void }) {
+export default function UniversalScanner({ onClose, fullPage = false }: { onClose: () => void; fullPage?: boolean }) {
   const router = useRouter();
   
   // App states
@@ -72,19 +72,24 @@ export default function UniversalScanner({ onClose }: { onClose: () => void }) {
     params.set("floor", scannedLocation.floor);
     if (scannedLocation.shelf) params.set("shelf", scannedLocation.shelf);
     if (scannedLocation.tier) params.set("tier", scannedLocation.tier);
+    params.set("step", "product");
+    window.localStorage.setItem("cama-inventory-work-location", JSON.stringify({
+      location_floor: scannedLocation.floor,
+      location_shelf: scannedLocation.shelf,
+      location_tier: scannedLocation.tier,
+    }));
     
-    onClose();
+    if (!fullPage) onClose();
     router.push(`/dashboard/inventory/catalog/new?${params.toString()}`);
   };
 
   const handleOutbound = () => {
-    // For now, redirect to outbound history where they can open the scanner
-    // Or we could redirect to outbound with URL params, but outbound doesn't read URL params yet.
-    // The easiest is just to take them to outbound module, then they click + (which opens scanner automatically now).
-    // Or even better: if they want to outbound, we can let them do it right here in the future.
-    // For now, redirect to Outbound page so they just hit + and scan the rack again (or we could save it in a global state).
-    onClose();
-    router.push(`/dashboard/inventory/outbound`);
+    if (!scannedLocation) return;
+    const params = new URLSearchParams({ action: "new", floor: scannedLocation.floor });
+    if (scannedLocation.shelf) params.set("shelf", scannedLocation.shelf);
+    if (scannedLocation.tier) params.set("tier", scannedLocation.tier);
+    if (!fullPage) onClose();
+    router.push(`/dashboard/inventory/outbound?${params.toString()}`);
   };
 
   const resetScanner = () => {
@@ -95,8 +100,8 @@ export default function UniversalScanner({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
-      <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-2xl min-h-screen sm:min-h-0 sm:max-h-[90vh] flex flex-col overflow-hidden relative">
+    <div className={fullPage ? "min-h-full bg-slate-50" : "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto"}>
+      <div className={fullPage ? "mx-auto flex min-h-[calc(100dvh-64px)] w-full max-w-4xl flex-col bg-white" : "bg-white sm:rounded-2xl shadow-2xl w-full max-w-2xl min-h-screen sm:min-h-0 sm:max-h-[90vh] flex flex-col overflow-hidden relative"}>
         <div className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10 shrink-0">
           <div>
             <h2 className="text-xl md:text-2xl font-black text-slate-800 flex items-center gap-2">
@@ -117,7 +122,7 @@ export default function UniversalScanner({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50">
+        <div className={fullPage ? "flex-1 p-4 pb-24 md:p-8 bg-slate-50" : "flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50"}>
           {scannerOpen && (
             <div className="rounded-2xl overflow-hidden shadow-lg border-2 border-slate-200 bg-black relative max-w-md mx-auto aspect-[3/4]">
               <QRScanner onScanSuccess={handleScanSuccess} onClose={() => setScannerOpen(false)} />
@@ -178,7 +183,7 @@ export default function UniversalScanner({ onClose }: { onClose: () => void }) {
                   </h3>
                 </div>
                 
-                <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto">
+                <div className={fullPage ? "divide-y divide-slate-100" : "divide-y divide-slate-100 max-h-[300px] overflow-y-auto"}>
                   {loadingProducts ? (
                     <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-600" /></div>
                   ) : productsOnLocation.length === 0 ? (
