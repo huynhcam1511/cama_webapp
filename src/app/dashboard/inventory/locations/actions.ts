@@ -1,6 +1,51 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requirePermission } from "@/lib/rbac";
+
+export async function getAssetOverview() {
+  await requirePermission("INVENTORY_LOCATIONS", "view");
+  const supabase = await createClient();
+  const [assetsResult, outboundResult] = await Promise.all([
+    supabase
+      .from("garments_inventory")
+      .select("id, name, sku, qr_code, size, size_code, status, image_url, location_floor, location_shelf, location_tier, updated_at, model:garment_models(name, base_sku, group_type, image_url)")
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("inventory_outbound_sessions")
+      .select("id, reason, completed_at, notes, order:orders(id, order_code, return_date, service_type), contract:contracts(id, contract_code, customer:customers(bride_name, groom_name)), lines:inventory_outbound_lines(garment_instance_id)")
+      .order("completed_at", { ascending: false })
+      .limit(500),
+  ]);
+
+  if (assetsResult.error) return { success: false, error: assetsResult.error.message, assets: [] };
+
+  const latestOutbound = new Map<string, any>();
+  if (!outboundResult.error) {
+    for (const session of outboundResult.data || []) {
+      for (const line of session.lines || []) {
+        if (!latestOutbound.has(line.garment_instance_id)) latestOutbound.set(line.garment_instance_id, session);
+      }
+    }
+  }
+
+  const assets = await Promise.all((assetsResult.data || []).map(async (asset: any) => {
+    const model = Array.isArray(asset.model) ? asset.model[0] : asset.model;
+    let imageUrl = asset.image_url || model?.image_url || null;
+    if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
+      const { data: signed } = await supabase.storage.from("garment-images").createSignedUrl(imageUrl, 3600);
+      imageUrl = signed?.signedUrl || null;
+    }
+    return {
+      ...asset,
+      model,
+      image_url: imageUrl,
+      outbound: asset.status === "AVAILABLE" ? null : latestOutbound.get(asset.id) || null,
+    };
+  }));
+
+  return { success: true, assets, outboundWarning: outboundResult.error?.message || null };
+}
 
 export async function getCustomLocations() {
   const supabase = await createClient();

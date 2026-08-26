@@ -8,11 +8,8 @@ import {
   Plus,
   Search,
   Filter,
-  DollarSign,
   Printer,
   MoreVertical,
-  Calendar,
-  AlertTriangle,
   CheckCircle2,
   Clock,
   RotateCcw,
@@ -131,16 +128,19 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
     // Quick Filters
     let matchesQuick = true;
-    if (quickFilter === 'NEW') {
-      matchesQuick = (Date.now() - new Date(c.created_at).getTime()) < 86400000 * 7;
-    } else if (quickFilter === 'HIGH_DEBT') {
-      matchesQuick = c.remaining_amount >= 10000000;
-    } else if (quickFilter === 'DUE_SOON') {
-      matchesQuick = c.payment_due_date ? (new Date(c.payment_due_date).getTime() - Date.now()) > 0 && (new Date(c.payment_due_date).getTime() - Date.now()) < 86400000 * 3 : false;
+    if (quickFilter === 'EFFECTIVE') {
+      matchesQuick = c.contract_status === 'EFFECTIVE' || c.contract_status === 'CONFIRMED';
+    } else if (quickFilter === 'DEBT') {
+      matchesQuick = c.remaining_amount > 0;
+    } else if (quickFilter === 'UPCOMING_7D') {
+      if (!c.customers?.wedding_date) {
+        matchesQuick = false;
+      } else {
+        const diff = new Date(c.customers.wedding_date).getTime() - Date.now();
+        matchesQuick = diff >= 0 && diff <= 86400000 * 7;
+      }
     } else if (quickFilter === 'OVERDUE') {
-      matchesQuick = c.debt_status === 'OVERDUE';
-    } else if (quickFilter === 'UNASSIGNED') {
-      matchesQuick = !c.assigned_staff_names || c.assigned_staff_names.length === 0;
+      matchesQuick = c.remaining_amount > 0 && c.debt_status === 'OVERDUE';
     }
 
     return matchesSearch && matchesContractStatus && matchesContractType && matchesPaymentStatus && matchesDebt && matchesOverdue && matchesQuick;
@@ -181,114 +181,6 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
   return (
     <div className="space-y-3 sm:space-y-6 pt-2">
-      {/* KPI Summary Cards & Action Button */}
-      <div className="flex flex-col lg:flex-row gap-4 px-3 sm:px-0">
-        <div className="flex overflow-x-auto snap-x snap-mandatory lg:grid lg:grid-cols-4 gap-2 sm:gap-4 flex-1 pb-1 scrollbar-hide">
-        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0 relative group">
-          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <div className="flex flex-col sm:block">
-            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-2">
-              Hợp Đồng Hiệu Lực
-            </span>
-            <div className="flex items-baseline gap-1 sm:mt-1">
-              <span className="text-sm sm:text-2xl font-bold font-mono text-slate-900 leading-none">
-                {initialStats.effective_count}
-              </span>
-              <span className="text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
-                <span className="sm:hidden uppercase font-bold text-slate-600">HĐ Hiệu lực</span>
-                <span className="hidden sm:inline">HĐ đang chạy</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0 relative group">
-          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <div className="flex flex-col sm:block">
-            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-2">
-              Tổng Nợ Cần Thu
-            </span>
-            <div className="flex items-baseline gap-1 sm:mt-1">
-              <span className="text-sm sm:text-xl font-bold font-mono text-blue-600 leading-none">
-                {new Intl.NumberFormat("vi-VN").format(initialStats.total_debt)} ₫
-              </span>
-              <span className="text-[10px] sm:hidden text-slate-500 font-bold uppercase whitespace-nowrap">
-                Nợ Cần Thu
-              </span>
-            </div>
-            <div className="hidden sm:block text-[9px] text-slate-400 mt-0.5 leading-tight">Tiền khách còn nợ (Chưa thu)</div>
-          </div>
-        </div>
-
-        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0 relative group">
-          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
-            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <div className="flex flex-col sm:block">
-            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-2">
-              Sự Kiện 7 Ngày Tới
-            </span>
-            <div className="flex items-baseline gap-1 sm:mt-1">
-              <span className="text-sm sm:text-2xl font-bold font-mono text-slate-900 leading-none">
-                {initialStats.upcoming_7days_count}
-              </span>
-              <span className="text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
-                <span className="sm:hidden uppercase font-bold text-slate-600">Sự kiện tới</span>
-                <span className="hidden sm:inline">sự kiện</span>
-              </span>
-            </div>
-            <div className="hidden sm:block text-[9px] text-slate-400 mt-0.5 leading-tight">Lịch thử, chụp, giao đồ... sắp diễn ra</div>
-          </div>
-        </div>
-
-        <div className="min-w-fit sm:min-w-0 snap-start p-2 sm:p-4 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm flex-1 flex sm:block items-center gap-2 sm:gap-0 relative group">
-          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0">
-            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <div className="flex flex-col sm:block">
-            <span className="hidden sm:block text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-2">
-              Việc Cần Xử Lý
-            </span>
-            <div className="flex items-baseline gap-1 sm:mt-1">
-              <span className="text-sm sm:text-2xl font-bold font-mono text-red-600 leading-none">
-                {initialStats.overdue_count}
-              </span>
-              <span className="text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
-                <span className="sm:hidden uppercase font-bold text-red-600">Quá hạn</span>
-                <span className="hidden sm:inline">Việc</span>
-              </span>
-            </div>
-            <div className="hidden sm:block text-[9px] text-slate-400 mt-0.5 leading-tight">Số HĐ trễ lịch trả đồ, thanh toán...</div>
-          </div>
-        </div>
-        </div>
-        
-        {/* Create Contract Button Card */}
-        {canCreate && (
-          <div className="hidden sm:flex shrink-0 lg:w-[180px]">
-            <button
-              onClick={() => setIsContractTypeModalOpen(true)}
-              className="group relative overflow-hidden bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 rounded-xl transition-all duration-300 flex flex-col items-center justify-center gap-2.5 p-4 w-full h-full shadow-[0_8px_20px_rgb(245,158,11,0.25)] hover:shadow-[0_8px_25px_rgb(245,158,11,0.4)] hover:-translate-y-1 border border-amber-400/50"
-            >
-              {/* Decorative background elements */}
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl group-hover:opacity-20 transition-opacity duration-500"></div>
-              <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-16 h-16 bg-black opacity-10 rounded-full blur-lg"></div>
-              
-              <div className="relative z-10 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] border border-white/30 group-hover:scale-110 group-hover:rotate-90">
-                <Plus className="w-5 h-5 text-white drop-shadow-sm" />
-              </div>
-              <div className="relative z-10 font-black text-white text-sm tracking-wide group-hover:drop-shadow-md transition-all">
-                Thêm Hợp Đồng
-              </div>
-            </button>
-          </div>
-        )}
-      </div>
-      
       {/* Mobile Add Contract FAB */}
       {canCreate && (
         <button
@@ -304,6 +196,41 @@ export default function ContractsView({ initialContracts, initialStats, customer
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         {/* Search & Filter Bar */}
         <div className="p-3 sm:p-4 border-b border-slate-200 bg-slate-50/50 space-y-3 relative">
+          {/* Summary filters: the totals are visible and each item filters the list */}
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {[
+              { id: '', label: 'Tất cả', value: initialStats.total_count },
+              { id: 'EFFECTIVE', label: 'Hiệu lực', value: initialStats.effective_count },
+              {
+                id: 'DEBT',
+                label: 'Còn nợ',
+                value: contracts.filter((c) => c.remaining_amount > 0).length,
+                detail: `${new Intl.NumberFormat('vi-VN').format(initialStats.total_debt)} ₫`,
+              },
+              { id: 'UPCOMING_7D', label: 'Cưới 7 ngày tới', value: initialStats.upcoming_7days_count },
+              { id: 'OVERDUE', label: 'Quá hạn', value: initialStats.overdue_count },
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setQuickFilter(item.id)}
+                aria-pressed={quickFilter === item.id}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                  quickFilter === item.id
+                    ? 'border-slate-800 bg-slate-800 text-white shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <span>{item.label} ({item.value})</span>
+                {item.detail && (
+                  <span className={`ml-1.5 font-mono font-bold ${quickFilter === item.id ? 'text-emerald-300' : 'text-emerald-600'}`}>
+                    · {item.detail}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex gap-2 flex-1 w-full">
               <div className="relative flex-1">
@@ -376,7 +303,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 <option value="OVERDUE">Quá hạn</option>
               </select>
 
-              {(searchQuery || contractStatusFilter || paymentStatusFilter || debtOnlyFilter || overdueOnlyFilter || quickFilter !== '') && (
+              {(searchQuery || contractTypeFilter || contractStatusFilter || paymentStatusFilter || debtOnlyFilter || overdueOnlyFilter || quickFilter !== '') && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
@@ -386,27 +313,18 @@ export default function ContractsView({ initialContracts, initialStats, customer
                   <RotateCcw className="w-4 h-4" />
                 </button>
               )}
+
+              {canCreate && (
+                <button
+                  type="button"
+                  onClick={() => setIsContractTypeModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4" />
+                  Thêm HĐ
+                </button>
+              )}
             </div>
-          </div>
-          
-          {/* Desktop Quick Filters */}
-          <div className="hidden sm:flex flex-wrap gap-2 pt-1">
-             {[
-               { id: '', label: 'Tất cả' },
-               { id: 'NEW', label: 'Mới tạo' },
-               { id: 'HIGH_DEBT', label: 'Công nợ > 10Tr' },
-               { id: 'DUE_SOON', label: 'Sắp đến hạn' },
-               { id: 'OVERDUE', label: 'Quá hạn trước' },
-               { id: 'UNASSIGNED', label: 'Chưa có phụ trách' }
-             ].map(q => (
-               <button
-                 key={q.id}
-                 onClick={() => setQuickFilter(q.id)}
-                 className={`px-3 py-1.5 text-[11px] font-semibold rounded-full border transition-all ${quickFilter === q.id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-               >
-                 {q.label}
-               </button>
-             ))}
           </div>
 
           {/* Mobile Filter Modal */}
@@ -464,21 +382,6 @@ export default function ContractsView({ initialContracts, initialStats, customer
                       <option value="OVERDUE">Quá hạn</option>
                     </select>
                   </label>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100">
-                  <label className="text-xs font-bold text-slate-500 mb-2 block">Lọc nhanh</label>
-                  <div className="flex flex-wrap gap-2">
-                    {['', 'NEW', 'HIGH_DEBT', 'DUE_SOON', 'OVERDUE'].map(q => (
-                      <button
-                        key={q}
-                        onClick={() => setQuickFilter(q)}
-                        className={`px-3 py-2 text-[12px] font-semibold rounded-xl border ${quickFilter === q ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border-slate-200'}`}
-                      >
-                        {q || 'Tất cả'}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-[auto_1fr] gap-2 mt-4">

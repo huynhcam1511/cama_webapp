@@ -247,8 +247,8 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   // KHO VÀ TÀI SẢN
   {
     moduleCode: "INVENTORY_LOCATIONS",
-    label: "Sơ đồ Không gian Kho",
-    shortLabel: "Sơ đồ Kho",
+    label: "Tài sản",
+    shortLabel: "Tài sản",
     route: "/dashboard/inventory/locations",
     icon: "Layers",
     group: "INVENTORY_GROUP",
