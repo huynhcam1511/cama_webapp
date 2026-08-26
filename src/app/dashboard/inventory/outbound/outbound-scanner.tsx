@@ -47,13 +47,17 @@ export default function OutboundScannerModal({ onClose, onSuccess }: { onClose: 
           // Ignore URL parse error
         }
         
-        // Fallback if not a URL or missing floor
         if (!floor) {
            // Maybe it's a raw locCode string like "TANG-1-KE-A"
-           // We'll just pass the whole string to getProductsByLocation and let the backend handle it, or we try to extract
-           // But since getProductsByLocation expects exact floor/shelf/tier, this might fail unless we parse it.
-           // For now, if floor is still empty, throw the error
-           throw new Error("Mã QR không phải là URL mã vị trí kho hợp lệ.");
+           const rawCode = decodedText.trim();
+           const parts = rawCode.split('-');
+           if (parts.length > 0 && rawCode.length < 50 && !rawCode.startsWith("http")) {
+              floor = parts[0]; 
+              if (parts.length > 1) shelf = parts[1];
+              if (parts.length > 2) tier = parts[2];
+           } else {
+              throw new Error("Mã QR không phải là URL mã vị trí kho hợp lệ.");
+           }
         }
         
         setScannerOpen(false);

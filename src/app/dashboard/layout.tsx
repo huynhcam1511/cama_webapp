@@ -8,7 +8,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { MODULE_REGISTRY, getModuleByRoute, getModuleByCode, ModuleGroup, ModuleCode } from "@/config/moduleRegistry";
-import QRScanner from "@/components/qr-scanner";
+import UniversalScanner from "@/components/universal-scanner";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [isPinned, setIsPinned] = useState(false);
@@ -287,27 +287,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </div>
 
       {isScannerOpen && (
-        <QRScanner 
+        <UniversalScanner 
           onClose={() => setIsScannerOpen(false)}
-          onScanSuccess={(text) => {
-            // Scanner stays open, we just show the alert!
-            
-            // Mock data for demo
-            const MOCK_DB: Record<string, any> = {
-              "VC001-M-W-01": { name: "Váy Cưới Công Chúa Ren Pháp", size: "M", color: "Trắng (W)", loc: "Lầu 1 - Kệ A - Tầng 2" },
-              "VC001-S-W-01": { name: "Váy Cưới Công Chúa Ren Pháp", size: "S", color: "Trắng (W)", loc: "Lầu 1 - Kệ A - Tầng 2" },
-              "VS012-L-B-01": { name: "Suit Nam Tuxedo Đen", size: "L", color: "Đen (B)", loc: "Lầu 2 - Kệ V1 - Tầng 1" },
-              "AD005-F-R-01": { name: "Áo Dài Cặp Long Phụng (Nữ)", size: "Free", color: "Đỏ (R)", loc: "Lầu 1 - Kệ C - Tầng 3" },
-              "PK001-F-W-01": { name: "Lúp Cô Dâu Đính Đá Cao Cấp", size: "Free", color: "Trắng (W)", loc: "Lầu 3 - Tủ P - Ngăn 1" }
-            };
-
-            const garment = MOCK_DB[text];
-            if (garment) {
-              alert(`✅ TÌM THẤY SẢN PHẨM!\n\nMã: ${text}\nTên: ${garment.name}\nSize: ${garment.size} | Màu: ${garment.color}\nVị trí: ${garment.loc}\n\n(Đây là dữ liệu test để chứng minh QR Code hoạt động)`);
-            } else {
-              alert(`❌ KHÔNG TÌM THẤY!\n\nMã: ${text}\nSản phẩm này không có trong kho hệ thống.`);
-            }
-          }}
         />
       )}
     </div>
