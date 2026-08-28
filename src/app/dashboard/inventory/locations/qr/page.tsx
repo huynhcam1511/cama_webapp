@@ -61,8 +61,8 @@ export default function LocationQrPage() {
     anchor.click();
   };
 
-  return <div className="mx-auto max-w-7xl space-y-4 px-3 pb-20 pt-2 sm:p-5 md:p-7">
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+  return <div className="mx-auto max-w-7xl space-y-4 px-3 pb-20 pt-2 sm:p-5 md:p-7 print:p-0 print:m-0 print:max-w-none">
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm print:border-none print:shadow-none">
       <div className="flex items-center gap-2 border-b border-slate-200 p-3 sm:p-4 print:hidden">
         <div className="relative min-w-0 flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Tìm tầng, kệ hoặc mã vị trí..." className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-indigo-500" /></div>
         <button onClick={() => window.print()} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50" aria-label="In danh sách QR"><Printer className="h-4.5 w-4.5" /></button>
