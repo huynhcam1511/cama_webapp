@@ -3,6 +3,28 @@
 import { createClient } from "@/lib/supabase/server";
 import { requirePermission } from "@/lib/rbac";
 
+/**
+ * Batch signing does not accept image transformations in storage-js.
+ * Keep the single signing request, then point the signed URL at Supabase's
+ * image renderer so list cards download a small thumbnail instead of the
+ * original camera file (which can be up to 10 MB).
+ */
+function asInventoryThumbnail(url: string | null, width = 240, height = 320) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (!parsed.pathname.includes("/storage/v1/object/sign/")) return url;
+    parsed.pathname = parsed.pathname.replace("/storage/v1/object/sign/", "/storage/v1/render/image/sign/");
+    parsed.searchParams.set("width", String(width));
+    parsed.searchParams.set("height", String(height));
+    parsed.searchParams.set("resize", "cover");
+    parsed.searchParams.set("quality", "60");
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 export async function getAssetOverview() {
   await requirePermission("INVENTORY_LOCATIONS", "view");
   const supabase = await createClient();
@@ -63,7 +85,8 @@ export async function getAssetOverview() {
     
     return {
       ...asset,
-      image_url: finalUrl,
+      image_url: asInventoryThumbnail(finalUrl),
+      image_original_url: finalUrl,
       outbound: asset.status === "AVAILABLE" ? null : latestOutbound.get(asset.id) || null,
     };
   });
@@ -213,7 +236,7 @@ export async function getProductsByLocation(floor: string, shelf: string, tier: 
       finalUrl = urlMap.get(finalUrl) || null;
     }
     delete p._rawUrl;
-    return { ...p, image_url: finalUrl };
+    return { ...p, image_url: asInventoryThumbnail(finalUrl), image_original_url: finalUrl };
   });
   
   return { success: true, products: formattedData };
@@ -285,7 +308,7 @@ export async function searchProducts(query: string) {
       finalUrl = urlMap.get(finalUrl) || null;
     }
     delete p._rawUrl;
-    return { ...p, image_url: finalUrl };
+    return { ...p, image_url: asInventoryThumbnail(finalUrl), image_original_url: finalUrl };
   });
   
   return { success: true, products: formattedData };

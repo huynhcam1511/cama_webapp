@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Calendar, FileText, Loader2, Package, PackageMinus, Plus, Search, User } from "lucide-react";
+import { Calendar, FileText, Loader2, Package, PackageMinus, Plus, QrCode, Search, User } from "lucide-react";
 import { getOutboundHistory } from "./actions";
 
 function formatDate(value?: string | null, withTime = false) {
@@ -96,7 +96,7 @@ export default function OutboundHistoryPage() {
         </div>
       </div>
 
-      <Link href="/dashboard/inventory/outbound/new" aria-label="Tạo phiếu xuất kho mới" className="fixed bottom-[80px] right-4 w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/30 active:scale-95 hover:bg-indigo-700 transition-all z-40"><Plus className="w-7 h-7" /></Link>
+      <Link href="/dashboard/inventory/outbound/new" aria-label="Quét QR vị trí để xuất kho" className="fixed bottom-[80px] right-4 w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/30 active:scale-95 hover:bg-indigo-700 transition-all z-40"><QrCode className="w-7 h-7" /></Link>
     </div>
   );
 }

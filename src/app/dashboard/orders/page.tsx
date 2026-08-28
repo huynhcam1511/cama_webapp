@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
-export default async function OrdersPage() {
+export default async function OrdersPage({ searchParams }: { searchParams?: { status?: string } }) {
   const user = await requireActiveUser();
   await requirePermission("ORDERS", "view");
 
@@ -18,5 +18,5 @@ export default async function OrdersPage() {
   const { data: vhDept } = await supabase.from("departments").select("id").eq("department_code", "DEP-VH").single();
   const { data: teams } = await supabase.from("teams").select("id, name").eq("active", true).eq("department_id", vhDept?.id).order("name");
 
-  return <OrdersClient initialOrders={orders} users={users || []} contracts={contracts || []} teams={teams || []} />;
+  return <OrdersClient initialOrders={orders} users={users || []} contracts={contracts || []} teams={teams || []} initialStatus={searchParams?.status} />;
 }

@@ -292,7 +292,7 @@ export default function OutboundScannerPage() {
                     <select 
                       value={reason} 
                       onChange={e => setReason(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm font-semibold text-slate-700"
+                      className="inventory-select w-full h-11 px-3 pr-10 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm font-semibold text-slate-700"
                     >
                       <option value="GIAO_KHACH">Giao khách (Có Hợp đồng)</option>
                       <option value="BAO_TRI">Gửi đi giặt / Sửa chữa</option>
@@ -448,6 +448,7 @@ export default function OutboundScannerPage() {
               onScanSuccess={handleScanSuccess} 
             />
           )}
+          <style jsx>{`.inventory-select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .75rem center;background-size:18px;cursor:pointer}`}</style>
         </div>
       </div>
     </div>

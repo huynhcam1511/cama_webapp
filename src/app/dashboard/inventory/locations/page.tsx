@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, Check, Clock3, Filter, ImageIcon, Loader2, MapPin, Package, QrCode, Search, Truck, UserRound, X } from "lucide-react";
 import UniversalScanner from "@/components/universal-scanner";
-import { getAssetOverview } from "./actions";
+import { getAssetOverviewCached } from "@/lib/inventory-asset-prefetch";
 
 type View = "ALL" | "IN_STOCK" | "OUTBOUND" | "MAINTENANCE" | "NO_LOCATION";
 
@@ -38,7 +38,7 @@ export default function AssetsPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
-    getAssetOverview().then(result => {
+    getAssetOverviewCached().then(result => {
       if (result.success) {
         setAssets(result.assets || []);
         setWarning(result.outboundWarning || "");
@@ -130,7 +130,7 @@ function AssetCard({ asset, onClick }: { asset: any; onClick: () => void }) {
   const order = one(outbound?.order);
   const meta = statusMeta[asset.status] || { label: asset.status || "Không rõ", classes: "bg-slate-100 text-slate-600 border-slate-200" };
   return <button onClick={onClick} className="flex min-w-0 gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition-colors hover:border-indigo-200">
-    <div className="flex h-28 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">{asset.image_url ? <img src={asset.image_url} alt={asset.name || asset.model?.name || "Tài sản"} className="h-full w-full object-cover" /> : <ImageIcon className="h-8 w-8 text-slate-300" />}</div>
+    <div className="flex h-28 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">{asset.image_url ? <img src={asset.image_url} alt={asset.name || asset.model?.name || "Tài sản"} loading="lazy" decoding="async" onError={event => { const image = event.currentTarget; if (asset.image_original_url && image.src !== asset.image_original_url) image.src = asset.image_original_url; }} className="h-full w-full object-cover" /> : <ImageIcon className="h-8 w-8 text-slate-300" />}</div>
     <div className="flex min-w-0 flex-1 flex-col">
       <div className="flex items-start justify-between gap-2"><strong className="line-clamp-2 text-sm leading-tight text-slate-900">{asset.name || asset.model?.name || "Tài sản chưa đặt tên"}</strong><span className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase ${meta.classes}`}>{meta.label}</span></div>
       <div className="mt-1 truncate font-mono text-[11px] text-slate-400">{asset.sku || asset.qr_code || asset.model?.base_sku || "—"}</div>
@@ -154,7 +154,7 @@ function AssetDetail({ asset, onClose }: { asset: any; onClose: () => void }) {
     <div className="max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-w-xl sm:rounded-3xl" onClick={event => event.stopPropagation()}>
       <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-4"><div><h2 className="font-black text-slate-900">Chi tiết tài sản</h2><p className="font-mono text-xs text-slate-400">{asset.qr_code || asset.sku}</p></div><button onClick={onClose} className="rounded-full p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button></div>
       <div className="space-y-4 p-4">
-        <div className="flex gap-4"><div className="h-36 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-100">{asset.image_url ? <img src={asset.image_url} alt="" className="h-full w-full object-cover" /> : <ImageIcon className="m-auto h-full w-9 text-slate-300" />}</div><div><h3 className="text-lg font-bold text-slate-900">{asset.name || asset.model?.name}</h3><p className="mt-1 text-sm text-slate-500">{asset.model?.group_type || "Tài sản kho"}</p><p className="mt-3 text-sm">Size: <b>{asset.size_code || asset.size || "—"}</b></p></div></div>
+        <div className="flex gap-4"><div className="h-36 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-100">{asset.image_url ? <img src={asset.image_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /> : <ImageIcon className="m-auto h-full w-9 text-slate-300" />}</div><div><h3 className="text-lg font-bold text-slate-900">{asset.name || asset.model?.name}</h3><p className="mt-1 text-sm text-slate-500">{asset.model?.group_type || "Tài sản kho"}</p><p className="mt-3 text-sm">Size: <b>{asset.size_code || asset.size || "—"}</b></p></div></div>
         <div className="grid grid-cols-2 gap-2"><Info icon={MapPin} label="Vị trí trong kho" value={locationOf(asset) || "Chưa xác định"} /><Info icon={Clock3} label="Trạng thái" value={statusMeta[asset.status]?.label || asset.status} /></div>
         {outbound && <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4"><h4 className="font-bold text-indigo-950">Thông tin đang xuất</h4><div className="grid grid-cols-2 gap-2"><Info icon={Truck} label="Đơn hàng" value={order?.order_code || "—"} /><Info icon={CalendarDays} label="Ngày về dự kiến" value={date(order?.return_date)} /><Info icon={UserRound} label="Khách hàng" value={customer?.bride_name || customer?.groom_name || "—"} /><Info icon={Clock3} label="Ngày xuất" value={date(outbound.completed_at)} /></div><div className="flex flex-wrap gap-2">{order?.id && <Link href={`/dashboard/orders/${order.id}`} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white">Xem đơn hàng</Link>}{contract?.id && <Link href={`/dashboard/contracts/${contract.id}`} className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700">Hợp đồng {contract.contract_code}</Link>}</div></div>}
       </div>

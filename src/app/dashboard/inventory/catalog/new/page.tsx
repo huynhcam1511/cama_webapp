@@ -395,7 +395,7 @@ export default function InventoryDeclarationPage() {
       )}
 
       {locationScannerOpen && <QRScanner title="Quét QR vị trí kệ" instruction="Đưa mã QR dán tại kệ hoặc ngăn vào khung hình." onClose={() => setLocationScannerOpen(false)} onScanSuccess={applyScannedLocation} />}
-      <style jsx>{`.field{width:100%;margin-top:.25rem;padding:.62rem .7rem;border:1px solid #e2e8f0;border-radius:.65rem;background:white;outline:none;min-width:0;font-size:.82rem}.field:focus{border-color:#6366f1;box-shadow:0 0 0 3px #e0e7ff}.label{display:block;font-size:.75rem;font-weight:700;color:#475569}@media(min-width:768px){.field{padding:.7rem .85rem;border-radius:.75rem;font-size:.875rem}.label{font-size:.82rem}}`}</style>
+      <style jsx>{`.field{width:100%;min-height:44px;margin-top:.25rem;padding:.62rem .7rem;border:1px solid #e2e8f0;border-radius:.65rem;background-color:white;outline:none;min-width:0;font-size:.82rem}.field:focus{border-color:#6366f1;box-shadow:0 0 0 3px #e0e7ff}select.field{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .75rem center;background-size:18px;padding-right:2.5rem;cursor:pointer}.label{display:block;font-size:.75rem;font-weight:700;color:#475569}@media(min-width:768px){.field{padding:.7rem .85rem;border-radius:.75rem;font-size:.875rem}select.field{padding-right:2.75rem}.label{font-size:.82rem}}`}</style>
     </div>
   );
 }

@@ -5,36 +5,9 @@ import * as icons from "lucide-react";
 import { MODULE_REGISTRY, ModuleGroup } from "@/config/moduleRegistry";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import AttendanceWidget from "@/components/AttendanceWidget";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import SalesKpiCard from "./sales-kpi-card";
-import QuickContractModal from "./quick-contract-modal";
-
-const IMPLEMENTED_ROUTES = [
-  "/dashboard",
-  "/dashboard/contracts",
-  "/dashboard/customers",
-  "/dashboard/employees",
-  "/dashboard/schedules",
-  "/dashboard/schedules/staff",
-  "/dashboard/schedules/operation",
-  "/dashboard/orders",
-  "/dashboard/policies",
-  "/dashboard/attendance",
-  "/dashboard/garments",
-  "/dashboard/garments/scan",
-  "/dashboard/kpi",
-  "/dashboard/payroll",
-  "/dashboard/cashflow",
-  "/dashboard/overdue-invoices",
-  "/dashboard/profit",
-  "/dashboard/subscriptions",
-  "/dashboard/training",
-  "/dashboard/recruitment",
-  "/dashboard/marketing/content-feed",
-  "/dashboard/marketing/manager",
-  "/dashboard/employees?tab=permissions"
-];
 
 const GROUP_LABELS: Record<ModuleGroup, string> = {
   DASHBOARD: "TỔNG QUAN",
@@ -50,7 +23,46 @@ const GROUP_LABELS: Record<ModuleGroup, string> = {
 export default function DashboardHome() {
   const { hasPermission, isLoading } = usePermissions();
   const router = useRouter();
-  const [showQuickContract, setShowQuickContract] = useState(false);
+  const [reminders, setReminders] = useState({ appointments: 0, inspections: 0, deliveries: 0 });
+
+  useEffect(() => {
+    const loadReminders = async () => {
+      const supabase = createClient();
+      const today = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date());
+
+      const [appointmentsResult, inspectionsResult, deliveriesResult] = await Promise.all([
+        supabase
+          .from("operation_schedules")
+          .select("id", { count: "exact", head: true })
+          .eq("schedule_category", "SALE_BOOKING")
+          .eq("date", today)
+          .neq("status", "CANCELLED"),
+        supabase
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .is("deleted_at", null)
+          .eq("completion_status", "WAITING_RETURN"),
+        supabase
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .is("deleted_at", null)
+          .eq("completion_status", "READY_TO_DELIVER"),
+      ]);
+
+      setReminders({
+        appointments: appointmentsResult.count ?? 0,
+        inspections: inspectionsResult.count ?? 0,
+        deliveries: deliveriesResult.count ?? 0,
+      });
+    };
+
+    void loadReminders();
+  }, []);
 
   const dashboardModules = MODULE_REGISTRY.filter(m => m.showOnDashboard).sort((a, b) => a.sortOrder - b.sortOrder);
 
@@ -65,31 +77,52 @@ export default function DashboardHome() {
   const groupOrder: ModuleGroup[] = ["DASHBOARD", "BUSINESS", "FINANCE", "OPERATIONS", "HR", "MARKETING", "ADMIN"];
 
   return (
-    <div className="space-y-6 relative">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-slate-800">Tổng quan hệ thống</h1>
-        <div className="flex items-center gap-2">
-          <Link 
-            href="/dashboard/contracts/new"
-            className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 p-2.5 rounded-lg shadow-sm transition-colors"
-            title="Tạo Hợp đồng"
-          >
-            <icons.FileText className="w-5 h-5" />
-          </Link>
-          <Link 
-            href="/dashboard/orders/create"
-            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 p-2.5 rounded-lg shadow-sm transition-colors"
-            title="Tạo Đơn hàng lẻ"
-          >
-            <icons.ShoppingCart className="w-5 h-5" />
-          </Link>
-        </div>
+    <div className="relative space-y-5 px-4 py-4 sm:px-2 sm:py-2 md:p-0">
+      {/* Thao tác nhanh */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { href: "/dashboard/contracts/new", label: "Hợp đồng", icon: icons.FilePlus2, color: "bg-indigo-50 text-indigo-600 border-indigo-100" },
+          { href: "/dashboard/orders/create", label: "Tạo đơn", icon: icons.ShoppingCart, color: "bg-emerald-50 text-emerald-600 border-emerald-100" },
+          { href: "/dashboard/attendance", label: "Chấm công", icon: icons.Fingerprint, color: "bg-amber-50 text-amber-600 border-amber-100" },
+        ].map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
+            >
+              <span className={`rounded-xl border p-2.5 ${action.color}`}><Icon className="h-5 w-5" /></span>
+              <span className="text-[11px] font-bold text-slate-700 sm:text-xs">{action.label}</span>
+            </Link>
+          );
+        })}
       </div>
 
-      {/* Widget Chấm Công - Ưu tiên trên cùng */}
-      <div>
-        <AttendanceWidget />
-      </div>
+      {/* Nhắc việc xuyên module: Sales → Vận hành → Kho/Giao nhận */}
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
+          <icons.BellRing className="h-4 w-4 text-blue-600" />
+          <h2 className="text-sm font-bold text-slate-800">Việc cần chú ý hôm nay</h2>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {[
+            { href: "/dashboard/appointments", count: reminders.appointments, label: "cuộc hẹn hôm nay", action: "Xem lịch", icon: icons.CalendarDays, color: "bg-blue-50 text-blue-600" },
+            { href: "/dashboard/orders?status=WAITING_RETURN", count: reminders.inspections, label: "đơn về kiểm tra", action: "Kiểm tra", icon: icons.PackageCheck, color: "bg-amber-50 text-amber-600" },
+            { href: "/dashboard/orders?status=READY_TO_DELIVER", count: reminders.deliveries, label: "đơn cần giao", action: "Xem đơn", icon: icons.Truck, color: "bg-emerald-50 text-emerald-600" },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.href} href={item.href} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50">
+                <span className={`rounded-xl p-2.5 ${item.color}`}><Icon className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1 text-sm text-slate-600"><strong className="text-base text-slate-900">{item.count}</strong> {item.label}</span>
+                <span className="hidden text-xs font-semibold text-blue-600 min-[380px]:block">{item.action}</span>
+                <icons.ChevronRight className="h-4 w-4 text-slate-400" />
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
       {/* SALES KPI & BENCHMARK - Chỉ hiển thị cho Admin hoặc người có quyền xem Dòng tiền (Tài chính) */}
       {hasPermission("CASHFLOW", "view") && (
@@ -163,18 +196,11 @@ export default function DashboardHome() {
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {visibleModules.map((mod) => {
                   const Icon = ((icons as any)[mod.icon] || (icons as any).LayoutDashboard) as React.ElementType;
-                  const isImplemented = IMPLEMENTED_ROUTES.includes(mod.route);
                   
                   return (
                     <button 
                       key={mod.moduleCode}
-                      onClick={() => {
-                        if (isImplemented) {
-                          router.push(mod.route);
-                        } else {
-                          window.alert(`Tính năng "${mod.label}" đang được phát triển!\nVui lòng quay lại sau nhé.`);
-                        }
-                      }}
+                      onClick={() => router.push(mod.route)}
                       className="group flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-300 transition-all gap-2 outline-none focus:ring-2 focus:ring-blue-500 text-center w-full cursor-pointer"
                     >
                       <div className="text-blue-600 group-hover:scale-110 transition-transform bg-blue-50 p-3 rounded-xl border border-blue-100">
@@ -182,7 +208,6 @@ export default function DashboardHome() {
                       </div>
                       <div className="flex flex-col items-center">
                         <span className="text-[11px] md:text-xs font-semibold text-slate-700 group-hover:text-blue-600 transition-colors leading-tight line-clamp-2">{mod.label}</span>
-                        {!isImplemented && <span className="text-[9px] text-orange-500 font-medium mt-0.5">Phát triển</span>}
                       </div>
                     </button>
                   );
@@ -193,13 +218,6 @@ export default function DashboardHome() {
         })
       )}
     </div>
-
-      {showQuickContract && (
-        <QuickContractModal 
-          onClose={() => setShowQuickContract(false)}
-          onSuccess={() => window.location.reload()}
-        />
-      )}
     </div>
   );
 }

@@ -51,7 +51,7 @@ export default function InventoryCatalogPage() {
             {historyFiltered.map(item => (
               <button type="button" key={item.id} onClick={() => setDetail({ type: "history", data: item })} className="w-full p-4 text-left active:bg-slate-50 flex gap-4">
                 <div className="w-20 h-28 shrink-0 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-sm flex items-center justify-center">
-                   {item.model?.image_url ? <img src={item.model.image_url} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="text-slate-300" />}
+                   {item.model?.image_url ? <img src={item.model.image_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <ImageIcon className="text-slate-300" />}
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
                   <div>
@@ -90,7 +90,7 @@ export default function InventoryCatalogPage() {
                     <td>
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-16 shrink-0 bg-slate-100 rounded-lg overflow-hidden border border-slate-200 flex items-center justify-center">
-                          {item.model?.image_url ? <img src={item.model.image_url} alt="" className="w-full h-full object-cover" /> : <ImageIcon size={20} className="text-slate-300" />}
+                          {item.model?.image_url ? <img src={item.model.image_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <ImageIcon size={20} className="text-slate-300" />}
                         </div>
                         <div>
                           <strong className="text-slate-900 line-clamp-1">{item.model?.name || "Sản phẩm đã xoá"}</strong>
@@ -126,7 +126,7 @@ export default function InventoryCatalogPage() {
          <QrCode size={24} />
       </button>
 
-      {scannerOpen && <UniversalScanner onClose={() => setScannerOpen(false)} />}
+      {scannerOpen && <UniversalScanner intent="inbound" onClose={() => setScannerOpen(false)} />}
       <style jsx>{`th{text-align:left;padding:.85rem 1rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}td{padding:.9rem 1rem;border-top:1px solid #f1f5f9;vertical-align:middle}.badge{background:#f1f5f9;border-radius:.5rem;padding:.2rem .45rem;font-size:.72rem;color:#475569;flex:none}`}</style>
     </div>
   );

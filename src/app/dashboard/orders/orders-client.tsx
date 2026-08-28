@@ -15,6 +15,7 @@ interface Props {
   users: any[];
   contracts?: any[];
   teams?: any[];
+  initialStatus?: string;
 }
 
 const UI_STEPS = [
@@ -37,9 +38,9 @@ const STATUS_MAP: Record<OrderStatus, { label: string, color: string, icon: any 
   CANCELLED: { label: "Đã hủy", color: "bg-slate-200 text-slate-500 border-slate-300", icon: icons.XCircle },
 };
 
-export default function OrdersClient({ initialOrders, users, contracts = [], teams = [] }: Props) {
+export default function OrdersClient({ initialOrders, users, contracts = [], teams = [], initialStatus }: Props) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
-  const [filterStatus, setFilterStatus] = useState<string>("ACTIVE");
+  const [filterStatus, setFilterStatus] = useState<string>(initialStatus || "ACTIVE");
   const [filterTeam, setFilterTeam] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);

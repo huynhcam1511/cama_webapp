@@ -2,7 +2,7 @@ import { getPolicyById } from "../actions";
 import { requireActiveUser, requirePermission } from "@/lib/rbac";
 import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
-import { ArrowLeft, FileText, CheckCircle2, XCircle } from "lucide-react";
+import { FileText, CheckCircle2, XCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -40,27 +40,23 @@ export default async function PolicyDetailPage({ params }: { params: { id: strin
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-4 md:space-y-6 pb-8 md:pb-12 px-3 md:px-4">
-      <div className="flex items-start gap-2 md:gap-4">
-        <Link href="/dashboard/policies" className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-          <ArrowLeft className="w-5 h-5 text-slate-600" />
-        </Link>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl md:text-2xl leading-tight font-bold font-serif text-slate-900 break-words">{policy.title}</h1>
-          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-1.5 sm:gap-3 mt-3 text-xs md:text-sm text-slate-500">
-            <span>Áp dụng cho: <span className="font-medium text-slate-700">{getTargetName(policy.policy_scope, policy.target_id)}</span></span>
-            <span className="hidden sm:inline">•</span>
-            <span>Ban hành: {new Date(policy.created_at).toLocaleDateString("vi-VN")}</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="flex items-center gap-1">
-              Trạng thái: 
-              {policy.is_active ? (
-                <span className="flex items-center gap-1 text-emerald-600 font-semibold"><CheckCircle2 className="w-4 h-4"/> Hiệu lực</span>
-              ) : (
-                <span className="flex items-center gap-1 text-slate-400"><XCircle className="w-4 h-4"/> Đã hủy</span>
-              )}
-            </span>
-          </div>
+    <div className="w-full max-w-5xl mx-auto space-y-4 md:space-y-6 pb-8 md:pb-12 px-3 pt-2 md:px-4 md:pt-0">
+      <div className="grid grid-cols-[1.2fr_0.9fr_1fr] divide-x divide-slate-100 rounded-xl border border-slate-200 bg-white px-1 py-3 shadow-sm">
+        <div className="min-w-0 px-2.5">
+          <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">Đối tượng</span>
+          <span className="mt-1 block text-xs font-semibold leading-4 text-slate-700">{getTargetName(policy.policy_scope, policy.target_id)}</span>
+        </div>
+        <div className="min-w-0 px-2.5">
+          <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">Ban hành</span>
+          <span className="mt-1 block text-xs font-semibold leading-4 text-slate-700">{new Date(policy.created_at).toLocaleDateString("vi-VN")}</span>
+        </div>
+        <div className="min-w-0 px-2.5">
+          <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">Trạng thái</span>
+          {policy.is_active ? (
+            <span className="mt-1 flex items-start gap-1 text-xs font-semibold leading-4 text-emerald-600"><CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0"/> Hiệu lực</span>
+          ) : (
+            <span className="mt-1 flex items-start gap-1 text-xs font-medium leading-4 text-slate-500"><XCircle className="mt-0.5 h-3 w-3 shrink-0"/> Ngừng hiệu lực</span>
+          )}
         </div>
       </div>
 

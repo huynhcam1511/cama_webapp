@@ -8,6 +8,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { MODULE_REGISTRY, getModuleByRoute, getModuleByCode, ModuleGroup, ModuleCode } from "@/config/moduleRegistry";
+import { prefetchAssetOverview } from "@/lib/inventory-asset-prefetch";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [isPinned, setIsPinned] = useState(false);
@@ -47,6 +48,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     };
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (isLoading || !hasPermission("INVENTORY_LOCATIONS", "view")) return;
+    const startPrefetch = () => prefetchAssetOverview();
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(startPrefetch, { timeout: 1500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = setTimeout(startPrefetch, 500);
+    return () => clearTimeout(id);
+  }, [hasPermission, isLoading]);
 
   const GROUP_LABELS: Record<ModuleGroup, string> = {
     DASHBOARD: "TỔNG QUAN",
@@ -257,7 +269,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <button 
               onClick={() => router.push("/dashboard/inventory/scan")}
               className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-              title="Quét QR Sản Phẩm"
+              title="Quét QR vị trí kho"
+              aria-label="Quét QR vị trí kệ hoặc tủ trong kho"
             >
               <icons.QrCode className="w-4 h-4" />
             </button>

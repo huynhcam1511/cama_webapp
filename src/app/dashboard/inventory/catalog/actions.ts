@@ -26,10 +26,16 @@ export async function getInventoryIntakeHistory() {
     .limit(250);
 
   if (error) return { success: false, error: error.message, sessions: [] };
-  const sessions = await Promise.all((data || []).map(async (session: any) => ({
+  // Sign all model images in one Storage request. Signing per session used to
+  // create as many as 250 concurrent requests before the page could render.
+  const rows = data || [];
+  const models = rows.flatMap((session: any) => session.model ? [session.model] : []);
+  const signedModels = await signModelImages(supabase, models);
+  let signedModelIndex = 0;
+  const sessions = rows.map((session: any) => ({
     ...session,
-    model: session.model ? (await signModelImages(supabase, [session.model]))[0] : null,
-  })));
+    model: session.model ? signedModels[signedModelIndex++] : null,
+  }));
   return { success: true, sessions };
 }
 

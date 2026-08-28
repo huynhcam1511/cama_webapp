@@ -6,7 +6,17 @@ import { useRouter } from "next/navigation";
 import { Loader2, PackageMinus, PackagePlus, MapPin, Search, CheckCircle2, QrCode, ArrowLeft, Shirt, AlertCircle, X, Package } from "lucide-react";
 import QRScanner from "@/components/qr-scanner";
 
-export default function UniversalScanner({ onClose, fullPage = false }: { onClose: () => void; fullPage?: boolean }) {
+type ScannerIntent = "choose" | "inbound" | "outbound";
+
+export default function UniversalScanner({
+  onClose,
+  fullPage = false,
+  intent = "choose",
+}: {
+  onClose: () => void;
+  fullPage?: boolean;
+  intent?: ScannerIntent;
+}) {
   const router = useRouter();
   
   // App states
@@ -17,6 +27,27 @@ export default function UniversalScanner({ onClose, fullPage = false }: { onClos
   const [productsOnLocation, setProductsOnLocation] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [error, setError] = useState("");
+
+  const openInboundForm = (location: { floor: string; shelf: string; tier: string }) => {
+    const params = new URLSearchParams({ floor: location.floor, step: "product" });
+    if (location.shelf) params.set("shelf", location.shelf);
+    if (location.tier) params.set("tier", location.tier);
+    window.localStorage.setItem("cama-inventory-work-location", JSON.stringify({
+      location_floor: location.floor,
+      location_shelf: location.shelf,
+      location_tier: location.tier,
+    }));
+    if (!fullPage) onClose();
+    router.push(`/dashboard/inventory/catalog/new?${params.toString()}`);
+  };
+
+  const openOutboundForm = (location: { floor: string; shelf: string; tier: string }) => {
+    const params = new URLSearchParams({ action: "new", floor: location.floor });
+    if (location.shelf) params.set("shelf", location.shelf);
+    if (location.tier) params.set("tier", location.tier);
+    if (!fullPage) onClose();
+    router.push(`/dashboard/inventory/outbound/new?${params.toString()}`);
+  };
 
   const handleScanSuccess = async (decodedText: string) => {
     try {
@@ -47,8 +78,13 @@ export default function UniversalScanner({ onClose, fullPage = false }: { onClos
         }
       }
       
+      const location = { floor, shelf, tier };
       setScannerOpen(false);
-      setScannedLocation({ floor, shelf, tier });
+      setScannedLocation(location);
+
+      // Module-specific scanners skip the universal action chooser.
+      if (intent === "inbound") return openInboundForm(location);
+      if (intent === "outbound") return openOutboundForm(location);
       
       // Fetch products
       setLoadingProducts(true);
@@ -68,28 +104,12 @@ export default function UniversalScanner({ onClose, fullPage = false }: { onClos
 
   const handleInbound = () => {
     if (!scannedLocation) return;
-    const params = new URLSearchParams();
-    params.set("floor", scannedLocation.floor);
-    if (scannedLocation.shelf) params.set("shelf", scannedLocation.shelf);
-    if (scannedLocation.tier) params.set("tier", scannedLocation.tier);
-    params.set("step", "product");
-    window.localStorage.setItem("cama-inventory-work-location", JSON.stringify({
-      location_floor: scannedLocation.floor,
-      location_shelf: scannedLocation.shelf,
-      location_tier: scannedLocation.tier,
-    }));
-    
-    if (!fullPage) onClose();
-    router.push(`/dashboard/inventory/catalog/new?${params.toString()}`);
+    openInboundForm(scannedLocation);
   };
 
   const handleOutbound = () => {
     if (!scannedLocation) return;
-    const params = new URLSearchParams({ action: "new", floor: scannedLocation.floor });
-    if (scannedLocation.shelf) params.set("shelf", scannedLocation.shelf);
-    if (scannedLocation.tier) params.set("tier", scannedLocation.tier);
-    if (!fullPage) onClose();
-    router.push(`/dashboard/inventory/outbound/new?${params.toString()}`);
+    openOutboundForm(scannedLocation);
   };
 
   const resetScanner = () => {
@@ -100,14 +120,14 @@ export default function UniversalScanner({ onClose, fullPage = false }: { onClos
   };
 
   return (
-    <div className={fullPage ? "min-h-full bg-slate-50" : "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto"}>
-      <div className={fullPage ? "mx-auto flex min-h-[calc(100dvh-64px)] w-full max-w-4xl flex-col bg-white" : "bg-white sm:rounded-2xl shadow-2xl w-full max-w-2xl min-h-screen sm:min-h-0 sm:max-h-[90vh] flex flex-col overflow-hidden relative"}>
+    <div className={fullPage ? "fixed inset-0 z-[100] overflow-y-auto bg-slate-50" : "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto"}>
+      <div className={fullPage ? "mx-auto flex min-h-[100dvh] w-full max-w-4xl flex-col bg-white" : "bg-white sm:rounded-2xl shadow-2xl w-full max-w-2xl min-h-screen sm:min-h-0 sm:max-h-[90vh] flex flex-col overflow-hidden relative"}>
         <div className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10 shrink-0">
           <div>
             <h2 className="text-xl md:text-2xl font-black text-slate-800 flex items-center gap-2">
-              <QrCode className="text-blue-600" /> Trạm Quét Vạn Năng
+              <QrCode className="text-blue-600" /> Quét vị trí kho
             </h2>
-            <p className="text-slate-500 mt-1 text-sm">Quét mã kệ để thao tác Nhập / Xuất</p>
+            <p className="text-slate-500 mt-1 text-sm">Quét QR vị trí kệ hoặc tủ để nhập, xuất và xem tồn kho</p>
           </div>
           
           <div className="flex items-center gap-2">
