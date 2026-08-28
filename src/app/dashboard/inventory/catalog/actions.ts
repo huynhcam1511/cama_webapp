@@ -99,17 +99,52 @@ export async function uploadGarmentImage(formData: FormData) {
 }
 
 async function signModelImages(supabase: any, models: any[]) {
-  return Promise.all(models.map(async model => {
-    const sign = async (path?: string) => {
+  const pathsToSign = new Set<string>();
+
+  // 1. Thu thập tất cả các đường dẫn (paths) cần ký
+  models.forEach(model => {
+    if (model.image_url && !model.image_url.startsWith("http") && !model.image_url.startsWith("data:")) {
+      pathsToSign.add(model.image_url);
+    }
+    if (model.tag_image_url && !model.tag_image_url.startsWith("http") && !model.tag_image_url.startsWith("data:")) {
+      pathsToSign.add(model.tag_image_url);
+    }
+    if (Array.isArray(model.additional_images)) {
+      model.additional_images.forEach((path: string) => {
+        if (path && !path.startsWith("http") && !path.startsWith("data:")) {
+          pathsToSign.add(path);
+        }
+      });
+    }
+  });
+
+  const uniquePaths = Array.from(pathsToSign);
+  const urlMap = new Map<string, string>();
+
+  // 2. Ký hàng loạt bằng createSignedUrls (chỉ 1 request duy nhất)
+  if (uniquePaths.length > 0) {
+    const { data: signed } = await supabase.storage.from("garment-images").createSignedUrls(uniquePaths, 3600);
+    if (signed) {
+      signed.forEach((s: any) => {
+        if (s.signedUrl) urlMap.set(s.path, s.signedUrl);
+      });
+    }
+  }
+
+  // 3. Map URL đã ký ngược trở lại models
+  return models.map(model => {
+    const getSigned = (path?: string) => {
       if (!path || path.startsWith("http") || path.startsWith("data:")) return path || "";
-      const { data } = await supabase.storage.from("garment-images").createSignedUrl(path, 3600);
-      return data?.signedUrl || "";
+      return urlMap.get(path) || path;
     };
+
     return {
       ...model,
-      image_url: await sign(model.image_url),
-      tag_image_url: await sign(model.tag_image_url),
-      additional_images: await Promise.all((model.additional_images || []).map(sign)),
+      image_url: getSigned(model.image_url),
+      tag_image_url: getSigned(model.tag_image_url),
+      additional_images: Array.isArray(model.additional_images) 
+        ? model.additional_images.map(getSigned) 
+        : [],
     };
-  }));
+  });
 }

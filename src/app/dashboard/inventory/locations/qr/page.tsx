@@ -70,19 +70,90 @@ export default function LocationQrPage() {
 
       {error && <div className="m-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>}
       {loading ? <div className="flex justify-center py-20 text-slate-400"><Loader2 className="mr-2 animate-spin" />Đang tạo danh sách QR...</div> : !filtered.length ? <div className="py-20 text-center text-sm text-slate-500"><MapPin className="mx-auto mb-2 h-9 w-9 text-slate-300" />Không tìm thấy vị trí nào.</div> :
-        <div className="grid grid-cols-2 gap-3 bg-slate-50/60 p-3 sm:grid-cols-3 sm:p-4 lg:grid-cols-4 xl:grid-cols-5">
+        <div id="print-area" className="grid grid-cols-2 gap-3 bg-slate-50/60 p-3 sm:grid-cols-3 sm:p-4 lg:grid-cols-4 xl:grid-cols-5 flex-wrap">
           {filtered.map(location => {
             const code = locationCode(location);
-            return <article key={`${location.floor}-${location.shelf}-${location.tier}`} className="break-inside-avoid rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-              <div className="aspect-square overflow-hidden rounded-lg bg-slate-50">{qrImages[code] ? <img src={qrImages[code]} alt={`QR ${code}`} className="h-full w-full object-contain" /> : <div className="flex h-full items-center justify-center"><QrCode className="h-10 w-10 animate-pulse text-slate-300" /></div>}</div>
-              <h2 className="mt-2 truncate text-sm font-black text-slate-900" title={code}>{code}</h2>
-              <p className="mt-0.5 truncate text-[11px] text-slate-500" title={locationName(location)}>{locationName(location)}</p>
-              {location.notes && <p className="mt-1 line-clamp-1 text-[10px] text-slate-400">{location.notes}</p>}
-              <button disabled={!qrImages[code]} onClick={() => downloadQr(location)} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-50 py-2 text-xs font-bold text-indigo-700 disabled:opacity-40 print:hidden"><Download className="h-3.5 w-3.5" />Tải QR</button>
+            return <article key={`${location.floor}-${location.shelf}-${location.tier}`} className="qr-label break-inside-avoid rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+              
+              <div className="qr-text-container flex flex-col justify-center min-w-0 flex-1 print:flex-1">
+                <h2 className="code-title mt-2 print:mt-0 truncate text-sm font-black text-slate-900" title={code}>{code}</h2>
+                <p className="code-subtitle print:text-[6pt] mt-0.5 truncate text-[11px] text-slate-500" title={locationName(location)}>{locationName(location)}</p>
+                {location.notes && <p className="no-print mt-1 line-clamp-1 text-[10px] text-slate-400">{location.notes}</p>}
+              </div>
+
+              <div className="qr-code-wrapper aspect-square overflow-hidden rounded-lg bg-slate-50 shrink-0">
+                {qrImages[code] ? <img src={qrImages[code]} alt={`QR ${code}`} className="qr-code-img h-full w-full object-contain" /> : <div className="flex h-full items-center justify-center"><QrCode className="h-10 w-10 animate-pulse text-slate-300" /></div>}
+              </div>
+
+              <button disabled={!qrImages[code]} onClick={() => downloadQr(location)} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-50 py-2 text-xs font-bold text-indigo-700 disabled:opacity-40 print:hidden no-print w-full col-span-full"><Download className="h-3.5 w-3.5" />Tải QR</button>
             </article>;
           })}
         </div>}
     </div>
-    <style jsx global>{`@media print { header, aside, button, input { display: none !important; } main, body { background: white !important; } article { box-shadow: none !important; page-break-inside: avoid; } }`}</style>
+    <style jsx global>{`
+      @media print { 
+        header, aside, button, input, .no-print { display: none !important; } 
+        main, body { background: white !important; } 
+        #print-area {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 1mm !important;
+          padding: 0 !important;
+          background: white !important;
+        }
+        .qr-label {
+          width: 60mm !important;
+          height: 25mm !important;
+          padding: 2mm !important;
+          border: 0.5px dashed #94a3b8 !important;
+          box-sizing: border-box !important;
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          page-break-inside: avoid !important;
+          margin: 0 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          gap: 2mm !important;
+        }
+        .qr-text-container {
+          flex: 1 !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: center !important;
+          min-width: 0 !important;
+        }
+        .qr-code-wrapper {
+          width: 21mm !important;
+          height: 21mm !important;
+          margin: 0 !important;
+          background: transparent !important;
+        }
+        .qr-code-img {
+          width: 21mm !important;
+          height: 21mm !important;
+          object-fit: contain !important;
+          margin: 0 !important;
+        }
+        .code-title {
+          font-size: 8pt !important;
+          font-weight: 900 !important;
+          color: black !important;
+          line-height: 1.2 !important;
+          word-wrap: break-word !important;
+        }
+        .code-subtitle {
+          font-size: 6pt !important;
+          font-weight: normal !important;
+          color: #333 !important;
+          margin-top: 0.5mm !important;
+          line-height: 1.2 !important;
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
+      }
+    `}</style>
   </div>;
 }
