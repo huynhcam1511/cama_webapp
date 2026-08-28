@@ -89,7 +89,7 @@ export default function UniversalScanner({ onClose, fullPage = false }: { onClos
     if (scannedLocation.shelf) params.set("shelf", scannedLocation.shelf);
     if (scannedLocation.tier) params.set("tier", scannedLocation.tier);
     if (!fullPage) onClose();
-    router.push(`/dashboard/inventory/outbound?${params.toString()}`);
+    router.push(`/dashboard/inventory/outbound/new?${params.toString()}`);
   };
 
   const resetScanner = () => {

@@ -26,19 +26,48 @@ export async function getOutboundHistory() {
 
   if (error) return { success: false, error: error.message, sessions: [] };
 
-  const sessions = await Promise.all((data || []).map(async (session: any) => ({
-    ...session,
-    lines: await Promise.all((session.lines || []).map(async (line: any) => {
+  const rawSessions = data || [];
+  const pathsToSign = new Set<string>();
+
+  rawSessions.forEach((session: any) => {
+    (session.lines || []).forEach((line: any) => {
       const instance = line.instance;
       const model = Array.isArray(instance?.model) ? instance.model[0] : instance?.model;
-      let imageUrl = instance?.image_url || model?.image_url || null;
+      const imageUrl = instance?.image_url || model?.image_url || null;
+      
+      line._rawUrl = imageUrl;
       if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
-        const { data: signed } = await supabase.storage.from("garment-images").createSignedUrl(imageUrl, 3600);
-        imageUrl = signed?.signedUrl || null;
+        pathsToSign.add(imageUrl);
       }
-      return { ...line, instance: { ...instance, model, image_url: imageUrl } };
-    }))
-  })));
+    });
+  });
+
+  const uniquePaths = Array.from(pathsToSign);
+  const urlMap = new Map<string, string>();
+  if (uniquePaths.length > 0) {
+    const { data: signed } = await supabase.storage.from("garment-images").createSignedUrls(uniquePaths, 3600);
+    if (signed) {
+      signed.forEach((s: any) => {
+        if (s.signedUrl) urlMap.set(s.path, s.signedUrl);
+      });
+    }
+  }
+
+  const sessions = rawSessions.map((session: any) => ({
+    ...session,
+    lines: (session.lines || []).map((line: any) => {
+      const instance = line.instance;
+      const model = Array.isArray(instance?.model) ? instance.model[0] : instance?.model;
+      let finalUrl = line._rawUrl;
+      
+      if (finalUrl && !finalUrl.startsWith("http") && !finalUrl.startsWith("data:")) {
+        finalUrl = urlMap.get(finalUrl) || null;
+      }
+      delete line._rawUrl;
+      
+      return { ...line, instance: { ...instance, model, image_url: finalUrl } };
+    })
+  }));
 
   return { success: true, sessions };
 }
@@ -50,7 +79,7 @@ export async function getOutboundOrders() {
     .from("orders")
     .select("id, order_code, contract_id, return_date, event_date, service_type, completion_status, contract:contracts(contract_code, customer:customers(bride_name, groom_name))")
     .is("deleted_at", null)
-    .not("completion_status", "in", '(COMPLETED,CANCELLED)')
+    .in("completion_status", ['PREPARING', 'WAITING_FITTING', 'READY_TO_DELIVER'])
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -98,6 +127,7 @@ export async function submitOutbound(payload: any) {
     order_id: payload.order_id || null,
     contract_id: payload.contract_id || null,
     notes: payload.notes || "",
+    expected_return_date: payload.expected_return_date || null,
     items: payload.items.map((i: any) => ({
       instance_id: i.instance_id,
       status: payload.reason === "Giao khách" ? "RENTED" : "MAINTENANCE"

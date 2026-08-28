@@ -29,22 +29,46 @@ export async function getAssetOverview() {
     }
   }
 
-  const assets = await Promise.all((assetsResult.data || []).map(async (asset: any) => {
+  const assets = assetsResult.data || [];
+  
+  // N+1 Optimization for Signed URLs
+  const pathsToSign = new Set<string>();
+  assets.forEach((asset: any) => {
     const model = Array.isArray(asset.model) ? asset.model[0] : asset.model;
     let imageUrl = asset.image_url || model?.image_url || null;
     if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
-      const { data: signed } = await supabase.storage.from("garment-images").createSignedUrl(imageUrl, 3600);
-      imageUrl = signed?.signedUrl || null;
+      pathsToSign.add(imageUrl);
     }
+    asset._rawUrl = imageUrl;
+    asset.model = model;
+  });
+
+  const uniquePaths = Array.from(pathsToSign);
+  const urlMap = new Map<string, string>();
+  if (uniquePaths.length > 0) {
+    const { data: signed } = await supabase.storage.from("garment-images").createSignedUrls(uniquePaths, 3600);
+    if (signed) {
+      signed.forEach((s: any) => {
+        if (s.signedUrl) urlMap.set(s.path, s.signedUrl);
+      });
+    }
+  }
+
+  const finalAssets = assets.map((asset: any) => {
+    let finalUrl = asset._rawUrl;
+    if (finalUrl && !finalUrl.startsWith("http") && !finalUrl.startsWith("data:")) {
+      finalUrl = urlMap.get(finalUrl) || null;
+    }
+    delete asset._rawUrl;
+    
     return {
       ...asset,
-      model,
-      image_url: imageUrl,
+      image_url: finalUrl,
       outbound: asset.status === "AVAILABLE" ? null : latestOutbound.get(asset.id) || null,
     };
-  }));
+  });
 
-  return { success: true, assets, outboundWarning: outboundResult.error?.message || null };
+  return { success: true, assets: finalAssets, outboundWarning: outboundResult.error?.message || null };
 }
 
 export async function getCustomLocations() {
@@ -155,21 +179,42 @@ export async function getProductsByLocation(floor: string, shelf: string, tier: 
   const { data, error } = await query;
   if (error) return { success: false, error: error.message };
   
-  const formattedData = await Promise.all((data || []).map(async (p) => {
+  const rawProducts = data || [];
+  const pathsToSign = new Set<string>();
+  
+  rawProducts.forEach((p: any) => {
     const modelData = Array.isArray(p.model) ? p.model[0] : p.model;
     const invUrl = (p.image_url && p.image_url !== 'null' && p.image_url !== 'undefined') ? p.image_url : null;
     const modUrl = (modelData?.image_url && modelData.image_url !== 'null' && modelData.image_url !== 'undefined') ? modelData.image_url : null;
-    let finalUrl = invUrl || modUrl || null;
+    const finalUrl = invUrl || modUrl || null;
+    
+    p._rawUrl = finalUrl;
+    p.group_type = modelData?.group_type || null;
+    
     if (finalUrl && !finalUrl.startsWith("http") && !finalUrl.startsWith("data:")) {
-      const { data: signData } = await supabase.storage.from("garment-images").createSignedUrl(finalUrl, 3600);
-      if (signData?.signedUrl) finalUrl = signData.signedUrl;
+      pathsToSign.add(finalUrl);
     }
-    return {
-      ...p,
-      image_url: finalUrl,
-      group_type: modelData?.group_type || null
-    };
-  }));
+  });
+
+  const uniquePaths = Array.from(pathsToSign);
+  const urlMap = new Map<string, string>();
+  if (uniquePaths.length > 0) {
+    const { data: signed } = await supabase.storage.from("garment-images").createSignedUrls(uniquePaths, 3600);
+    if (signed) {
+      signed.forEach((s: any) => {
+        if (s.signedUrl) urlMap.set(s.path, s.signedUrl);
+      });
+    }
+  }
+
+  const formattedData = rawProducts.map((p: any) => {
+    let finalUrl = p._rawUrl;
+    if (finalUrl && !finalUrl.startsWith("http") && !finalUrl.startsWith("data:")) {
+      finalUrl = urlMap.get(finalUrl) || null;
+    }
+    delete p._rawUrl;
+    return { ...p, image_url: finalUrl };
+  });
   
   return { success: true, products: formattedData };
 }
@@ -206,21 +251,42 @@ export async function searchProducts(query: string) {
 
   if (error) return { success: false, error: error.message };
   
-  const formattedData = await Promise.all((data || []).map(async (p) => {
+  const rawProducts = data || [];
+  const pathsToSign = new Set<string>();
+  
+  rawProducts.forEach((p: any) => {
     const modelData = Array.isArray(p.model) ? p.model[0] : p.model;
     const invUrl = (p.image_url && p.image_url !== 'null' && p.image_url !== 'undefined') ? p.image_url : null;
     const modUrl = (modelData?.image_url && modelData.image_url !== 'null' && modelData.image_url !== 'undefined') ? modelData.image_url : null;
-    let finalUrl = invUrl || modUrl || null;
+    const finalUrl = invUrl || modUrl || null;
+    
+    p._rawUrl = finalUrl;
+    p.group_type = modelData?.group_type || null;
+    
     if (finalUrl && !finalUrl.startsWith("http") && !finalUrl.startsWith("data:")) {
-      const { data: signData } = await supabase.storage.from("garment-images").createSignedUrl(finalUrl, 3600);
-      if (signData?.signedUrl) finalUrl = signData.signedUrl;
+      pathsToSign.add(finalUrl);
     }
-    return {
-      ...p,
-      image_url: finalUrl,
-      group_type: modelData?.group_type || null
-    };
-  }));
+  });
+
+  const uniquePaths = Array.from(pathsToSign);
+  const urlMap = new Map<string, string>();
+  if (uniquePaths.length > 0) {
+    const { data: signed } = await supabase.storage.from("garment-images").createSignedUrls(uniquePaths, 3600);
+    if (signed) {
+      signed.forEach((s: any) => {
+        if (s.signedUrl) urlMap.set(s.path, s.signedUrl);
+      });
+    }
+  }
+
+  const formattedData = rawProducts.map((p: any) => {
+    let finalUrl = p._rawUrl;
+    if (finalUrl && !finalUrl.startsWith("http") && !finalUrl.startsWith("data:")) {
+      finalUrl = urlMap.get(finalUrl) || null;
+    }
+    delete p._rawUrl;
+    return { ...p, image_url: finalUrl };
+  });
   
   return { success: true, products: formattedData };
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { getOutboundOrders, submitOutbound } from "../actions";
 import { getProductsByLocation } from "../../locations/actions";
-import { Loader2, PackageMinus, MapPin, CheckCircle2, QrCode, ArrowLeft, Shirt, AlertCircle, X } from "lucide-react";
+import { Loader2, PackageMinus, MapPin, CheckCircle2, QrCode, ArrowLeft, Shirt, AlertCircle, X, ChevronDown, Search, Calendar, User } from "lucide-react";
 import QRScanner from "@/components/qr-scanner";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -35,8 +35,11 @@ export default function OutboundScannerPage() {
   const [orderId, setOrderId] = useState("");
   const [orders, setOrders] = useState<any[]>([]);
   const [notes, setNotes] = useState("");
+  const [expectedReturnDate, setExpectedReturnDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState("");
+  const [orderDropdownOpen, setOrderDropdownOpen] = useState(false);
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
 
   useEffect(() => {
     getOutboundOrders().then((res) => {
@@ -142,6 +145,7 @@ export default function OutboundScannerPage() {
       reason: reason === "GIAO_KHACH" ? "Giao khách" : reason === "BAO_TRI" ? "Bảo trì" : reason === "DI_CHUP" ? "Đi chụp" : "Khác",
       order_id: orderId,
       contract_id: contractId,
+      expected_return_date: expectedReturnDate || undefined,
       notes,
       items: selectedItems.map(p => ({
         instance_id: p.id,
@@ -298,30 +302,113 @@ export default function OutboundScannerPage() {
                   </div>
 
                   {reason === "GIAO_KHACH" && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Đơn hàng <span className="text-rose-500">*</span></label>
-                      <select
-                        required
-                        value={orderId}
-                        onChange={e => {
-                          const selected = orders.find(order => order.id === e.target.value);
-                          setOrderId(e.target.value);
-                          setContractId(selected?.contract_id || "");
-                        }}
-                        className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm"
+                    <div className="relative">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Đơn hàng đang chuẩn bị giao <span className="text-rose-500">*</span></label>
+                      <div 
+                        onClick={() => setOrderDropdownOpen(!orderDropdownOpen)}
+                        className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl cursor-pointer flex justify-between items-center hover:border-indigo-300 transition-colors"
                       >
-                        <option value="">-- Chọn đơn hàng --</option>
-                        {orders.map(order => {
-                          const contract = Array.isArray(order.contract) ? order.contract[0] : order.contract;
-                          const customer = Array.isArray(contract?.customer) ? contract.customer[0] : contract?.customer;
-                          const customerName = customer?.bride_name || customer?.groom_name || "";
-                          return <option key={order.id} value={order.id}>{order.order_code} · {contract?.contract_code || "Đơn lẻ"}{customerName ? ` · ${customerName}` : ""}{order.return_date ? ` · Trả ${new Date(order.return_date).toLocaleDateString("vi-VN")}` : ""}</option>;
-                        })}
-                      </select>
+                        {orderId ? (
+                          <div className="flex-1 min-w-0 flex flex-col">
+                            {(() => {
+                              const selected = orders.find(order => order.id === orderId);
+                              const contract = Array.isArray(selected?.contract) ? selected?.contract[0] : selected?.contract;
+                              const customer = Array.isArray(contract?.customer) ? contract.customer[0] : contract?.customer;
+                              const customerName = customer?.bride_name || customer?.groom_name || "Khách lẻ";
+                              return (
+                                <>
+                                  <span className="font-bold text-indigo-900 truncate">{customerName}</span>
+                                  <span className="text-xs text-slate-500 truncate">
+                                    {selected?.order_code} • {contract?.contract_code || "Không HĐ"}
+                                  </span>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-slate-400">Chọn đơn hàng...</span>
+                        )}
+                        <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${orderDropdownOpen ? 'rotate-180' : ''}`} />
+                      </div>
+
+                      {orderDropdownOpen && (
+                        <div className="absolute z-50 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[350px]">
+                          <div className="p-3 border-b border-slate-100 bg-slate-50/50 sticky top-0">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                              <input 
+                                type="text"
+                                placeholder="Tìm tên khách, mã đơn, HĐ..."
+                                value={orderSearchQuery}
+                                onChange={e => setOrderSearchQuery(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="overflow-y-auto p-2 space-y-1">
+                            {orders.filter(order => {
+                              if (!orderSearchQuery) return true;
+                              const contract = Array.isArray(order.contract) ? order.contract[0] : order.contract;
+                              const customer = Array.isArray(contract?.customer) ? contract.customer[0] : contract?.customer;
+                              const customerName = customer?.bride_name || customer?.groom_name || "";
+                              const searchStr = `${order.order_code} ${contract?.contract_code || ''} ${customerName}`.toLowerCase();
+                              return searchStr.includes(orderSearchQuery.toLowerCase());
+                            }).map(order => {
+                              const contract = Array.isArray(order.contract) ? order.contract[0] : order.contract;
+                              const customer = Array.isArray(contract?.customer) ? contract.customer[0] : contract?.customer;
+                              const customerName = customer?.bride_name || customer?.groom_name || "Khách lẻ";
+                              const isSelected = order.id === orderId;
+                              
+                              return (
+                                <div 
+                                  key={order.id}
+                                  onClick={() => {
+                                    setOrderId(order.id);
+                                    setContractId(contract?.id || "");
+                                    setOrderDropdownOpen(false);
+                                  }}
+                                  className={`p-3 rounded-xl cursor-pointer transition-all border ${isSelected ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-transparent hover:bg-slate-50'}`}
+                                >
+                                  <div className="flex justify-between items-start gap-2 mb-1">
+                                    <div className="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                                      <User size={14} className="text-slate-400" /> {customerName}
+                                    </div>
+                                    <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                                      {order.service_type || "Khác"}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                                    <span className="font-mono text-indigo-600 font-medium">#{order.order_code}</span>
+                                    {contract?.contract_code && <span>HĐ: {contract.contract_code}</span>}
+                                    {order.event_date && <span className="flex items-center gap-1"><Calendar size={12} /> Dùng: {new Date(order.event_date).toLocaleDateString("vi-VN")}</span>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            {orders.length === 0 && (
+                              <div className="p-4 text-center text-sm text-slate-500">Không có đơn hàng nào chờ giao</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {orderId && (() => {
                         const selected = orders.find(order => order.id === orderId);
-                        return <p className="mt-2 text-xs text-indigo-700 bg-indigo-50 rounded-lg px-3 py-2">Ngày về dự kiến: <strong>{selected?.return_date ? new Date(selected.return_date).toLocaleDateString("vi-VN") : "Chưa có"}</strong></p>;
+                        return <p className="mt-2 text-xs text-indigo-700 bg-indigo-50 rounded-lg px-3 py-2 flex items-center gap-2"><Calendar size={14} /> Ngày về dự kiến: <strong>{selected?.return_date ? new Date(selected.return_date).toLocaleDateString("vi-VN") : "Chưa có"}</strong></p>;
                       })()}
+                    </div>
+                  )}
+
+                  {reason !== "GIAO_KHACH" && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Ngày về dự kiến</label>
+                      <input 
+                        type="date"
+                        value={expectedReturnDate}
+                        onChange={e => setExpectedReturnDate(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm"
+                      />
                     </div>
                   )}
 
