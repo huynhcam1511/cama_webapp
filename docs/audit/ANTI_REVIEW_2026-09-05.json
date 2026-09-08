@@ -1,0 +1,239 @@
+{
+  "review_date": "2026-09-05",
+  "verdict": "not_accepted",
+  "production_verified": false,
+  "findings": [
+    {
+      "id": "R01",
+      "tickets": "T03",
+      "priority": "P1",
+      "title": "Chọn lại món đã giữ làm xóa món khỏi hợp đồng",
+      "path": "src/app/dashboard/contracts/actions.ts",
+      "needle": "currentMeta.garments = [...garments.filter",
+      "evidence": "Nhánh alreadyReserved đưa món cũ vào additions. Phép merge sau đó loại nó khỏi garments vì ID gar-* đã có trong additions, rồi cũng loại khỏi additions vì đã có trong garments. Probe cho success nhưng danh sách cuối rỗng.",
+      "fix": "Merge/upsert theo garment_instance_id hoặc reservation ID, giữ nguyên món chọn lại; thêm test retry không đổi số món.",
+      "verification": "offline",
+      "status": "open",
+      "line": 1937,
+      "source_sha256": "f6ad3997fe36581c68b8c1a675103256b8e1692a49554b0820fcd058f5a29f0c"
+    },
+    {
+      "id": "R02",
+      "tickets": "T03",
+      "priority": "P1",
+      "title": "Bulk giữ hai dòng cùng size có thể lấy trùng một món",
+      "path": "src/app/dashboard/contracts/actions.ts",
+      "needle": "const selected = allInstances.filter",
+      "evidence": "Trong vòng selections, tập available lấy từ DB không loại UUID đã chọn ở vòng trước; không có reservation transaction/lock ở DB. Probe với tồn một món và hai dòng cùng size ghi hai reservation cùng physical UUID. Bulk request chỉ khắc phục một dạng ghi đè trong một form, chưa atomic giữa nhiều người.",
+      "fix": "Lọc UUID đã giữ trong batch, rồi thực hiện reserve dưới transaction/lock/constraint và kiểm tra khoảng ngày; test một batch và hai người cạnh tranh.",
+      "verification": "offline",
+      "status": "open",
+      "line": 1912,
+      "source_sha256": "f6ad3997fe36581c68b8c1a675103256b8e1692a49554b0820fcd058f5a29f0c"
+    },
+    {
+      "id": "R03",
+      "tickets": "T05",
+      "priority": "P1",
+      "title": "Hủy hợp đồng có thể đưa món đã bán về khả dụng",
+      "path": "src/app/dashboard/contracts/actions.ts",
+      "needle": "await supabase.from(\"garments_inventory\").update({ status: \"AVAILABLE\", updated_at: new Date().toISOString() }).in(\"id\", saleInstances)",
+      "evidence": "cancelContract suy ra saleInstances từ metadata còn RESERVED rồi update về AVAILABLE không kiểm tra status thật. Xuất bán đã đổi physical item sang SOLD nhưng metadata không đồng bộ tương ứng. Probe SOLD → AVAILABLE sau cancel.",
+      "fix": "Chỉ giải phóng reservation còn RESERVED_SALE thuộc hợp đồng, có điều kiện status trong DB; SOLD cần flow hoàn trả riêng, không mở lại tự động.",
+      "verification": "offline",
+      "status": "open",
+      "line": 1169,
+      "source_sha256": "f6ad3997fe36581c68b8c1a675103256b8e1692a49554b0820fcd058f5a29f0c"
+    },
+    {
+      "id": "R04",
+      "tickets": "T04",
+      "priority": "P1",
+      "title": "Thu tiền còn ghi dở và retry tạo dòng thu trùng",
+      "path": "src/app/dashboard/contracts/actions.ts",
+      "needle": "// Insert ledger first (backward compatibility & cashflow)",
+      "evidence": "Đổi thứ tự ghi ledger trước contracts không tạo transaction. Khi ledger insert thành công nhưng contracts update lỗi, ledger vẫn tồn tại; retry chèn thêm. Probe hai lần lỗi để lại hai dòng thu, không rollback. Cashflow error vẫn bị bỏ qua.",
+      "fix": "Một RPC transaction cho ledger và tổng paid_amount, request UUID chống lặp; kiểm thử lỗi sau insert và retry.",
+      "verification": "offline",
+      "status": "open",
+      "line": 991,
+      "source_sha256": "f6ad3997fe36581c68b8c1a675103256b8e1692a49554b0820fcd058f5a29f0c"
+    },
+    {
+      "id": "R05",
+      "tickets": "T07",
+      "priority": "P1",
+      "title": "Báo sự cố mới làm đứt liên kết tới món hàng và luồng xếp kệ",
+      "path": "src/app/dashboard/orders/actions.ts",
+      "needle": "export async function reportOrderIncident",
+      "evidence": "Action mới không lưu garment_instance_id/garment_code, không đổi kho MAINTENANCE, không ghi movement hoặc cập nhật Orders ISSUE. updateIncidentStatus cần garment_instance_id để chuyển PENDING_PUTAWAY nên bỏ qua món mới. Action còn chuyển sang session client, nhưng migration order_incidents trong repo chỉ có SELECT policy; INSERT có thể bị RLS từ chối khi schema đúng repo. Probe dùng DB giả cho phép insert vẫn tái hiện mất liên kết.",
+      "fix": "Khôi phục validation/quyền và liên kết món/order/contract; transaction incident+movement+state; cấp RLS đúng phạm vi nếu dùng session client; test từ báo lỗi đến resolve và putaway.",
+      "verification": "offline",
+      "status": "open",
+      "line": 315,
+      "source_sha256": "911f672b2385f7b4851e3f0f5c95add53d93d75dd2c03f9d2a7aefbd91381b2c"
+    },
+    {
+      "id": "R06",
+      "tickets": "T01/T02",
+      "priority": "P1",
+      "title": "T01 chưa phủ hết điểm vào và mapping quyền vẫn lệch",
+      "path": "src/app/dashboard/customers/actions.ts",
+      "needle": "export async function saveBooking",
+      "evidence": "saveBooking/getBookingById còn admin thiếu guard; probe saveBooking ghi trực tiếp khi guard chưa gọi. Lịch hẹn page dùng APPOINTMENTS nhưng deleteBooking dùng CUSTOMERS.delete; getOutboundHistory/getOutboundOrders vẫn GARMENT_CATALOG.view. Các action admin Orders create/delete/notes/PIC vẫn cần rà quyền.",
+      "fix": "Lập inventory public actions; guard ngay entrypoint, đúng module/action và object scope; kiểm thử account chỉ có APPOINTMENTS/INVENTORY_OUTBOUND.",
+      "verification": "offline",
+      "status": "open",
+      "line": 8,
+      "source_sha256": "1f9d08d22b95802288f3661381fe749695c28d8b29fa98e14130151fc6bde49b"
+    },
+    {
+      "id": "R07",
+      "tickets": "T12",
+      "priority": "P1",
+      "title": "RPC cấp mã mới chưa thực sự cấp phát mã duy nhất",
+      "path": "supabase/migrations/20260905000000_code_generator_rpc.sql",
+      "needle": "PERFORM pg_advisory_xact_lock",
+      "evidence": "RPC khóa trong transaction chỉ SELECT MAX+1 rồi RETURN, không ghi counter/giữ mã. Lock hết khi RPC xong trước request insert; hai cuộc gọi trước insert vẫn nhận cùng mã. Fallback TS dùng giây nên hai gọi cùng giây trùng (đã probe).",
+      "fix": "Dùng sequence hoặc counter update-returning atomic, hoặc tạo record cùng RPC; bỏ fallback theo giây và fail rõ khi migration chưa áp dụng.",
+      "verification": "offline",
+      "status": "open",
+      "line": 11,
+      "source_sha256": "9d66f8720098a7504d2482ea0cd5385fe3273467a30ddca178e5bfffae1d5bab"
+    },
+    {
+      "id": "R08",
+      "tickets": "T06",
+      "priority": "P1",
+      "title": "SQL xuất kho gọi hàm phân quyền sai chữ ký",
+      "path": "supabase/migrations/20260905000004_fix_inventory_outbound_t06.sql",
+      "needle": "IF NOT has_module_permission(v_staff_id",
+      "evidence": "Migration mới truyền (uuid, text, text) nhưng các định nghĩa has_module_permission trong repo chỉ nhận (text, text) và lấy auth.uid bên trong. Nếu DB có đúng schema trong repo, xuất kho sẽ lỗi function does not exist trước khi làm việc. Chưa thực thi trên DB thật, chưa loại trừ overload ngoài repo.",
+      "fix": "Gọi public.has_module_permission('INVENTORY_OUTBOUND','create'), kiểm chứng đúng signature trên DB cô lập và chạy ca xuất có quyền/không quyền.",
+      "verification": "static",
+      "status": "open",
+      "line": 25,
+      "source_sha256": "33a37c651a0b8a48c6cefa76df219c6c5ded7fa17467c80b07091a64b677e88d"
+    },
+    {
+      "id": "R09",
+      "tickets": "T05",
+      "priority": "P1",
+      "title": "event_id được dùng để match nhưng không được đọc/ghi đầy đủ",
+      "path": "src/app/dashboard/contracts/actions.ts",
+      "needle": ".select(\"id, order_code, service_type, notes, completion_status, created_at\")",
+      "evidence": "createContract mới bỏ marker trong notes và chỉ ghi event_id lúc insert. updateContract SELECT thiếu event_id nhưng match o.event_id; đổi tên sự kiện lần đầu không match theo id hoặc tên cũ, có thể sinh đơn mới và hủy đơn cũ, mất mạch tiến độ. Nhánh insert/update của updateContract cũng thiếu event_id; xóa hết event vẫn bỏ qua sync; lỗi insert đơn hiện bị bỏ qua và báo success.",
+      "fix": "Select/upsert event_id ở mọi nhánh, backfill theo marker trước khi bỏ trigger, unique(contract_id,event_id); xử lý zero events và lỗi DB; test rename giữ nguyên order UUID/checklist/PIC.",
+      "verification": "static",
+      "status": "open",
+      "line": 1639,
+      "source_sha256": "f6ad3997fe36581c68b8c1a675103256b8e1692a49554b0820fcd058f5a29f0c"
+    },
+    {
+      "id": "R10",
+      "tickets": "T12",
+      "priority": "P1",
+      "title": "Đổi tên migration làm đảo thứ tự tạo bảng và cập nhật bảng",
+      "path": "supabase/migrations/20260731000014_fk_order_schedules.sql",
+      "needle": "ALTER TABLE public.operation_schedules",
+      "evidence": "Migration tạo operation_schedules bị chuyển từ prefix 000005 sang 000055; file 000014 vẫn ALTER bảng trước khi được CREATE ở 000055. Fresh replay theo thứ tự tên sẽ gặp relation missing nếu không có schema ngoài repo. Chưa có bằng chứng đối chiếu migration history/rollback trước khi rename.",
+      "fix": "Khôi phục thứ tự phụ thuộc, đối chiếu version đã áp dụng; không xử lý duplicate version bằng cách đẩy migration tạo bảng ra sau consumers. Kiểm thử bootstrap DB sạch.",
+      "verification": "static",
+      "status": "open",
+      "line": 6,
+      "source_sha256": "dce5a10b98af4ff8de96ab31761ee08fc10a54235008097c4509b98c792ba936"
+    },
+    {
+      "id": "R11",
+      "tickets": "T06/T07",
+      "priority": "P1",
+      "title": "Trạng thái đơn và kho vẫn dùng hai đường không cùng điều kiện",
+      "path": "src/app/dashboard/orders/actions.ts",
+      "needle": "} else if (status === 'COMPLETED')",
+      "evidence": "RPC xuất đổi delivery_status nhưng UI filter dựa completion_status. Orders action vẫn ghi thuê DELIVERED, RPC ghi RENTED. Nhánh mới COMPLETED đưa mọi món thuê liên kết về AVAILABLE trực tiếp, không kiểm tra QC/incident; có thể mở món đang bảo trì. Không thấy request ID/membership món–đơn trong RPC mới.",
+      "fix": "Chốt một transition service và source trạng thái; COMPLETED không tự bỏ qua QC; RPC verify món thuộc đơn; test bán/thuê/QC, retry và UI filter.",
+      "verification": "static",
+      "status": "open",
+      "line": 126,
+      "source_sha256": "911f672b2385f7b4851e3f0f5c95add53d93d75dd2c03f9d2a7aefbd91381b2c"
+    }
+  ],
+  "checks": [
+    {
+      "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false --pretty false",
+      "exit_code": 0
+    },
+    {
+      "command": "node node_modules/next/dist/bin/next lint",
+      "exit_code": 0,
+      "result": "warnings only"
+    },
+    {
+      "command": "node scripts/review-anti-offline.cjs",
+      "exit_code": 0,
+      "result": "7 defects reproduced against extracted current functions; mocked DB only"
+    }
+  ],
+  "ticket_review": [
+    {
+      "id": "T01",
+      "review_status": "partial_not_accepted",
+      "summary": "Đã bỏ 5 API và thêm một số guard/scope; saveBooking và các action khác còn thiếu guard. R06."
+    },
+    {
+      "id": "T02",
+      "review_status": "partial_not_accepted",
+      "summary": "Đã merge role/user và đổi page APPOINTMENTS, submit outbound; read/delete vẫn lệch module. R06."
+    },
+    {
+      "id": "T03",
+      "review_status": "regression_not_accepted",
+      "summary": "Bulk request và QR thật đã sửa hướng; chọn lại mất món, cùng size giữ trùng, chưa DB atomic/restore aggregate. R01,R02."
+    },
+    {
+      "id": "T04",
+      "review_status": "partial_not_accepted",
+      "summary": "Không tự COMPLETED khi thu đủ; ledger-first vẫn không transaction/idempotency. R04."
+    },
+    {
+      "id": "T05",
+      "review_status": "regression_not_accepted",
+      "summary": "Đã thêm event_id và cancel; event chưa match đủ, cancel có thể mở hàng SOLD. R03,R09."
+    },
+    {
+      "id": "T06",
+      "review_status": "not_accepted",
+      "summary": "UI lấy order.contract_id đúng; SQL guard sai signature, trạng thái chưa nhất quán. R08,R11."
+    },
+    {
+      "id": "T07",
+      "review_status": "regression_not_accepted",
+      "summary": "reportOrderIncident mất liên kết món và cập nhật kho so với baseline đã audit. R05,R11."
+    },
+    {
+      "id": "T08",
+      "review_status": "not_implemented_in_reviewed_tree",
+      "summary": "CRM bỏ ngày hẹn chưa sửa; actions chỉ thêm guard."
+    },
+    {
+      "id": "T09",
+      "review_status": "not_implemented_in_reviewed_tree",
+      "summary": "Staff/operation schedules không đổi so manifest trước; tự APPROVED, load tháng và mức 200k còn."
+    },
+    {
+      "id": "T10",
+      "review_status": "not_implemented_in_reviewed_tree",
+      "summary": "Home/KPI/assets/cache không đổi so manifest trước; số cứng và thiếu nhóm kho còn."
+    },
+    {
+      "id": "T11",
+      "review_status": "not_implemented_in_reviewed_tree",
+      "summary": "Intake RPC và catalogue không đổi so manifest trước; chưa có request id chống lặp."
+    },
+    {
+      "id": "T12",
+      "review_status": "partial_not_accepted",
+      "summary": "Typecheck script/build gate đã sửa; allocator vẫn trùng, migration rename sai dependency, chưa có DB replay evidence. R07,R10."
+    }
+  ]
+}

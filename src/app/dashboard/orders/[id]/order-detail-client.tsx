@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as icons from "lucide-react";
@@ -28,6 +28,15 @@ const UI_STEPS = [
   { id: 'XU_LY', label: 'Xử lý Kho', statuses: ['ISSUE'] },
   { id: 'HOAN_TAT', label: 'Hoàn tất', statuses: ['COMPLETED'] }
 ];
+
+const getNextStatus = (status: OrderStatus): OrderStatus | null => {
+  if (status === "WAITING_RETURN") return "COMPLETED";
+  if (status === "ISSUE") return "COMPLETED";
+  const stepIndex = UI_STEPS.findIndex(step => step.statuses.includes(status));
+  return stepIndex >= 0 && stepIndex < UI_STEPS.length - 1
+    ? UI_STEPS[stepIndex + 1].statuses[0] as OrderStatus
+    : null;
+};
 
 const ImageWithFallback = ({ src, alt, className, fallbackIcon: FallbackIcon = icons.Shirt }: any) => {
   const [error, setError] = React.useState(false);
@@ -68,8 +77,9 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
   
   // Incident Modal State
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
-  const [incidentForm, setIncidentForm] = useState({ description: '', penalty_amount: 0, bill_image: '' });
+  const [incidentForm, setIncidentForm] = useState({ garment_code: '', description: '', penalty_amount: 0, bill_image: '' });
   const [isSubmittingIncident, setIsSubmittingIncident] = useState(false);
+  const incidentSubmissionRef = useRef<string | null>(null);
   const [isUploadingBill, setIsUploadingBill] = useState(false);
   
   const items = useMemo(() => {
@@ -402,7 +412,7 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
             {UI_STEPS.map((step, idx) => {
               let stepStatus = idx < actualStepIndex ? 'completed' : idx === actualStepIndex ? 'current' : 'pending';
               const isViewing = idx === viewingStepIndex;
-              const nextStatusToProgress = UI_STEPS[actualStepIndex + 1]?.statuses[0] as OrderStatus;
+              const nextStatusToProgress = getNextStatus(currentOrder.completion_status);
               
               return (
                 <div key={idx} className="flex flex-col items-center gap-3 bg-white px-2 cursor-pointer group min-w-[80px]" onClick={() => setViewingStepIndex(idx)}>
@@ -418,7 +428,7 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
                     <span className={`text-xs sm:text-sm whitespace-nowrap font-bold transition-colors ${isViewing ? 'text-blue-700' : stepStatus === 'completed' ? 'text-slate-800' : 'text-slate-500'}`}>
                       {step.label}
                     </span>
-                    {stepStatus === 'current' && idx < UI_STEPS.length - 1 && (
+                    {stepStatus === 'current' && nextStatusToProgress && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleStatusChange(nextStatusToProgress); }}
                         disabled={isUpdating}
@@ -841,6 +851,22 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
           </div>
           <div className="p-4 overflow-y-auto space-y-4">
             <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Mã suit gặp sự cố</label>
+              <select
+                required
+                value={incidentForm.garment_code}
+                onChange={e => setIncidentForm({ ...incidentForm, garment_code: e.target.value })}
+                className="w-full border border-slate-200 rounded-lg p-3 text-sm bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none"
+              >
+                <option value="">-- Chọn mã suit trong đơn --</option>
+                {garments.map((garment: any) => (
+                  <option key={garment.garment_code} value={garment.garment_code}>
+                    {garment.garment_code}{garment.product_location ? ` — Vị trí cũ: ${garment.product_location}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Mô tả tình trạng (Rách, Dơ, Hư hỏng)</label>
               <textarea 
                 value={incidentForm.description}
@@ -914,25 +940,33 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
             </button>
             <button 
               onClick={async () => {
+                if (incidentSubmissionRef.current) return;
+                const submissionId = crypto.randomUUID();
+                incidentSubmissionRef.current = submissionId;
                 setIsSubmittingIncident(true);
                 try {
                   const { reportOrderIncident } = await import('../actions');
-                  await reportOrderIncident(currentOrder.id, contract?.id, {
+                  const result = await reportOrderIncident(currentOrder.id, contract?.id, {
                     ...incidentForm,
+                    id: submissionId,
                     deductAmount,
                     extraAmount,
                     type: 'DAMAGE',
                     created_by_id: currentOrder.pic_id || 'system'
                   });
+                  if (result.error) throw new Error(result.error);
                   setIsIncidentModalOpen(false);
-                  alert("Đã ghi nhận sự cố và tạo phiếu kế toán thành công!");
-                } catch (e) {
-                  alert("Lỗi ghi nhận sự cố.");
+                  setIncidentForm({ garment_code: '', description: '', penalty_amount: 0, bill_image: '' });
+                  router.refresh();
+                  alert("Đã ghi nhận sự cố thành công!");
+                } catch (e: any) {
+                  alert(`Lỗi ghi nhận sự cố: ${e?.message || 'Vui lòng thử lại.'}`);
                 } finally {
+                  incidentSubmissionRef.current = null;
                   setIsSubmittingIncident(false);
                 }
               }}
-              disabled={isSubmittingIncident || incidentForm.penalty_amount <= 0 || !incidentForm.description}
+              disabled={isSubmittingIncident || !incidentForm.garment_code || incidentForm.penalty_amount <= 0 || !incidentForm.description}
               className="flex-1 py-3 bg-rose-600 text-white font-bold text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmittingIncident ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.CheckCircle className="w-4 h-4" />}

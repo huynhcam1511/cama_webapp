@@ -1,10 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/rbac";
-import { redirect } from "next/navigation";
 import CreateOrderClient from "./create-order-client";
 
 export default async function CreateOrderPage() {
-  await requirePermission("OPERATION_ORDERS", "create");
+  await requirePermission("ORDERS", "create");
   const supabase = createAdminClient();
 
   // Fetch data for the form (users, contracts)
@@ -14,10 +13,13 @@ export default async function CreateOrderPage() {
   ]);
 
   return (
-    <div className="w-full h-full p-4 md:p-6 overflow-y-auto bg-slate-50/50">
+    <div className="min-h-full w-full overflow-y-auto bg-slate-50">
       <CreateOrderClient 
         users={users || []} 
-        contracts={contracts || []}
+        contracts={(contracts || []).map((contract) => ({
+          ...contract,
+          customer: Array.isArray(contract.customer) ? contract.customer[0] || null : contract.customer,
+        }))}
       />
     </div>
   );

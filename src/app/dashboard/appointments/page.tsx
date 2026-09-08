@@ -6,7 +6,7 @@ import AppointmentsClient from "./appointments-client";
 export const dynamic = "force-dynamic";
 
 export default async function AppointmentsPage() {
-  await requirePermission("CUSTOMERS", "view"); // Temporary permission check
+  await requirePermission("APPOINTMENTS", "view"); // Temporary permission check
 
   const supabase = createAdminClient();
   const { data: bookings } = await supabase

@@ -1,0 +1,2351 @@
+{
+  "date": "2026-09-05",
+  "method": "Structural scan of all src TS/TSX/JS and migration SQL; not full semantic review of every line",
+  "source_files": 155,
+  "migration_files": 66,
+  "total_lines": 35319,
+  "registry": [
+    {
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "DASHBOARD",
+      "label": "Tổng quan",
+      "route": "/dashboard",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "SALES_DASHBOARD",
+      "label": "Báo cáo Doanh thu & Chốt Sale",
+      "route": "/dashboard/sales",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "CUSTOMERS",
+      "label": "Khách hàng",
+      "route": "/dashboard/customers",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "STUDIO_CONTRACTS",
+      "label": "Hợp đồng",
+      "route": "/dashboard/contracts",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "CUSTOMER_JOURNEY",
+      "label": "Hành trình khách hàng",
+      "route": "/dashboard/customer-journey",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "APPOINTMENTS",
+      "label": "Lịch hẹn khách",
+      "route": "/dashboard/appointments",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "CASHFLOW",
+      "label": "Dòng tiền",
+      "route": "/dashboard/cashflow",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "OVERDUE_INVOICES",
+      "label": "Cảnh báo công nợ",
+      "route": "/dashboard/overdue-invoices",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "PROFIT_TRACKER",
+      "label": "Theo dõi lợi nhuận",
+      "route": "/dashboard/profit",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "SUBSCRIPTIONS",
+      "label": "Quản lý thuê bao",
+      "route": "/dashboard/subscriptions",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "OPERATION_DASHBOARD",
+      "label": "Báo cáo Vận hành & QC",
+      "route": "/dashboard/operations",
+      "exact_page_exists": false
+    },
+    {
+      "moduleCode": "OPERATION_SCHEDULE",
+      "label": "(ẨN) Lịch khách & Lịch giao hàng",
+      "route": "/dashboard/schedules/operation",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "ORDERS",
+      "label": "Đơn hàng vận hành",
+      "route": "/dashboard/orders",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "ORDER_INCIDENTS",
+      "label": "Theo dõi sự cố đơn hàng",
+      "route": "/dashboard/order-incidents",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "INVENTORY_LOCATIONS",
+      "label": "Tài sản",
+      "route": "/dashboard/inventory/locations",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "INVENTORY_POSITION_QR",
+      "label": "Vị trí",
+      "route": "/dashboard/inventory/locations/qr",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "GARMENT_CATALOG",
+      "label": "Quản lý Nhập Kho",
+      "route": "/dashboard/inventory/catalog",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "INVENTORY_OUTBOUND",
+      "label": "Quản lý xuất kho",
+      "route": "/dashboard/inventory/outbound",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "TASKS",
+      "label": "Giao việc",
+      "route": "/dashboard/tasks",
+      "exact_page_exists": false
+    },
+    {
+      "moduleCode": "HR_DASHBOARD",
+      "label": "Báo cáo Năng lực & Đào tạo",
+      "route": "/dashboard/hr",
+      "exact_page_exists": false
+    },
+    {
+      "moduleCode": "STAFF_SCHEDULE",
+      "label": "Lịch làm việc",
+      "route": "/dashboard/schedules/staff",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "EMPLOYEES",
+      "label": "Danh sách nhân sự",
+      "route": "/dashboard/employees",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "ORG_CHART",
+      "label": "Sơ đồ tổ chức",
+      "route": "/dashboard/org-chart",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "POLICIES",
+      "label": "Chính sách & nội quy",
+      "route": "/dashboard/policies",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "KPI_PERFORMANCE",
+      "label": "KPI & Đánh giá",
+      "route": "/dashboard/kpi",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "PAYROLL",
+      "label": "Bảng lương & Hoa hồng",
+      "route": "/dashboard/payroll",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "TRAINING",
+      "label": "Đào tạo nội bộ",
+      "route": "/dashboard/training",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "RECRUITMENT",
+      "label": "Tuyển dụng",
+      "route": "/dashboard/recruitment",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "MARKETING_DASHBOARD",
+      "label": "Báo cáo Tương tác & Reach",
+      "route": "/dashboard/marketing",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "MARKETING_IDEA",
+      "label": "Ý Tưởng Content",
+      "route": "/dashboard/marketing/ideas",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "MARKETING_CONTENT",
+      "label": "Sản Xuất Content",
+      "route": "/dashboard/marketing/contents",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "MARKETING_MANAGER",
+      "label": "Quản trị Marketing (Sếp)",
+      "route": "/dashboard/marketing/manager",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "PERMISSIONS",
+      "label": "Phân quyền",
+      "route": "/dashboard/permissions",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "SYSTEM_SETTINGS",
+      "label": "Cấu hình hệ thống",
+      "route": "/dashboard/settings",
+      "exact_page_exists": false
+    },
+    {
+      "moduleCode": "USER_GUIDE",
+      "label": "Hướng dẫn sử dụng",
+      "route": "/dashboard/user-guide",
+      "exact_page_exists": true
+    },
+    {
+      "moduleCode": "QR_SCAN",
+      "label": "Quét mã QR",
+      "route": "/dashboard/garments/scan",
+      "exact_page_exists": false
+    },
+    {
+      "moduleCode": "ATTENDANCE",
+      "label": "Chấm công GPS",
+      "route": "/dashboard/attendance",
+      "exact_page_exists": true
+    }
+  ],
+  "duplicate_migration_versions": {
+    "20260731000005": [
+      "20260731000005_add_policy_attachment.sql",
+      "20260731000005_split_schedules.sql"
+    ],
+    "20260731000006": [
+      "20260731000006_booking_schedules.sql",
+      "20260731000006_fix_operation_schedule_fk.sql"
+    ],
+    "20260829000002": [
+      "20260829000002_fix_garment_sku_trigger.sql",
+      "20260829000002_sync_contract_event_orders.sql"
+    ],
+    "20260830000001": [
+      "20260830000001_backfill_inventory_product_codes.sql",
+      "20260830000001_order_incidents.sql"
+    ]
+  },
+  "files": [
+    {
+      "path": "src/app/(auth)/login/actions.ts",
+      "lines": 40,
+      "sha256": "1b3ce704b8bb9649393cf5bb6bd73e9f4e6d6db22cdb47df7cea61966d3ae142",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": [
+        "login",
+        "resetPassword"
+      ]
+    },
+    {
+      "path": "src/app/(auth)/login/page.tsx",
+      "lines": 87,
+      "sha256": "11df721910fe45156b5f1267ddb7158beb0139a0b45caa403b04af4299f8131f",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/403/page.tsx",
+      "lines": 75,
+      "sha256": "b250e3814463e2cc6d6c6e16a7327838f18f3239d84bf73f481b28687d5b0017",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/api/cron/daily-reminders/route.ts",
+      "lines": 41,
+      "sha256": "9a0ff3dbfbe9e0b25518b5db137f8a15efc81b646a6313ad013591c028d2f82b",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": [
+        "GET"
+      ]
+    },
+    {
+      "path": "src/app/api/cron/reminders/route.ts",
+      "lines": 127,
+      "sha256": "eabd8de48ef581c5c3e32a3559d02bb45d21dbeede699f42f3edcc1f4758bc7f",
+      "tables": [
+        "journey_tasks",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "GET"
+      ]
+    },
+    {
+      "path": "src/app/api/debug/route.ts",
+      "lines": 7,
+      "sha256": "5f86ef4b37d802fff6930eab68310f2dbc2c004b5a911c77c51bfe2715891819",
+      "tables": [
+        "contracts"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "GET"
+      ]
+    },
+    {
+      "path": "src/app/api/fix-db/route.ts",
+      "lines": 50,
+      "sha256": "40bebd55bdcc824456d179960237a974cc75b865f36ae8954d9a9203a030a1d8",
+      "tables": [],
+      "rpc": [
+        "exec_sql"
+      ],
+      "exported_async_functions": [
+        "GET"
+      ]
+    },
+    {
+      "path": "src/app/api/fix-db/virtual-warehouse/route.ts",
+      "lines": 62,
+      "sha256": "63e3069c3c1dc1955c74499fc502dea04f8a9c7c46525dd2b959d3858f5fcbf1",
+      "tables": [
+        "garments_inventory",
+        "inventory_locations"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "GET"
+      ]
+    },
+    {
+      "path": "src/app/api/inventory/location-labels-pdf/route.ts",
+      "lines": 19,
+      "sha256": "31d5fb20e91b16bac56d71b72983a8174f02908af2469798dd926f3e15bbc3e7",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": [
+        "GET"
+      ]
+    },
+    {
+      "path": "src/app/api/inventory/scan/route.ts",
+      "lines": 104,
+      "sha256": "219f2b16bf7c5293a8168690aef5c292b1b68189e25037557bb14115cf9dad01",
+      "tables": [
+        "contract_garments",
+        "garments_inventory"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "POST"
+      ]
+    },
+    {
+      "path": "src/app/api/me/permissions/route.ts",
+      "lines": 22,
+      "sha256": "6436364320569f75b57a91bc69cefc4f9415fc4db03bb8e9b41af471936dc8a6",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": [
+        "GET"
+      ]
+    },
+    {
+      "path": "src/app/api/test-query/route.ts",
+      "lines": 12,
+      "sha256": "b4567011b9fa45b72a7c9f323b67499eeebe8a70a3d959b54b8f9f6ed4ca7116",
+      "tables": [
+        "journey_tasks"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "GET"
+      ]
+    },
+    {
+      "path": "src/app/api/test-sign/route.ts",
+      "lines": 10,
+      "sha256": "45d123d5128e99be97af6ae110d8ff9a0928112aee5455173f9431e8d3bdd669",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": [
+        "GET"
+      ]
+    },
+    {
+      "path": "src/app/auth/callback/route.ts",
+      "lines": 26,
+      "sha256": "94ba1837e32288cd04af4bd596ac4e7d1433239e2514adf8811e0df4c8c6f4d9",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": [
+        "GET"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/appointments/appointments-client.tsx",
+      "lines": 276,
+      "sha256": "e80baaeedb36518deae14a048272470528939ec1f30083a9bc4ce5732199eceb",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/appointments/page.tsx",
+      "lines": 30,
+      "sha256": "9379c68343a967a0a8ab188a604bbceef8becd73f95a20258e9ede0232bd9261",
+      "tables": [
+        "operation_schedules",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/attendance/actions.ts",
+      "lines": 176,
+      "sha256": "60f75c207ae1c9ac15892d5a5a0927f324d6c5c4d997307fb549e65c5522d949",
+      "tables": [
+        "attendance_logs",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "checkIn",
+        "checkOut",
+        "getMyAttendanceToday",
+        "getAttendanceHistory"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/attendance/page.tsx",
+      "lines": 282,
+      "sha256": "cd3b3c16458ef9773aa7a3c788618ccc8a4408699e86c27bec904236dbb7e382",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/cashflow/page.tsx",
+      "lines": 11,
+      "sha256": "20131348b48e3c22a1e76674dc4d743d5afd69d4062c4ba72e735c67c61c9df6",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/[id]/contract-detail-view.tsx",
+      "lines": 546,
+      "sha256": "42e5fd74b86183b5be5f987dd6afd155d0b9aff2d56f7019f8080d766994c9b6",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/[id]/edit/page.tsx",
+      "lines": 33,
+      "sha256": "a298f77725ca5087ff23a96f8a4a5713bec0d23098471310f4dff80e4f9faf22",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/[id]/page.tsx",
+      "lines": 21,
+      "sha256": "fe14df47c202a810b85b9e2e7f0c45136e5985232cc6247a417eb77391feacd1",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/[id]/pdf-view-wrapper.tsx",
+      "lines": 98,
+      "sha256": "e0196d2dbef6230e3209f3ab3b0d2f3f722b017c0f99f2a4ad7f443fcf79ac15",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/_components/contract-audit-drawer.tsx",
+      "lines": 186,
+      "sha256": "25cf8fbf12b780ba54743313abe6fbb4408aa8e12c7ae5552c2ddd7bf3228351",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/_components/contract-form.tsx",
+      "lines": 1580,
+      "sha256": "3e049d7f323360c99b13bd93b388b0e490f5254a5de208ac5df8bfb44aea437f",
+      "tables": [
+        "contract_files"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/_components/incident-report-modal.tsx",
+      "lines": 141,
+      "sha256": "8e4fbcfa36844b4ec4e3bbb50af96cf577b048b81430a5d505212949fc0cd079",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/_components/inventory-picker-modal.tsx",
+      "lines": 258,
+      "sha256": "3129df1d1e19eddbb4e34516f53c9441620d9992759c551fd80bb605adde6aa9",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/actions.ts",
+      "lines": 2212,
+      "sha256": "7402b27e48db25e59dce2333d88d013f1d58a3298400ec9b2eb58f869a4339bf",
+      "tables": [
+        "cashflow",
+        "contract_activities",
+        "contract_services",
+        "contract_versions",
+        "contracts",
+        "garment-images",
+        "garment_models",
+        "garments_inventory",
+        "inventory_items",
+        "operation_schedules",
+        "orders",
+        "payment_installments",
+        "users"
+      ],
+      "rpc": [
+        "restore_contract_version"
+      ],
+      "exported_async_functions": [
+        "getStaffs",
+        "recordPayment",
+        "getContracts",
+        "getContractById",
+        "getContractActivities",
+        "restoreContractVersion",
+        "logContractActivity",
+        "createContract",
+        "recordPaymentTransaction",
+        "cancelContract",
+        "addContractSchedule",
+        "toggleScheduleCompleted",
+        "addContractDocument",
+        "deleteContract",
+        "addGarmentToContractByQR",
+        "updateContract",
+        "checkInventoryAvailability",
+        "searchContractInventory",
+        "reserveContractInventory",
+        "checkInventoryAvailabilityAndSearch",
+        "addGarmentToContract",
+        "markGarmentReturned",
+        "reportGarmentIncident",
+        "reportIncidentFromScanner"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/contracts/cancel-contract-dialog.tsx",
+      "lines": 123,
+      "sha256": "1c4e262c57e1153a08230e0b65c830a9f82a00fb19eda0f9915440a0e550e1f7",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/contract-detail-modal.tsx",
+      "lines": 171,
+      "sha256": "551fbde894720625a48d5c9c219413346138bf3747e223297d62545ea98d580d",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/contract-dialog.tsx",
+      "lines": 771,
+      "sha256": "131ea2977dea52bfdfec7963d897df864b52e7a484a7288dd6251bdb376c3eb8",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/contracts-view.tsx",
+      "lines": 829,
+      "sha256": "9543bc2e92d0ca5bd401945b6f9e4ba772df34b6895a241bdb62adc9890ca13c",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/create/page.tsx",
+      "lines": 22,
+      "sha256": "30390a7257f231c5b14a5bf18b7a7c0e61727322925fec50b50c937c58fc5588",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/edit-contract-dialog.tsx",
+      "lines": 862,
+      "sha256": "7e464960f58f6981dcfb4c1c0171661e4cb0d23bdf367af0e6bd0075672b6bdf",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/page.tsx",
+      "lines": 21,
+      "sha256": "d21a540fb784a11ca7b2be8f501d4193196509a66c70558fb9f549306866ec28",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/payment-modal.tsx",
+      "lines": 227,
+      "sha256": "e0f1d05162a2fb53fe6c95ce2ca2825bb90a815d2495441f4c11abe00711b5e7",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/printable-contract.tsx",
+      "lines": 534,
+      "sha256": "0e83b1bac8cbb18bb445621ac0c847fe52a8fbaa79ff941f57e47eb6f6eaf5d4",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/record-payment-dialog.tsx",
+      "lines": 223,
+      "sha256": "cf02d7808d20cc865b0823909332f393054fd09b3c46cb81c1afaf5d51a4204a",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/refactor.js",
+      "lines": 23,
+      "sha256": "d72381d38f341224a20661593fd153c955d8062f7066cc795fef94b58f744532",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/restore.js",
+      "lines": 31,
+      "sha256": "aa275ee0c9a19f5edd38bab93db239765b56565cc7622b5e1370332265715faa",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/revert.js",
+      "lines": 69,
+      "sha256": "0cc2d1705432021a63cd68869b4d67a364d323d805aab2c5993178b931ec21e9",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/contracts/types.ts",
+      "lines": 198,
+      "sha256": "4eab077508b117ca33b875503a528a72f8762d7be33499e84985e5804574ef26",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/customer-journey/[id]/customer-journey-detail-client.tsx",
+      "lines": 865,
+      "sha256": "12d8f8ae7cd0efcf4de8802e321971b524fc6ce17d18bce8a0d49057dd2e8a87",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/customer-journey/[id]/page.tsx",
+      "lines": 35,
+      "sha256": "f1134663ef23265b90d0e64cd7451dc780c2c04b8ba58764abdd27cc389a65f2",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/customer-journey/actions.ts",
+      "lines": 283,
+      "sha256": "2c8d11c5ac0825b5b97df157b1fe2684bff0406852a5d0cd11920595edb068d9",
+      "tables": [
+        "contracts",
+        "customers",
+        "journey_tasks",
+        "operation_schedules"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "getCustomerJourneyData",
+        "getCustomerJourneyById",
+        "updateCustomerJourneyData",
+        "createManualJourney"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/customer-journey/customer-journey-client.tsx",
+      "lines": 390,
+      "sha256": "72f7274cc32bfe49abe15ebaddabf1ef992818e050bc9a3ea99368e844170173",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/customer-journey/page.tsx",
+      "lines": 40,
+      "sha256": "2d66e6bc3a2456c9f6b4b0866efcec61437670d359ff3722918fbcb28632857d",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/customers/[id]/edit/page.tsx",
+      "lines": 20,
+      "sha256": "1b194ea8a8df1d7c0d927f56143c654cb1e7a32c1bd7084d0193bb6b1adceead",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/customers/actions.ts",
+      "lines": 251,
+      "sha256": "bd89c97335b443f60dc801f1f6f3cfcc8d67869ae2ca2934b7bfbdd31f0e301f",
+      "tables": [
+        "contract_services",
+        "contracts",
+        "customers",
+        "operation_schedules",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "saveBooking",
+        "getBookingById",
+        "deleteBooking",
+        "getCustomers",
+        "getCustomerById",
+        "createCustomer",
+        "updateCustomer",
+        "getStaffs",
+        "deleteCustomer",
+        "createQuickContract"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/customers/create/page.tsx",
+      "lines": 12,
+      "sha256": "f7c9941f535caa8992b108063da31624a82a5e36ae3eb7c5e1364e3192a04622",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/customers/customer-form-client.tsx",
+      "lines": 430,
+      "sha256": "6e2c5dce2eac2f9a8d410c5ed0c9b0e3afea799398670011b5b56c1c2ec4b426",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/customers/customers-page-client.tsx",
+      "lines": 32,
+      "sha256": "af5c3301e9ae79e7ebdc97c640e5b918e1931c8794e8868504ec99b00c628821",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/customers/customers-view.tsx",
+      "lines": 385,
+      "sha256": "2363ff4a306b1e90f68c909ed0ac480b77b91bd0b89bc24a742e95fd25dfff0d",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/customers/leads-kanban-view.tsx",
+      "lines": 164,
+      "sha256": "be80395349befb6d68f2058b3f850636c8b0197717300ee9b04e67328573df34",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/customers/page.tsx",
+      "lines": 19,
+      "sha256": "edeefe30ddd870acdc480d1021a641644a3c9b5a7338000e601f253b432a0e2c",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/employees/[id]/actions.ts",
+      "lines": 127,
+      "sha256": "05862efff70a8ba36aa82e2730e0f69e3bbfc91d70338fc2abe7e88a1bdf4851",
+      "tables": [
+        "user_permissions",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "saveEmployee"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/employees/[id]/employee-detail-view.tsx",
+      "lines": 915,
+      "sha256": "7158552ca6341099fd1cf50ae37e4a7ff5edfeed2761010cb6cf269b05c889ec",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/employees/[id]/page.tsx",
+      "lines": 65,
+      "sha256": "4428469779ca02ed036b775b2b9c891b95150be86e8429f21a8504f2a0862587",
+      "tables": [
+        "departments",
+        "modules",
+        "positions",
+        "roles",
+        "teams",
+        "user_permissions",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/employees/employee-list-view.tsx",
+      "lines": 138,
+      "sha256": "c1465a7a92517438ae770af5172545fd623dc769d78c0b26f8617de4435efdfa",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/employees/page.tsx",
+      "lines": 36,
+      "sha256": "8a1215e031aa63cde6578bcb91e427efb8ceffaa1ee291f281f1f40c12f1d961",
+      "tables": [
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/inventory/catalog/actions.ts",
+      "lines": 164,
+      "sha256": "dc10339861eaaecef77a6c677f4835bc349f82194ebff30976ed12befb9b46af",
+      "tables": [
+        "garment-images",
+        "garment_models",
+        "inventory_intake_sessions",
+        "inventory_locations",
+        "master_data"
+      ],
+      "rpc": [
+        "complete_inventory_declaration"
+      ],
+      "exported_async_functions": [
+        "getInventoryCatalog",
+        "getInventoryIntakeHistory",
+        "getInventoryFormOptions",
+        "completeInventoryDeclaration",
+        "uploadGarmentImage"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/inventory/catalog/new/page.tsx",
+      "lines": 431,
+      "sha256": "3cf3474bf1f77f72b89f24418a5019da895deeef509e798860c39fb3adcd3e5e",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/inventory/catalog/page.tsx",
+      "lines": 142,
+      "sha256": "2cdd714bc948166efc55b6443a814e873717a88edb3558ed0b924f8bcf57162c",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/inventory/inbound/actions.ts",
+      "lines": 131,
+      "sha256": "67d1f1c08e7b13efecd547c42c3b449d4421002367ac4574be972d8e94fd3ceb",
+      "tables": [
+        "garments_inventory",
+        "inventory_locations",
+        "inventory_movement_history"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "getInboundHistory",
+        "findSuitForPutaway",
+        "putAwaySuit"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/inventory/inbound/page.tsx",
+      "lines": 142,
+      "sha256": "8bb2e617987cf9bd4e409c0ff28149c5f426f67fadbcb817890cf33f191de5ab",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/inventory/inbound/putaway/page.tsx",
+      "lines": 57,
+      "sha256": "c501cc667b0cb030828616560560f11c5b1abe30c82108074dbbdbca42d9e50b",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/inventory/locations/actions.ts",
+      "lines": 338,
+      "sha256": "7f8c77fab5d70fa911a6c1543fbbb93615c64cd4eb837f7877ce5eaefaa8f115",
+      "tables": [
+        "app_settings",
+        "garment-images",
+        "garments_inventory",
+        "inventory_locations",
+        "inventory_outbound_sessions"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "getAssetOverview",
+        "getCustomLocations",
+        "addLocation",
+        "deleteLocation",
+        "saveLocationOrder",
+        "updateLocationNotes",
+        "renameLocation",
+        "getLocationOrder",
+        "getProductsByLocation",
+        "generateSequentialLocations",
+        "searchProducts"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/inventory/locations/generator/page.tsx",
+      "lines": 249,
+      "sha256": "62382547f175d11675a21c5a3276aafd7c3dea9f7ffca1cddde0c2d3796564c1",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/inventory/locations/page.tsx",
+      "lines": 217,
+      "sha256": "774a65f5ecd6c77d5f012a42f1e3f432d365eb34d29dc4e58115ac5e44033f49",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/inventory/locations/qr/page.tsx",
+      "lines": 182,
+      "sha256": "424292bf43a818d540ad400633a553568a1382e11fc9db1b74309404c2ade897",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/inventory/outbound/actions.ts",
+      "lines": 146,
+      "sha256": "24fe8f51264474d571bc6afb594ea3321aa6f970d3ceb0960746b86c8ffd939e",
+      "tables": [
+        "garment-images",
+        "garments_inventory",
+        "inventory_outbound_sessions",
+        "orders"
+      ],
+      "rpc": [
+        "process_inventory_outbound"
+      ],
+      "exported_async_functions": [
+        "getOutboundHistory",
+        "getOutboundOrders",
+        "searchGarmentInstance",
+        "submitOutbound"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/inventory/outbound/new/page.tsx",
+      "lines": 456,
+      "sha256": "8a96d144f38f8a0baecf812cd35db6e6c96a14a79b7de94fa6d63c01f9c20e39",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/inventory/outbound/page.tsx",
+      "lines": 102,
+      "sha256": "899e3fb2e54ead21a5283a12c3aac9b558efbb578292905f516728e5397c9f39",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/inventory/page.tsx",
+      "lines": 5,
+      "sha256": "5bfaa42928ff2e224fffa0e750f11c004c94f6952b2e7df933bb7f1685714644",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/inventory/scan/page.tsx",
+      "lines": 9,
+      "sha256": "5e200fde33f62fc20b8060292a26d92e8113711f01596a1d4dc53669eb0fd27c",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/kpi/page.tsx",
+      "lines": 125,
+      "sha256": "fa6d1a01b9ce914980da2d8c7588c73d7df171130fb1a704e6f1894e06f49578",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/layout.tsx",
+      "lines": 303,
+      "sha256": "20a02416fbed1acfc04a1c4b05625aabaf6a338d7b68b88042c127d9b9cea0fe",
+      "tables": [
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/loading.tsx",
+      "lines": 10,
+      "sha256": "f496adc1ad4a98caeb8fb6eb864428e6f224510d8b4e709974ecf5cb1507b2c9",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/marketing/actions.ts",
+      "lines": 177,
+      "sha256": "e032abca3d2bf462d8ed8acca8675a2cf8c6758e7fc0a94ba495fef0b78b0381",
+      "tables": [
+        "marketing_contents"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "getMarketingContents",
+        "createMarketingContent",
+        "getMarketingContentById",
+        "updateMarketingContent",
+        "deleteMarketingContent",
+        "syncSocialMetrics"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/marketing/contents/[id]/edit/page.tsx",
+      "lines": 453,
+      "sha256": "c2e39e8ed88b024f4f8a26555198f95fed3c5c9df6d287991d08f536f8da6a27",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/marketing/contents/[id]/page.tsx",
+      "lines": 271,
+      "sha256": "50d509c40c72369afdbc12aac36c55b2d50bc7bcd9176aae9fa53d0f509d6685",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/marketing/contents/page.tsx",
+      "lines": 199,
+      "sha256": "965fbf275fdef8246f0d07d77c5ea9671cb9808b17caae2203b0728e0c49f170",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/marketing/cross_module_actions.ts",
+      "lines": 128,
+      "sha256": "c400fb64c082b38e341012cb497cab05367315bdc02c9a0b3182592f147b2816",
+      "tables": [
+        "customers",
+        "marketing_contents",
+        "operations_tasks",
+        "payroll_bonuses"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "createShootingTaskFromCampaign",
+        "calculateCampaignROI",
+        "evaluateCampaignKPI"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/marketing/ideas/[id]/page.tsx",
+      "lines": 244,
+      "sha256": "eb4d1d1e7f4e2b8d0287cfc29a6bfb4650e6df042a2e5449ad28f6bad1cb5ffb",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/marketing/ideas/[id]/preview/page.tsx",
+      "lines": 224,
+      "sha256": "5aae44bcb94a33534fcfe906669fe77a07e15d2f4f1bea591cea49110cb832c6",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/marketing/ideas/page.tsx",
+      "lines": 368,
+      "sha256": "411547730fbff8232a70ae4726fbc2a6aa0fd777d14efc56531fb3d6ad532148",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/marketing/manager/page.tsx",
+      "lines": 69,
+      "sha256": "efdede7400a6ec23cdb399d90a514f70b5e3f08144d4b50e734fbeb2f6b34f41",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/marketing/page.tsx",
+      "lines": 269,
+      "sha256": "fc281818bedee4c51dd0bfa1cf323c48bc248c0d0db4cde8d372169571d7ed6b",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/order-incidents/actions.ts",
+      "lines": 79,
+      "sha256": "3438598b9584410a83dd205bbe39dbdccd0c4a007ade654a3e93572c3b023672",
+      "tables": [
+        "garments_inventory",
+        "order_incidents",
+        "orders"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "updateIncidentStatus"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/order-incidents/incidents-client.tsx",
+      "lines": 109,
+      "sha256": "8c7c0558680fe935434a004e0952cc5c0196770d39b2e9bf4f5de8e596d5dd4d",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/order-incidents/page.tsx",
+      "lines": 25,
+      "sha256": "c510a74dc760ed37812c7b3675a74ffb0529bd0b8b852a6daa65ef6def129206",
+      "tables": [
+        "order_incidents"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/orders/[id]/order-detail-client.tsx",
+      "lines": 981,
+      "sha256": "6adc97aaeaeb6d931813891c3a6d811506d528b6eb1b30fdb1c563e880c206d3",
+      "tables": [
+        "contract_files"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/orders/[id]/order-detail-mobile.tsx",
+      "lines": 612,
+      "sha256": "8b5bd4f12908b19880547cd80bf3ea256b078759d5172259ff60830f46ef452a",
+      "tables": [
+        "contract_files"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/orders/[id]/page.tsx",
+      "lines": 20,
+      "sha256": "28abca26ec65b08129967fd6f25a8b857210c1482eac9bc62d74c98c3a3520eb",
+      "tables": [
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/orders/actions.ts",
+      "lines": 459,
+      "sha256": "023e9f90f2177cb1a465474e2d89bdc224444ce80a6afdb0107c5609a6bd754d",
+      "tables": [
+        "contracts",
+        "garments_inventory",
+        "inventory_movement_history",
+        "order_incidents",
+        "orders",
+        "payroll_deductions"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "getOrders",
+        "updateOrderStatus",
+        "updateOrderChecklist",
+        "saveOrderNotesAndImages",
+        "createOrder",
+        "getOrderById",
+        "deleteOrder",
+        "updateOrderQAStage",
+        "reportOrderIncident",
+        "updateOrderPic"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/orders/create/create-order-client.tsx",
+      "lines": 199,
+      "sha256": "636ded30d146795dbb5a5ce2589b92aee519d95f18ab96e8f406dc578d99fc5a",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/orders/create/page.tsx",
+      "lines": 23,
+      "sha256": "87577b6c680e0e45a084876710a3e46477627f2c461a27316d6896ce0aa418f1",
+      "tables": [
+        "contracts",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/orders/orders-client.tsx",
+      "lines": 649,
+      "sha256": "ea196ee839e8e194ac9b74fc19374b35bfc443086e3ab7cc9b23c8bdff9e4c15",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/orders/page.tsx",
+      "lines": 22,
+      "sha256": "0fce91f22f007ef923610f0dc78dab813376c839d9b7bccb1ff6196f3657819b",
+      "tables": [
+        "contracts",
+        "departments",
+        "teams",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/orders/return-scanner.tsx",
+      "lines": 193,
+      "sha256": "da14ab8b2e182af3ef55d660e8329453ac1bd75e95589a78028fd9aa254788d9",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/org-chart/org-chart-view.tsx",
+      "lines": 238,
+      "sha256": "ceb7a89baf8dfd04ca0cf9fb32c8730cdf36ac29884b2cbd29118eb0dbd3d542",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/org-chart/page.tsx",
+      "lines": 30,
+      "sha256": "8be95526234d3d0ff06c7d4376749efa9f411b2c3e5b54eebecc347eb04ec702",
+      "tables": [
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/overdue-invoices/page.tsx",
+      "lines": 11,
+      "sha256": "85959eda62917aae6c9251ee9673a0192f1093dfe418b0d2749207f6b1fa2417",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/page.tsx",
+      "lines": 223,
+      "sha256": "c7f5535e853bbf202fe09dfeeedd84f992691fe7cf9f7f3fa38c69f4587730be",
+      "tables": [
+        "operation_schedules",
+        "orders"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/payroll/page.tsx",
+      "lines": 231,
+      "sha256": "b8e9c1ed283abd8991aeb93b9401988adefef5d97b6b59b468caf4b1ed583f08",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/permissions/actions.ts",
+      "lines": 239,
+      "sha256": "f8d790e8e17211c7a2e6a4fed4e1af98ba3d42a3f1be4ddf1511fa1160c0b93b",
+      "tables": [
+        "modules",
+        "role_permissions",
+        "roles",
+        "user_permissions",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "getRolesAndModules",
+        "getRolePermissions",
+        "saveRolePermissions",
+        "getEmployeesAndUserPermissions",
+        "saveUserPermissionsByModule",
+        "getAllEmployees",
+        "getUserPermissionsByEmployee",
+        "saveUserPermissionsByEmployee"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/permissions/page.tsx",
+      "lines": 10,
+      "sha256": "b3962550fa89f709c1322843f08ed8401be4fa2bdb8cbb305d410b98ee0c669a",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/permissions/permissions-view.tsx",
+      "lines": 465,
+      "sha256": "87c3c2cdae4b59f7218eb1f31c9b2bd0934f30867f32e1445a14e8a2e71a9632",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/policies/[id]/page.tsx",
+      "lines": 101,
+      "sha256": "7e73f88d1532f116735d70e6aac1bbe8afff4c4ab5c51c6771d2db26eec8a7ba",
+      "tables": [
+        "departments",
+        "roles",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/policies/actions.ts",
+      "lines": 90,
+      "sha256": "0386e333647e6fa0c520c87196a8a17192c93a1d8345111c4e05c5af3218f27b",
+      "tables": [
+        "policies",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "getPolicies",
+        "savePolicy",
+        "deletePolicy",
+        "getPolicyById"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/policies/page.tsx",
+      "lines": 34,
+      "sha256": "2fb91907f225755a0cd0e4d75d7c3dd6b8880e1f8cf73fcea37989830d080c1a",
+      "tables": [
+        "departments",
+        "roles",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/policies/policies-view.tsx",
+      "lines": 137,
+      "sha256": "71f7a8480f51c6e9718c57ec427554e57049de28f8d70f902e1f6b554710e4b9",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/policies/policy-dialog.tsx",
+      "lines": 369,
+      "sha256": "43fbc938358439fd0e5e280d78fd4812ec5e1910f639addfdbc62ae0de419d07",
+      "tables": [
+        "policy_files"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/profit/page.tsx",
+      "lines": 11,
+      "sha256": "af526a28c876c37069115f354fa76954630c246f2fe4044f14cbf66198458a48",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/quick-contract-modal.tsx",
+      "lines": 126,
+      "sha256": "fc7001acae5389fdea5603b05eb1fdcc53e12629a12b9ae16f60884ced73c728",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/recruitment/page.tsx",
+      "lines": 112,
+      "sha256": "7311c0db50faa895edbdbe38290787c2ab1616a6e3559567536071239e530a51",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/sales/page.tsx",
+      "lines": 165,
+      "sha256": "070d398c530bade64f64012aca0595018dbbc8b717b8d8f951fcdd8e60d844d6",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/sales/sales-charts.tsx",
+      "lines": 146,
+      "sha256": "0b571f40a997e4fb495fcf92394f9bd60918d3ee15e7dffd832d463066662ffb",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/sales-kpi-card.tsx",
+      "lines": 91,
+      "sha256": "0bd97b358fa083728e04a35c4b844c3c1ff42d782ead8493e37facb27415a490",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/schedules/operation/actions.ts",
+      "lines": 426,
+      "sha256": "b2f489ca753b5189feffe139f7ddcab5440a90a9c8c8acd0b42790e16988d3f4",
+      "tables": [
+        "attendance",
+        "contracts",
+        "operation_schedule_assignees",
+        "operation_schedules"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "getOperationSchedules",
+        "completeInternalTask",
+        "createOperationSchedule",
+        "updateOperationSchedule",
+        "deleteOperationSchedule"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/schedules/operation/operation-schedules-view.tsx",
+      "lines": 681,
+      "sha256": "337dcb52fd0314e5bd18141af5880900912868e255707eb0b58f2dccd18c8cef",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/schedules/operation/page.tsx",
+      "lines": 32,
+      "sha256": "ac9152225e55c1fd06c0735e1fe15fde713fa2b52b0685ff7699dd4b3a6bd92f",
+      "tables": [
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/schedules/page.tsx",
+      "lines": 6,
+      "sha256": "1c3ba46212582eec47d4c14f52f98a4f839865112d7b4adb3a84abffdc5e636a",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/schedules/staff/actions.ts",
+      "lines": 153,
+      "sha256": "d1aa689358640951da7e3d7fc710f756c3eee817d3a54746fbfe1fad97945b58",
+      "tables": [
+        "staff_schedules",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "getStaffSchedules",
+        "createLeaveRequest",
+        "updateApprovalStatus",
+        "createWeeklySchedules"
+      ]
+    },
+    {
+      "path": "src/app/dashboard/schedules/staff/page.tsx",
+      "lines": 40,
+      "sha256": "1927a75b5c4254821b741180908b7c6609c1f4e6b873a8709aa8de29f4309c2b",
+      "tables": [
+        "departments",
+        "roles",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/schedules/staff/staff-schedules-view.tsx",
+      "lines": 537,
+      "sha256": "722d3d83e5dd2f67b44071786a2b8c3fe2610d983e7c80384a95bde191d91ba0",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/subscriptions/page.tsx",
+      "lines": 11,
+      "sha256": "4e62082de3922ea44019a1f5742ab8a13ec45d6fc729fe9eed959eef4af50ec1",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/training/exams/[id]/page.tsx",
+      "lines": 208,
+      "sha256": "b22a570a85a38e11c76b81b73a390a6b9317eeaf1a912ae7f3f6bb88a84499ed",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/training/exams/page.tsx",
+      "lines": 91,
+      "sha256": "41cc5adb75eba64e0a2f5351eff40588d18cb31c551cf9fe4a6b8117595516c0",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/training/page.tsx",
+      "lines": 144,
+      "sha256": "99f7b7fe3fe9a3d6b8bc3ac836e57e1f7b727f7f3b12d6b6c225dc50d73d99c9",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/dashboard/user-guide/page.tsx",
+      "lines": 40,
+      "sha256": "fd4f9529a74a959f4b46f24686c93cb2c5498fbc92d746506cabc97ea1f78602",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/layout.tsx",
+      "lines": 46,
+      "sha256": "4e8a4c8410139b8280a86c5ed12e3ad71017660e096787c5285aa7f82a7c2c7b",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/app/page.tsx",
+      "lines": 32,
+      "sha256": "420a5cfee306bd1a7d2b6dff2f1dd1ae8730ae951c30e4789d8b7e9c055fd458",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/components/AttendanceWidget.tsx",
+      "lines": 128,
+      "sha256": "c1a4ee6ed625b7a034feda5c19398ef4ce9446054ddd442a8108d0f338927d31",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/components/marketing/ContentDetailModal.tsx",
+      "lines": 300,
+      "sha256": "871d57b933752aef1f564850649f0e2e0e1941adb8a3f522a1e97aeb10e41dfe",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/components/marketing/ContentTableView.tsx",
+      "lines": 151,
+      "sha256": "7a8eab0bc7e582716706a636f0721768c8c2c052b261c5386a21f57d6c065d06",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/components/ocr-scanner.tsx",
+      "lines": 243,
+      "sha256": "41c86444ed8edabf20fa75d5d600b92d1bb19dc9162f7b3687f993d1465c595d",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/components/qr-scanner.tsx",
+      "lines": 138,
+      "sha256": "626b8ad6f4000583c6ebab75eff707cd28080cc33b8cdfcf374dc293b3960e61",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/components/ui/date-picker.tsx",
+      "lines": 105,
+      "sha256": "7712e32396cef61d85ac449062d25072430db4e9af53922a4ca2bf74fb4dcdee",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/components/universal-scanner.tsx",
+      "lines": 237,
+      "sha256": "671edb1441fd30aa556b43689c6856da0f38a3b0d71a335bae6802bb6c0f3e67",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/components/warehouse-map-selector.tsx",
+      "lines": 243,
+      "sha256": "7d6c30e3c29ee25d5cc08d1c26bba957010cf50ca99a1ba57a35da5a3d648c1e",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/config/moduleRegistry.ts",
+      "lines": 606,
+      "sha256": "23c60676f79d32f4eb4b5fec3703ee09e24f70c90ae10b4eec31eda1ee1aa52c",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/hooks/use-layout-scale.ts",
+      "lines": 26,
+      "sha256": "3369b6fe63056042892090f52cb91c0d8ce5b1bcce85f4220ac1411b83d9fade",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/hooks/use-permissions.ts",
+      "lines": 50,
+      "sha256": "be8951b99382d41872e5e5257ffbba6a345a67e4ef8f9e1f1b2c63eddc615141",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/lib/firebase.ts",
+      "lines": 29,
+      "sha256": "be8acb284ef8ddd4fbca23221876d1c02ab49a1e770062461916404e914c4d27",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/lib/inventory-asset-prefetch.ts",
+      "lines": 56,
+      "sha256": "bb29743ffc2ebce34d3524391b1dc917a50766814b12a6d9e0c68975fc2669fb",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/lib/rbac.ts",
+      "lines": 155,
+      "sha256": "c08054da928af3d74a55532b6b04a601b966e04a233e78725dc65ad7c620dfc0",
+      "tables": [
+        "role_permissions",
+        "user_permissions",
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "requireActiveUser",
+        "getUserPermissions",
+        "requirePermission"
+      ]
+    },
+    {
+      "path": "src/lib/supabase/admin.ts",
+      "lines": 14,
+      "sha256": "2eb7bce3258a038283b22a8173555c668c0ae0ce51dd8bc291632332476a0ed3",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/lib/supabase/auth-cookie.ts",
+      "lines": 8,
+      "sha256": "43b1483e99d5e13ef2808c0294dcd3e433f21924e8ef1f5a0a6b7953373b0533",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/lib/supabase/client.ts",
+      "lines": 10,
+      "sha256": "b02715d08d386b589abba25dcde57ae39a34c4810314f56ba56d038998e37dfa",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/lib/supabase/server.ts",
+      "lines": 38,
+      "sha256": "424293f468a4767544eac11cd59d0377e7cab831b49627b392aacb6d5fd72413",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/lib/sync-modules.ts",
+      "lines": 22,
+      "sha256": "d376c06675b2b95681ebdbe0559161b8e33073be0b92457a2fe7d300c47be2dd",
+      "tables": [
+        "modules"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "syncModuleRegistry"
+      ]
+    },
+    {
+      "path": "src/lib/utils.ts",
+      "lines": 6,
+      "sha256": "51bbf14cd1f84f49aab2e0dbee420137015d56b6677bb439e83a908cd292cce1",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "src/middleware.ts",
+      "lines": 111,
+      "sha256": "9c4bde09db00dee1ef649c1d8053197da4fe5d5204725f9af2b28cc6fc30f57c",
+      "tables": [
+        "users"
+      ],
+      "rpc": [],
+      "exported_async_functions": [
+        "middleware"
+      ]
+    },
+    {
+      "path": "src/utils/code-generator.ts",
+      "lines": 40,
+      "sha256": "465f1fb6715ecd54f3e638a69017b35098b8109886f2ccacf5bfd158acfc2254",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": [
+        "generateSequentialCode"
+      ]
+    },
+    {
+      "path": "supabase/migrations/20260731000000_initial_schema.sql",
+      "lines": 135,
+      "sha256": "5285abd505bd67a8d33796808f5c106b5f5d224194be3f8d6cfb345495fb1284",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000001_phase2_crm_contracts.sql",
+      "lines": 92,
+      "sha256": "ab336085da67463dd416dae1bf5394c940c84961599dfd79575650ad7e8de379",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000002_phase3_enterprise_contracts.sql",
+      "lines": 154,
+      "sha256": "039017430076758ea8f78436763d3f129835fb4a333841e6d3f57c59c5c14159",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000003_rbac_system.sql",
+      "lines": 207,
+      "sha256": "495ac90789837f1c91b0b04ccf774a87a4a94a0ad48400a9ae5395a89918b8ff",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000004_phase4_schedules_policies.sql",
+      "lines": 76,
+      "sha256": "04784157ca42c3d0ddadd5b611a5e6ce4e984118d0162cc1a6efe6375d7a2a82",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000005_add_policy_attachment.sql",
+      "lines": 37,
+      "sha256": "96dad2fbfc67eb8a45342877e55c8d2f6c4878e51eb9fe359b488dbef37a48f0",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000005_split_schedules.sql",
+      "lines": 115,
+      "sha256": "94c12f48f34609c3aee0198484142ab9b5d826ad576dc31626d0fd1c0b0a0bc1",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000006_booking_schedules.sql",
+      "lines": 31,
+      "sha256": "8fcf90e29f5c2fa795b78cf784c7f60f2d767cf478170cf0ed431e92ad57c3c4",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000006_fix_operation_schedule_fk.sql",
+      "lines": 7,
+      "sha256": "b715b9739ebfb676cd1874e0dbd2fe145b27459bc77ee85fe57dad0df8896228",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000007_add_orders_module.sql",
+      "lines": 17,
+      "sha256": "28d306db18a1f017ac8f4b7d57714ab0fe7c10ce2c8561ac05329689b1e443ab",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000008_unified_schedules.sql",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000009_customer_crm_fields.sql",
+      "lines": 9,
+      "sha256": "d01cbe1b008d2ed2c5bb80e297f6c836f3ea410fa4e277949dfa760232c5503a",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000010_leads_pipeline_fields.sql",
+      "lines": 10,
+      "sha256": "64b5afc154e104214929cbbf5381de022bde9c77db98c70ac5009e604d01901c",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000011_crm_orders_cskh.sql",
+      "lines": 49,
+      "sha256": "bc8027fbb969692ee307c5060de4505aa08581c3d3aa193520047c118c1e5bf6",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000012_orders_enhancements.sql",
+      "lines": 21,
+      "sha256": "b50cb91429fd665632966d8b1d54f2542ccdc2591485bd6e5794b1a270da8354",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000013_make_order_contract_optional.sql",
+      "lines": 6,
+      "sha256": "69b535bc2f94f2c71121b9d67f6403ce607222ed9b4db4a7c03fae3fdf1e51d9",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000014_fk_order_schedules.sql",
+      "lines": 10,
+      "sha256": "dce5a10b98af4ff8de96ab31761ee08fc10a54235008097c4509b98c792ba936",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000015_position_department.sql",
+      "lines": 8,
+      "sha256": "b41f841dab31e480b0295b04d35be6038c1fddd6674a98f404aaff7e26bc6f09",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000016_garments_inventory.sql",
+      "lines": 42,
+      "sha256": "6e13e07816ac326e0956d6cb4178d972f9cf7fc3e1b557b3d7b3a6d683598e5b",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000017_attendance_logs.sql",
+      "lines": 23,
+      "sha256": "a1693a07c1d91144bf7e5048f81c3977d7f500705b36a330e9d440f5784bc2d3",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260731000018_marketing_content.sql",
+      "lines": 26,
+      "sha256": "62c364e24bb65923d9d6293c5ea695778d9aa222b6836da42ab70cafdd508920",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260804000000_add_missing_modules.sql",
+      "lines": 26,
+      "sha256": "c61c71802aa75edab022ff2db97a423d4092dc2ec7af1b818280a6482693f816",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260804000001_add_image_urls.sql",
+      "lines": 2,
+      "sha256": "2addf4ab0f757d149698989cfeca3488f79d25eeb06d378a2283f707a4b867a9",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260805000000_marketing_enhancements.sql",
+      "lines": 34,
+      "sha256": "5896feda9f45fba4316cf6b90c83c02c8bb3a302b181736ef1ddc2a5129371cc",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260805000001_marketing_v3_schema.sql",
+      "lines": 12,
+      "sha256": "b6ee053847c7b5a93135b4f2f8b2aba7c71f66036620b26fe6622260a62d9e2d",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260805000002_marketing_v4_schema.sql",
+      "lines": 28,
+      "sha256": "fb5d171c121fc2d7055d28e131bb7d8df6454d67da6fda1fea6548ddb0fb1415",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260806000000_performance_metrics.sql",
+      "lines": 54,
+      "sha256": "2d4974b4da844bab2e263729b20f4fcf640c57a959cc7d515b14fe228e53a962",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260806000001_marketing_v10_schema.sql",
+      "lines": 4,
+      "sha256": "323eeb367d2a9e17c9f8bf2c75c91b2bfb21a71077114dddd849125181a6ce87",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260811150000_contract_multi_events.sql",
+      "lines": 11,
+      "sha256": "9c67ee23d9c3a5335f69ae23d56d4558da7e43070cb665d59208fbdd2385dd94",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260812000000_customer_care_and_orders.sql",
+      "lines": 31,
+      "sha256": "c79240768dcf42f251bd681c4b06704c64895b6478fd4b3b33fdfd0db9ac4a2f",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260812150000_rename_customer_service_to_journey.sql",
+      "lines": 11,
+      "sha256": "6b64e8f605f94fb005dfb390506859dc17d85dfa05343ad37270473594d24b7a",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260812160000_add_journey_data.sql",
+      "lines": 6,
+      "sha256": "65909379591a7089cee34322a86bc4458874b6796fc613f8104a7190db3e1414",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260813000000_auto_create_order_trigger.sql",
+      "lines": 34,
+      "sha256": "a19132726fd8b8496054e8e3700a1e5ea62edae45783eb2d4bc67f7465ae4c89",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260814000001_contract_version_history.sql",
+      "lines": 169,
+      "sha256": "cf8dfea22404969787339d1616e64ecb6a984881823ff21b2d40b63a3723904d",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260815000000_add_qa_stages.sql",
+      "lines": 3,
+      "sha256": "86443e95afc6a917e445c4b7ec47829bb47f4f90fedb5d266e6136b5b0cc26aa",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260815154039_upgrade_garments_schema.sql",
+      "lines": 47,
+      "sha256": "a1c7f27878f6c36fe7af73d4450daaecb1d63ed74b7eade1ff15cfb569a8e148",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260815234000_split_contracts_types.sql",
+      "lines": 17,
+      "sha256": "cd29b9e504366d91fd0b762a5f0106ce7010928e5360ac43ae9a37a657896b2a",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260816230500_group_inventory_schema.sql",
+      "lines": 55,
+      "sha256": "5cd0561d9264810b7249a61669ecbb4f61d7cd901a068aab79b0ee5454de02df",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260817000000_phase4_incidents_schema.sql",
+      "lines": 10,
+      "sha256": "d34e8de6cea281381b43d4e49bb15cf1a444ac520a9dd6c46830d48af0f5ad36",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260817000001_master_instance_inventory.sql",
+      "lines": 114,
+      "sha256": "3559f70a35a9193eb5971ce393b11ab6798d6a3e0b1b9ad84c940a2fb3140628",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260817000002_add_tag_image.sql",
+      "lines": 1,
+      "sha256": "6b87e5646c51a932dfc9a25e20ccd93e8de61e0f84837644b0a0f14421fffd89",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260817000003_audio_feedback.sql",
+      "lines": 5,
+      "sha256": "7dec39ad2784a45d78e4fb5647afa0be1427fac33c9c28472d3573d42ad9eb5c",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260818000001_master_data.sql",
+      "lines": 75,
+      "sha256": "6ac63d10c585e961fddc6c1d77339dbe6e5e478d481017bdacdcfe9fe3710b2c",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260818000002_inventory_locations.sql",
+      "lines": 36,
+      "sha256": "3692b0e9da0c8305440e0fd47fb0cf345cfbc3e8e4ca24a5612f3d996bead5d5",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260818000003_inventory_audit_workflow.sql",
+      "lines": 227,
+      "sha256": "905869c81ce63c0814dcb4e5eeb7f3e5b56eb56623f38fd7bb502f76e8c942b0",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260818000004_garment_images_bucket.sql",
+      "lines": 25,
+      "sha256": "a1ee173bbc8c03059b48e4bb3c2189b1d49141fe8b403965740acf68f74a9c41",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260819000001_inventory_rbac.sql",
+      "lines": 180,
+      "sha256": "7a26d3448c508e9bca264d1a031d38bb551b75eee02e3e629ce4f8d5255ccb61",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260819000002_garment_models_supplier.sql",
+      "lines": 104,
+      "sha256": "ef19207068ea85dc61fb8815f53040ca5fbe0a382b4b24946d5e33f8a69585c3",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260819000003_fix_director_rbac.sql",
+      "lines": 73,
+      "sha256": "69a2815db92144a53406a780fcbce334e0c0186f72a90a9699622f338ff552fb",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260819000004_inventory_outbound.sql",
+      "lines": 70,
+      "sha256": "e09cad39251b618932316e1409e82a58a609419e355c0fa535975f6b3d931f45",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260827000001_outbound_order_link.sql",
+      "lines": 54,
+      "sha256": "75f5c5b880f214759406b6e62d4c655f77f970664385047fb7a3f0463dd82c57",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260827000002_inventory_position_qr_module.sql",
+      "lines": 25,
+      "sha256": "5d49954120adef75fbee8fa142de34df3f29a56c5f17c2f2d60e172415991cd9",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260828000000_add_expected_return_date.sql",
+      "lines": 53,
+      "sha256": "f608843a78754016880fe5d488df1cd97299fd444aa74f2b30ae8e201653603c",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260828000001_remove_contract_id_not_null.sql",
+      "lines": 2,
+      "sha256": "2146ea221b9dcb554ec4482cd6682498262884c55423d04f3181b7edb0eb4d65",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260829000001_fix_roleless_user_permissions.sql",
+      "lines": 60,
+      "sha256": "9e11895508979b09caccdd293198f5600612c4a565f8b898813515311a80e55a",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260829000002_fix_garment_sku_trigger.sql",
+      "lines": 36,
+      "sha256": "1824be5f34f85ead59820e6d36b70763aa971a5544447cffd97e5460eb97f05b",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260829000002_sync_contract_event_orders.sql",
+      "lines": 141,
+      "sha256": "d256a32976c17645cbb519bd98f7f95832156d2caea0f3064eabfd88dd22fabc",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260829000003_fix_inventory_declaration_json_line.sql",
+      "lines": 29,
+      "sha256": "809173784c1a924555c4bf7e21aafdccdbe9cd5cd5ecb870fe5e828faf0060cc",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260829000004_inventory_intake_schema_repair.sql",
+      "lines": 112,
+      "sha256": "5cd738f0cb6f9d07e434acd0b183af9905d535d591ae1b7032d8989c35890c7e",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260829000005_inventory_factory_size_codes.sql",
+      "lines": 183,
+      "sha256": "402f44b0b8b5256a54eb91653ae33a54899d4681a6e887d22d3b58dd07aca3fa",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260830000000_add_floor_02_locations.sql",
+      "lines": 5,
+      "sha256": "b9fa7acfa5c0e7de505cc8d690a2e9903f9dc6a3fb0f8c325468a597b1158f73",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260830000001_backfill_inventory_product_codes.sql",
+      "lines": 84,
+      "sha256": "f4be0036fd2e2dae81df5e4741bbc8b1e583575f6d18190d436c5fc769bd2a79",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260830000001_order_incidents.sql",
+      "lines": 93,
+      "sha256": "8a56b0e4d0895a23f92b63064bd3b1beeae24dd5e367689136fe3a648d9d7214",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260830000002_add_user_guide_module.sql",
+      "lines": 20,
+      "sha256": "602572b963ce21eadc6c84424d1d2c902c41c8cb7eddebadffcc90fbe7324349",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/20260831000000_garment_incident_putaway.sql",
+      "lines": 43,
+      "sha256": "37c385e5cfda61454fc05d1eebfbe8fb7fdca728c1cab9f668c9d95012e3df5e",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    },
+    {
+      "path": "supabase/migrations/seed-lookups.sql",
+      "lines": 23,
+      "sha256": "3f07f6a971198da2477e9f4c0ba1f32a96451a73cb622016cd65e7767fefd090",
+      "tables": [],
+      "rpc": [],
+      "exported_async_functions": []
+    }
+  ]
+}

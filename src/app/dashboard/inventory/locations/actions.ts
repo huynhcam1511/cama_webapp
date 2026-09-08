@@ -31,7 +31,7 @@ export async function getAssetOverview() {
   const [assetsResult, outboundResult] = await Promise.all([
     supabase
       .from("garments_inventory")
-      .select("id, name, sku, qr_code, size, size_code, status, image_url, location_floor, location_shelf, location_tier, updated_at, model:garment_models(name, base_sku, group_type, image_url)")
+      .select("id, name, sku, qr_code, size, size_code, status, image_url, factory_code, color, color_code, location_floor, location_shelf, location_tier, updated_at, model:garment_models(id, name, base_sku, group_type, color_name, color_code, image_url)")
       .order("updated_at", { ascending: false }),
     supabase
       .from("inventory_outbound_sessions")
@@ -96,12 +96,35 @@ export async function getAssetOverview() {
 
 export async function getCustomLocations() {
   const supabase = await createClient();
-  const { data, error } = await supabase.from('inventory_locations').select('*').order('created_at', { ascending: true });
+  const { data, error } = await supabase.from('inventory_locations').select('*');
   if (error) return { success: false, error: error.message };
+
+  const collator = new Intl.Collator('vi', { numeric: true, sensitivity: 'base' });
+  const floorRank = (floorName: string) => {
+    const normalized = (floorName || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+
+    if (normalized.includes('kho ao')) return 0;
+    if (normalized === 'tret' || normalized.includes('tang tret')) return 1;
+
+    const floorNumber = normalized.match(/\d+/)?.[0];
+    if (floorNumber) return 2 + Number(floorNumber);
+
+    return Number.MAX_SAFE_INTEGER;
+  };
+  const sortedLocations = [...(data || [])].sort((left, right) =>
+    floorRank(left.floor_name || '') - floorRank(right.floor_name || '') ||
+    collator.compare(left.floor_name || '', right.floor_name || '') ||
+    collator.compare(left.shelf_name || '', right.shelf_name || '') ||
+    collator.compare(left.tier_name || '', right.tier_name || '')
+  );
 
   return {
     success: true,
-    locations: (data || []).map(loc => ({
+    locations: sortedLocations.map(loc => ({
       floor: loc.floor_name,
       shelf: loc.shelf_name || "",
       tier: loc.tier_name || "",

@@ -151,18 +151,48 @@ export default function InventoryDeclarationPage() {
     return Array.from(new Set([...masterSizes, ...defaults]));
   };
   const effectiveFactoryCode = missingFactoryCode ? generatedFactoryCode : form.factory_code;
-  const previewSku = [
-    form.group_type || "NHÓM",
-    ...(form.group_type === "SU" ? [form.suit_product_type || "LOẠI"] : []),
-    form.style_details || "FORM",
-    (form.group_type === "SU" ? form.pattern_code : form.material_pattern) || "CHẤT_LIỆU",
-    form.color_code || "MÀU",
-    effectiveFactoryCode || "MÃ"
-  ].join("-");
+  const normalizedFactoryCode = (effectiveFactoryCode || "MÃ-NSX")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "");
+  const previewSku = `${normalizedFactoryCode || "MÃ-NSX"}-{SIZE}`;
+
+  const compressImageForUpload = async (file: File) => {
+    if (!file.type.startsWith("image/") || file.size < 400 * 1024) return file;
+    try {
+      const bitmap = typeof createImageBitmap === "function" ? await createImageBitmap(file) : null;
+      const image = bitmap || await new Promise<HTMLImageElement>((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const element = new Image();
+        element.onload = () => { URL.revokeObjectURL(objectUrl); resolve(element); };
+        element.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Không đọc được ảnh")); };
+        element.src = objectUrl;
+      });
+      const maxDimension = 1600;
+      const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) return file;
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      if (bitmap) bitmap.close();
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/webp", 0.82));
+      if (!blob || blob.size >= file.size) return file;
+      const baseName = file.name.replace(/\.[^.]+$/, "") || "cama-image";
+      return new File([blob], `${baseName}.webp`, { type: "image/webp", lastModified: Date.now() });
+    } catch {
+      // HEIC and a few older mobile formats may not decode in-browser; keep the original.
+      return file;
+    }
+  };
 
   const uploadFile = async (file: File) => {
+    const optimizedFile = await compressImageForUpload(file);
     const body = new FormData();
-    body.append("file", file);
+    body.append("file", optimizedFile);
     const result = await uploadGarmentImage(body);
     if (!result.success || !result.path) throw new Error(result.error || "Không tải được ảnh.");
     return result.path;
@@ -314,7 +344,7 @@ export default function InventoryDeclarationPage() {
               <label className="label sm:col-span-2 lg:col-span-1">Màu sắc<select required value={form.color_code} onChange={e => { const c = colors.find(x => x.code === e.target.value); setForm({ ...form, color_code: e.target.value, color_name: c?.name || "" }); }} className="field"><option value="">Chọn màu...</option>{colors.map(x => <option key={x.code} value={x.code}>{x.code} — {x.name}</option>)}</select></label>
               <div className="sm:col-span-2 lg:col-span-2 rounded-xl border border-slate-200 bg-white p-3"><div className="flex items-center justify-between gap-2"><label className="label !text-slate-700">Mã mẫu trên mác</label><button type="button" onClick={() => { const checked = !missingFactoryCode; setMissingFactoryCode(checked); if (checked && !generatedFactoryCode) setGeneratedFactoryCode(`AUTO-${crypto.randomUUID().slice(0, 6).toUpperCase()}`); }} className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors ${missingFactoryCode ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500"}`}>{missingFactoryCode ? "Đang dùng mã tự sinh" : "Không có mã"}</button></div><input required={!missingFactoryCode} disabled={missingFactoryCode} value={missingFactoryCode ? generatedFactoryCode : form.factory_code} onChange={e => setForm({ ...form, factory_code: e.target.value.toUpperCase() })} className="field disabled:bg-slate-100 disabled:text-slate-500" placeholder="Ví dụ: J1158-4" /><p className="mt-1.5 text-[10px] font-medium text-slate-400">Tìm: ART NO. / STYLE NUMBER / CODE / TYPE OF GOODS / MODEL</p></div>
             </div>
-            <div className="bg-white border border-indigo-200 rounded-xl px-4 py-3"><span className="text-xs text-slate-500 block">MÃ MẪU DỰ KIẾN</span><strong className="font-mono text-indigo-700 text-lg">{previewSku}</strong></div>
+            <div className="bg-white border border-indigo-200 rounded-xl px-4 py-3"><span className="text-xs text-slate-500 block">MÃ THEO SIZE DỰ KIẾN</span><strong className="font-mono text-indigo-700 text-lg">{previewSku}</strong><span className="mt-1 block text-[10px] font-medium text-slate-400">QR từng món sẽ thêm số thứ tự: -001, -002, ...</span></div>
           </div>
         </section>
 

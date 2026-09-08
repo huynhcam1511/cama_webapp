@@ -18,6 +18,7 @@ export interface Order {
   id: string;
   order_code: string;
   contract_id: string;
+  event_id: string | null;
   event_date: string;
   return_date: string;
   delivery_status: string;
@@ -174,22 +175,38 @@ export async function saveOrderNotesAndImages(id: string, text: string, images: 
   revalidatePath(`/dashboard/orders/${id}`);
 }
 
-export async function createOrder(payload: Partial<Order>) {
+export type CreateOrderInput = {
+  contract_id?: string | null;
+  service_type: string;
+  event_date?: string | null;
+  pic_id?: string | null;
+  notes?: string;
+};
+
+export async function createOrder(payload: CreateOrderInput) {
+  await requirePermission("ORDERS", "create");
   const supabase = createAdminClient();
-  let code = payload.order_code?.trim();
-  if (!code || code.startsWith("ORD-")) {
-    code = await generateSequentialCode(supabase, "orders", "order_code", "ORDE");
+  const serviceType = payload.service_type?.trim();
+  if (!serviceType) throw new Error("Vui lòng nhập tên dịch vụ hoặc sự kiện.");
+  if (serviceType.length > 160) throw new Error("Tên dịch vụ không được dài quá 160 ký tự.");
+  if (payload.event_date && !/^\d{4}-\d{2}-\d{2}$/.test(payload.event_date)) throw new Error("Ngày giao đồ không hợp lệ.");
+
+  if (payload.contract_id) {
+    const { data: contract, error: contractError } = await supabase.from("contracts").select("id").eq("id", payload.contract_id).is("deleted_at", null).maybeSingle();
+    if (contractError) throw new Error(contractError.message);
+    if (!contract) throw new Error("Hợp đồng đã chọn không còn tồn tại.");
   }
+  const code = await generateSequentialCode(supabase, "orders", "order_code", "ORDE");
 
   const { data, error } = await supabase
     .from("orders")
     .insert([{
       order_code: code,
-      contract_id: payload.contract_id || null,
-      service_type: payload.service_type,
+      contract_id: payload.contract_id ?? null,
+      service_type: serviceType,
       event_date: payload.event_date || null,
       pic_id: payload.pic_id || null,
-      notes: payload.notes || "",
+      notes: payload.notes?.trim().slice(0, 1000) || "",
       completion_status: 'PENDING'
     }])
     .select()
@@ -317,11 +334,36 @@ export async function reportOrderIncident(orderId: string, contractId: string, i
   const { data: order, error: orderError } = await supabase.from('orders').select('qa_incidents, order_code').eq('id', orderId).single();
   if (orderError) return { error: orderError.message };
   
-  let incidents = order.qa_incidents || [];
-  incidents.push(incidentData);
+  const { data: user } = await supabase.auth.getUser();
+  const userId = user?.user?.id;
   
-  const { error } = await supabase.from('orders').update({ qa_incidents: incidents }).eq('id', orderId);
+  const { error } = await supabase.from('order_incidents').insert({
+    order_id: orderId,
+    contract_id: contractId,
+    garment_instance_id: incidentData.garment_instance_id || null,
+    description: incidentData.description,
+    penalty_amount: incidentData.penalty_amount || 0,
+    deduct_amount: incidentData.deductAmount || 0,
+    extra_amount: incidentData.extraAmount || 0,
+    status: 'OPEN',
+    reported_by: incidentData.created_by_id || userId || null,
+  });
   if (error) return { error: error.message };
+
+  if (incidentData.garment_instance_id) {
+    const { data: garment } = await supabase.from('garments_inventory').select('id, garment_code, status').eq('id', incidentData.garment_instance_id).single();
+    if (garment) {
+      await supabase.from('garments_inventory').update({ status: 'MAINTENANCE' }).eq('id', incidentData.garment_instance_id);
+      await supabase.from('inventory_movement_history').insert({
+        garment_id: incidentData.garment_instance_id,
+        action_type: 'MAINTENANCE',
+        actor_id: userId,
+        notes: `Chuyển sang bảo trì từ sự cố đơn hàng ${order.order_code}: ${incidentData.description}`,
+        from_location_id: null,
+        to_location_id: null
+      });
+    }
+  }
   
   if (contractId) {
     if (incidentData.deductAmount > 0) {
@@ -332,53 +374,20 @@ export async function reportOrderIncident(orderId: string, contractId: string, i
         method: "TRỪ_CỌC",
         status: "COMPLETED",
         payment_date: new Date().toISOString(),
-        note: `Khấu trừ cọc đền bù sự cố (Đơn: ${order.order_code || orderId}). Lý do: ${incidentData.description}`,
-        created_by: incidentData.created_by_id
       });
     }
-
     if (incidentData.extraAmount > 0) {
-      await supabase.from('payments').insert({
-        contract_id: contractId,
-        amount: incidentData.extraAmount,
-        type: "PENALTY", 
-        method: "CHUYỂN_KHOẢN",
-        status: "COMPLETED",
-        payment_date: new Date().toISOString(),
-        note: `Thu thêm tiền mặt đền bù (Đơn: ${order.order_code || orderId}). Lý do: ${incidentData.description}`,
-        created_by: incidentData.created_by_id,
-        image_url: incidentData.bill_image || null
-      });
-    }
-
-    const totalPenalty = incidentData.penalty_amount || 0;
-    if (totalPenalty > 0) {
-      const { data: contractData } = await supabase.from('contracts').select('notes').eq('id', contractId).single();
-      if (contractData) {
-        let pNotes: any = {};
-        if (contractData.notes) {
-          try {
-            pNotes = typeof contractData.notes === 'string' && contractData.notes.startsWith('{') ? JSON.parse(contractData.notes) : contractData.notes;
-          } catch(e) {}
-        }
-        
-        let history = pNotes.history || [];
-        history.push({
-          timestamp: new Date().toISOString(),
-          action: "Báo cáo sự cố",
-          actor_id: incidentData.created_by_id,
-          details: `Ghi nhận sự cố đền bù ${totalPenalty.toLocaleString('vi-VN')}đ (Đơn ${order.order_code || orderId}). Khấu trừ: ${incidentData.deductAmount?.toLocaleString('vi-VN')}đ, Thu thêm: ${incidentData.extraAmount?.toLocaleString('vi-VN')}đ. Lý do: ${incidentData.description}`
-        });
-
-        pNotes.history = history;
-        await supabase.from('contracts').update({ notes: JSON.stringify(pNotes) }).eq('id', contractId);
-      }
+      await supabase.from('contracts').update({
+        total_amount: incidentData.extraAmount,
+      }).eq('id', contractId);
     }
   }
   
-  revalidatePath('/dashboard/orders');
-  return { error: null };
+  revalidatePath(`/dashboard/orders/${orderId}`);
+  if (contractId) revalidatePath(`/dashboard/contracts/${contractId}`);
+  return { success: true };
 }
+
 export async function updateOrderPic(orderId: string, picId: string | null) {
   const supabase = createAdminClient();
   await supabase.from('orders').update({ pic_id: picId }).eq('id', orderId);

@@ -17,10 +17,12 @@ export type ModuleCode =
   | "KPI_PERFORMANCE"
   | "PAYROLL"
   | "SYSTEM_SETTINGS"
+  | "USER_GUIDE"
   | "QR_SCAN"
   | "ATTENDANCE"
   | "TASKS"
   | "ORDERS"
+  | "ORDER_INCIDENTS"
   | "PERMISSIONS"
   | "CASHFLOW"
   | "OVERDUE_INVOICES"
@@ -239,6 +241,20 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "OPERATIONS",
     parentCode: null,
     sortOrder: 2,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
+    moduleCode: "ORDER_INCIDENTS",
+    label: "Theo dõi sự cố đơn hàng",
+    shortLabel: "Sự cố đơn hàng",
+    route: "/dashboard/order-incidents",
+    icon: "Siren",
+    group: "OPERATIONS",
+    parentCode: null,
+    sortOrder: 3,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",
@@ -527,6 +543,20 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "ADMIN",
     parentCode: null,
     sortOrder: 2,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
+    moduleCode: "USER_GUIDE",
+    label: "Hướng dẫn sử dụng",
+    shortLabel: "Hướng dẫn",
+    route: "/dashboard/user-guide",
+    icon: "BookOpen",
+    group: "ADMIN",
+    parentCode: null,
+    sortOrder: 3,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",

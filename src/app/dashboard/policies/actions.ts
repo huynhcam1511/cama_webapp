@@ -80,8 +80,26 @@ export async function deletePolicy(id: string) {
 }
 
 export async function getPolicyById(id: string) {
+  const user = await requireActiveUser();
   const supabase = createAdminClient();
-  const { data, error } = await supabase.from("policies").select("*").eq("id", id).single();
+  
+  const { data: dbUser } = await supabase
+    .from("users")
+    .select("role_id, department_id, roles(role_code)")
+    .eq("id", user.id)
+    .single();
+
+  const isSuperAdmin = (dbUser?.roles as any)?.role_code === "SUPER_ADMIN";
+
+  let query = supabase.from("policies").select("*").eq("id", id);
+
+  if (!isSuperAdmin) {
+    query = query.or(
+      `policy_scope.eq.GENERAL,and(policy_scope.eq.DEPARTMENT,target_id.eq.${dbUser?.department_id}),and(policy_scope.eq.ROLE,target_id.eq.${dbUser?.role_id}),and(policy_scope.eq.SPECIFIC_USER,target_id.eq.${user.id})`
+    );
+  }
+
+  const { data, error } = await query.single();
   if (error) {
     console.error("Error fetching policy:", error);
     return null;

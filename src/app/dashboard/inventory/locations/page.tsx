@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Check, Clock3, Filter, ImageIcon, Loader2, MapPin, Package, QrCode, Search, Truck, UserRound, X } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, Clock3, Filter, ImageIcon, Loader2, MapPin, Package, QrCode, Search, Truck, UserRound, X } from "lucide-react";
 import UniversalScanner from "@/components/universal-scanner";
 import { getAssetOverviewCached } from "@/lib/inventory-asset-prefetch";
 
@@ -12,6 +12,7 @@ const statusMeta: Record<string, { label: string; classes: string }> = {
   AVAILABLE: { label: "Trong kho", classes: "bg-emerald-50 text-emerald-700 border-emerald-100" },
   RENTED: { label: "Đang xuất", classes: "bg-indigo-50 text-indigo-700 border-indigo-100" },
   MAINTENANCE: { label: "Bảo trì", classes: "bg-amber-50 text-amber-700 border-amber-100" },
+  PENDING_PUTAWAY: { label: "Kho ảo · Chờ xếp kệ", classes: "bg-cyan-50 text-cyan-700 border-cyan-100" },
   LOST: { label: "Thất lạc", classes: "bg-rose-50 text-rose-700 border-rose-100" },
 };
 
@@ -23,6 +24,24 @@ function date(value?: string | null) {
 }
 function locationOf(asset: any) {
   return [asset.location_floor, asset.location_shelf, asset.location_tier].filter(Boolean).join(" › ");
+}
+function assetColor(asset: any) {
+  return asset.color_code || asset.model?.color_code || asset.color || asset.model?.color_name || "Không rõ màu";
+}
+function assetSize(asset: any) {
+  return String(asset.size_code || asset.size || "ONE").trim().toUpperCase();
+}
+function assetFactoryCode(asset: any) {
+  const factoryCode = String(asset.factory_code || "").trim().toUpperCase();
+  if (factoryCode) return factoryCode;
+  const sku = String(asset.sku || "").trim().toUpperCase();
+  return sku.replace(new RegExp(`-${assetSize(asset)}-\\d{3}$`), "") || asset.model?.name || asset.name || "UNKNOWN";
+}
+function assetGroupKey(asset: any) {
+  return `${assetFactoryCode(asset)}::${assetSize(asset)}`.toLowerCase();
+}
+function assetGroupLabel(asset: any) {
+  return `${assetFactoryCode(asset)}-${assetSize(asset)}`;
 }
 
 export default function AssetsPage() {
@@ -52,29 +71,41 @@ export default function AssetsPage() {
     ALL: assets.length,
     IN_STOCK: assets.filter(a => a.status === "AVAILABLE").length,
     OUTBOUND: assets.filter(a => a.status === "RENTED").length,
-    MAINTENANCE: assets.filter(a => a.status === "MAINTENANCE").length,
+    MAINTENANCE: assets.filter(a => ["MAINTENANCE", "PENDING_PUTAWAY"].includes(a.status)).length,
     NO_LOCATION: assets.filter(a => !locationOf(a)).length,
   }), [assets]);
 
   const filtered = useMemo(() => assets.filter(asset => {
     if (view === "IN_STOCK" && asset.status !== "AVAILABLE") return false;
     if (view === "OUTBOUND" && asset.status !== "RENTED") return false;
-    if (view === "MAINTENANCE" && asset.status !== "MAINTENANCE") return false;
+    if (view === "MAINTENANCE" && !["MAINTENANCE", "PENDING_PUTAWAY"].includes(asset.status)) return false;
     if (view === "NO_LOCATION" && locationOf(asset)) return false;
     if (location !== "ALL" && locationOf(asset) !== location) return false;
     const outbound = asset.outbound;
     const order = one(outbound?.order);
     const contract = one(outbound?.contract);
     const q = search.trim().toLowerCase();
-    return !q || [asset.name, asset.sku, asset.qr_code, asset.model?.name, asset.model?.base_sku, asset.model?.group_type, locationOf(asset), order?.order_code, contract?.contract_code]
+    return !q || [asset.name, asset.sku, asset.qr_code, asset.factory_code, asset.color, asset.color_code, asset.model?.name, asset.model?.base_sku, asset.model?.group_type, asset.model?.color_name, locationOf(asset), order?.order_code, contract?.contract_code]
       .some(value => String(value || "").toLowerCase().includes(q));
   }), [assets, location, search, view]);
+
+  const grouped = useMemo(() => {
+    const groups = new Map<string, any[]>();
+    filtered.forEach(asset => {
+      const key = assetGroupKey(asset);
+      groups.set(key, [...(groups.get(key) || []), asset]);
+    });
+    return Array.from(groups.values()).map(group => ({
+      key: assetGroupKey(group[0]),
+      assets: group,
+    }));
+  }, [filtered]);
 
   const tabs: { key: View; label: string }[] = [
     { key: "ALL", label: "Tất cả" },
     { key: "IN_STOCK", label: "Trong kho" },
     { key: "OUTBOUND", label: "Đang xuất" },
-    { key: "MAINTENANCE", label: "Bảo trì" },
+    { key: "MAINTENANCE", label: "Bảo trì / chờ kệ" },
     { key: "NO_LOCATION", label: "Chưa có vị trí" },
   ];
 
@@ -113,7 +144,7 @@ export default function AssetsPage() {
 
         {loading ? <div className="flex items-center justify-center py-20 text-slate-400"><Loader2 className="mr-2 animate-spin" />Đang tải tài sản...</div> : !filtered.length ? <div className="py-20 text-center text-sm text-slate-500"><Package className="mx-auto mb-2 h-9 w-9 text-slate-300" />Không có tài sản phù hợp.</div> : (
           <div className="grid grid-cols-1 gap-3 bg-slate-50/60 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
-            {filtered.map(asset => <AssetCard key={asset.id} asset={asset} onClick={() => setSelected(asset)} />)}
+            {grouped.map(group => <AssetGroup key={group.key} assets={group.assets} onSelect={setSelected} />)}
           </div>
         )}
       </div>
@@ -125,6 +156,28 @@ export default function AssetsPage() {
   );
 }
 
+function AssetGroup({ assets, onSelect }: { assets: any[]; onSelect: (asset: any) => void }) {
+  const first = assets[0];
+  const sizes = Array.from(new Set(assets.map(asset => asset.size_code || asset.size || "—")));
+  const available = assets.filter(asset => asset.status === "AVAILABLE").length;
+  const colors = Array.from(new Set(assets.map(assetColor)));
+  return <details className="group min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm open:border-indigo-200 open:ring-1 open:ring-indigo-100">
+    <summary className="flex cursor-pointer list-none items-center gap-3 p-3 [&::-webkit-details-marker]:hidden">
+      <div className="flex h-20 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+        {first.image_url ? <img src={first.image_url} alt={first.name || "Ảnh mẫu"} loading="lazy" decoding="async" className="h-full w-full object-cover" /> : <ImageIcon className="h-7 w-7 text-slate-300" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2"><strong className="line-clamp-2 text-sm leading-tight text-slate-900">{assetGroupLabel(first)}</strong><ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" /></div>
+        <p className="mt-1 truncate font-mono text-[11px] text-slate-500">Size {sizes.join(", ")} · {assets.length} món</p>
+        <p className="mt-1 truncate text-[11px] text-slate-500">Màu: {colors.join(", ")} · Trong kho: {available}</p>
+      </div>
+    </summary>
+    <div className="space-y-2 border-t border-slate-100 bg-slate-50/60 p-2">
+      {assets.map(asset => <AssetCard key={asset.id} asset={asset} onClick={() => onSelect(asset)} />)}
+    </div>
+  </details>;
+}
+
 function AssetCard({ asset, onClick }: { asset: any; onClick: () => void }) {
   const outbound = asset.outbound;
   const order = one(outbound?.order);
@@ -133,13 +186,12 @@ function AssetCard({ asset, onClick }: { asset: any; onClick: () => void }) {
     <div className="flex h-28 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">{asset.image_url ? <img src={asset.image_url} alt={asset.name || asset.model?.name || "Tài sản"} loading="lazy" decoding="async" onError={event => { const image = event.currentTarget; if (asset.image_original_url && image.src !== asset.image_original_url) image.src = asset.image_original_url; }} className="h-full w-full object-cover" /> : <ImageIcon className="h-8 w-8 text-slate-300" />}</div>
     <div className="flex min-w-0 flex-1 flex-col">
       <div className="flex items-start justify-between gap-2"><strong className="line-clamp-2 text-sm leading-tight text-slate-900">{asset.name || asset.model?.name || "Tài sản chưa đặt tên"}</strong><span className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase ${meta.classes}`}>{meta.label}</span></div>
-      <div className="mt-1 truncate font-mono text-[11px] text-slate-400">{asset.sku || asset.qr_code || asset.model?.base_sku || "—"}</div>
       <div className="mt-auto space-y-1 text-[11px] text-slate-600">
         {asset.status === "AVAILABLE" ? <p className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-emerald-600" /><span className="truncate">{locationOf(asset) || "Chưa xác định vị trí"}</span></p> : <>
           <p className="flex items-center gap-1.5"><Truck className="h-3.5 w-3.5 text-indigo-600" /><span className="truncate">{order?.order_code || outbound?.reason || "Đang ở ngoài kho"}</span></p>
           <p className="flex items-center gap-1.5 text-indigo-700"><CalendarDays className="h-3.5 w-3.5" />Ngày về: <b>{date(order?.return_date)}</b></p>
         </>}
-        <p>Size: <b>{asset.size_code || asset.size || "—"}</b> · QR: <span className="font-mono">{asset.qr_code || "—"}</span></p>
+        <p>Size: <b>{asset.size_code || asset.size || "—"}</b> · Mã SP: <span className="font-mono">{asset.sku || "—"}</span></p>
       </div>
     </div>
   </button>;
@@ -152,7 +204,7 @@ function AssetDetail({ asset, onClose }: { asset: any; onClose: () => void }) {
   const customer = one(contract?.customer);
   return <div className="fixed inset-0 z-[100] flex items-end bg-slate-950/50 sm:items-center sm:justify-center sm:p-4" onClick={onClose}>
     <div className="max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-w-xl sm:rounded-3xl" onClick={event => event.stopPropagation()}>
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-4"><div><h2 className="font-black text-slate-900">Chi tiết tài sản</h2><p className="font-mono text-xs text-slate-400">{asset.qr_code || asset.sku}</p></div><button onClick={onClose} className="rounded-full p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button></div>
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-4"><div><h2 className="font-black text-slate-900">Chi tiết tài sản</h2><p className="font-mono text-xs text-slate-400">Mã SP: {asset.sku || "—"}</p></div><button onClick={onClose} className="rounded-full p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button></div>
       <div className="space-y-4 p-4">
         <div className="flex gap-4"><div className="h-36 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-100">{asset.image_url ? <img src={asset.image_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /> : <ImageIcon className="m-auto h-full w-9 text-slate-300" />}</div><div><h3 className="text-lg font-bold text-slate-900">{asset.name || asset.model?.name}</h3><p className="mt-1 text-sm text-slate-500">{asset.model?.group_type || "Tài sản kho"}</p><p className="mt-3 text-sm">Size: <b>{asset.size_code || asset.size || "—"}</b></p></div></div>
         <div className="grid grid-cols-2 gap-2"><Info icon={MapPin} label="Vị trí trong kho" value={locationOf(asset) || "Chưa xác định"} /><Info icon={Clock3} label="Trạng thái" value={statusMeta[asset.status]?.label || asset.status} /></div>

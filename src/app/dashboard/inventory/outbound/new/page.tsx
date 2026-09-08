@@ -271,7 +271,7 @@ export default function OutboundScannerPage() {
                               
                               <div className="flex-1 min-w-0">
                                 <h4 className={`font-bold text-sm leading-tight line-clamp-2 ${isSelected ? 'text-indigo-900' : 'text-slate-800'}`}>{p.name}</h4>
-                                <code className="block text-xs font-mono text-slate-500 mt-1">{p.qr_code}</code>
+                                <code className="block text-xs font-mono text-slate-500 mt-1">{p.sku || p.qr_code}</code>
                                 <div className="text-xs text-slate-500 mt-1">Size: <strong className="text-slate-700">{p.size || '—'}</strong></div>
                               </div>
                             </div>
@@ -365,7 +365,7 @@ export default function OutboundScannerPage() {
                                   key={order.id}
                                   onClick={() => {
                                     setOrderId(order.id);
-                                    setContractId(contract?.id || "");
+                                    setContractId(order.contract_id || "");
                                     setOrderDropdownOpen(false);
                                   }}
                                   className={`p-3 rounded-xl cursor-pointer transition-all border ${isSelected ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-transparent hover:bg-slate-50'}`}

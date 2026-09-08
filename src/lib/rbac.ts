@@ -70,8 +70,6 @@ export async function getUserPermissions(userId: string) {
   
   const userPermissions = up || [];
 
-  // Temporarily disable role permissions merging as requested by user
-  /*
   rolePermissions.forEach(rp => {
     if (rp.modules?.module_code) {
       mergedMap.set(rp.modules.module_code, {
@@ -82,7 +80,6 @@ export async function getUserPermissions(userId: string) {
       });
     }
   });
-  */
 
   userPermissions.forEach(up => {
     if (up.modules?.module_code) {

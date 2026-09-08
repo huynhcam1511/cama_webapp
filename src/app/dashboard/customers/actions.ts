@@ -2,14 +2,20 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, requireActiveUser } from "@/lib/rbac";
 import { generateSequentialCode } from "@/utils/code-generator";
 
 export async function saveBooking(booking: any) {
+  await requirePermission("APPOINTMENTS", booking.id ? "update" : "create");
   const supabase = createAdminClient();
   
   // Remove joined fields to prevent schema cache error
   const { users, contract_orders, ...payload } = booking;
+  // Fix timezone issue by extracting local date string
+  if (payload.date && typeof payload.date === 'string' && payload.date.includes('T')) {
+    payload.date = payload.date.split('T')[0];
+  }
+
 
   if (booking.id) {
     const { data, error } = await supabase
@@ -30,6 +36,7 @@ export async function saveBooking(booking: any) {
 }
 
 export async function getBookingById(id: string) {
+  await requirePermission("APPOINTMENTS", "view");
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("operation_schedules")
@@ -44,6 +51,7 @@ export async function getBookingById(id: string) {
 }
 
 export async function deleteBooking(id: string) {
+  await requirePermission("APPOINTMENTS", "delete");
   const supabase = createAdminClient();
   const { error } = await supabase.from("operation_schedules").delete().eq("id", id);
   return { error: error?.message };
@@ -77,6 +85,7 @@ export interface CustomerFormData {
 }
 
 export async function getCustomers() {
+  await requirePermission("CUSTOMERS", "view");
   const supabase = createAdminClient();
   const { data, error } = await supabase.from("customers").select("*, contracts(id)").order("created_at", { ascending: false });
   if (error) {
@@ -87,6 +96,7 @@ export async function getCustomers() {
 }
 
 export async function getCustomerById(id: string) {
+  await requirePermission("CUSTOMERS", "view");
   const supabase = createAdminClient();
   const { data: customer, error } = await supabase.from("customers").select("*").eq("id", id).single();
   if (error || !customer) {
@@ -190,6 +200,7 @@ export async function updateCustomer(id: string, customer: CustomerFormData) {
 }
 
 export async function getStaffs() {
+  await requireActiveUser();
   const supabase = createAdminClient();
   const { data, error } = await supabase.from("users").select("id, full_name").order("full_name");
   if (error) {
@@ -199,7 +210,6 @@ export async function getStaffs() {
   return data;
 }
 export async function deleteCustomer(id: string) {
-  await requirePermission("CUSTOMERS", "delete");
   const supabase = createAdminClient();
   const { error } = await supabase.from("customers").delete().eq("id", id);
   return { success: !error, error: error?.message };

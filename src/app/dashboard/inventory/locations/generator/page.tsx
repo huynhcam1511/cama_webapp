@@ -45,7 +45,8 @@ export default function LocationGeneratorPage() {
       url.searchParams.set("shelf", paddedNumber);
       
       try {
-        const qrDataUrl = await QRCode.toDataURL(url.toString(), { margin: 1, width: 300, color: { dark: '#0f172a', light: '#ffffff' } });
+        const svg = await QRCode.toString(url.toString(), { type: 'svg', margin: 2, errorCorrectionLevel: 'H', color: { dark: '#000000', light: '#ffffff' } });
+        const qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
         codes.push({ code: `${floor} - ${paddedNumber}`, img: qrDataUrl });
       } catch (err) {
         console.error("QR Error", err);
@@ -156,7 +157,7 @@ export default function LocationGeneratorPage() {
                 onClick={handlePrint}
                 className="px-6 py-2.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-colors flex items-center gap-2 shadow-sm"
               >
-                <Printer className="w-5 h-5" /> In Mã Tem (A4)
+                <Printer className="w-5 h-5" /> In tem Xprinter 72 × 22 mm
               </button>
             )}
           </div>
@@ -166,23 +167,32 @@ export default function LocationGeneratorPage() {
       {/* Print Area */}
       {generatedCodes.length > 0 && (
         <div className="flex-1 p-8 bg-slate-100 overflow-y-auto no-print">
-          <h3 className="text-lg font-bold text-slate-700 mb-4">Xem trước bản in (Tem 2.5cm x 6cm):</h3>
+          <h3 className="text-lg font-bold text-slate-700 mb-4">Xem trước bản in (2 tem 35 × 22 mm trên mỗi hàng 72 × 22 mm):</h3>
           <div className="bg-white p-8 shadow-xl max-w-[210mm] mx-auto border border-slate-200">
              <style dangerouslySetInnerHTML={{__html: `
                 @media print {
-                  body { background: white !important; }
+                  @page { size: 72mm 22mm; margin: 0; }
+                  html, body { width: 72mm !important; margin: 0 !important; padding: 0 !important; background: white !important; }
                   #print-area {
-                    display: flex !important;
-                    flex-wrap: wrap !important;
-                    gap: 1mm !important;
-                    justify-content: flex-start !important;
-                    align-content: flex-start !important;
+                    display: block !important;
+                    width: 72mm !important;
                   }
+                  .label-page {
+                    display: grid !important;
+                    grid-template-columns: 35mm 35mm !important;
+                    column-gap: 2mm !important;
+                    width: 72mm !important;
+                    height: 22mm !important;
+                    overflow: hidden !important;
+                    break-after: page !important;
+                    page-break-after: always !important;
+                  }
+                  .label-page:last-child { break-after: auto !important; page-break-after: auto !important; }
                   .qr-label {
-                    width: 60mm !important;
-                    height: 25mm !important;
-                    padding: 2mm !important;
-                    border: 0.5px dashed #94a3b8 !important;
+                    width: 35mm !important;
+                    height: 22mm !important;
+                    padding: 1.5mm !important;
+                    border: 0 !important;
                     box-sizing: border-box !important;
                     display: flex !important;
                     flex-direction: row !important;
@@ -190,7 +200,7 @@ export default function LocationGeneratorPage() {
                     justify-content: space-between !important;
                     page-break-inside: avoid !important;
                     margin: 0 !important;
-                    gap: 2mm !important;
+                    gap: 1mm !important;
                   }
                   .qr-text-container {
                     flex: 1 !important;
@@ -200,14 +210,14 @@ export default function LocationGeneratorPage() {
                     min-width: 0 !important;
                   }
                   .qr-code-img {
-                    width: 21mm !important;
-                    height: 21mm !important;
+                    width: 16mm !important;
+                    height: 16mm !important;
                     object-fit: contain !important;
                     margin: 0 !important;
                     flex-shrink: 0 !important;
                   }
                   .code-title {
-                    font-size: 8pt !important;
+                    font-size: 7pt !important;
                     font-weight: 900 !important;
                     color: black !important;
                     line-height: 1.2 !important;
@@ -215,14 +225,19 @@ export default function LocationGeneratorPage() {
                   }
                 }
              `}} />
-             <div id="print-area" className="w-full flex flex-wrap gap-2">
-                {generatedCodes.map((item, idx) => (
-                  <div key={idx} className="qr-label flex flex-row items-center justify-between border border-slate-300 border-dashed p-2 break-inside-avoid w-[60mm] h-[25mm] gap-2">
-                    <div className="qr-text-container flex flex-col justify-center min-w-0 flex-1">
-                      <div className="code-title font-black text-slate-900 leading-tight text-[11px] break-words">{item.code}</div>
-                    </div>
-                    <img src={item.img} alt={item.code} className="qr-code-img w-8 h-8 object-contain shrink-0" />
-                  </div>
+             <div id="print-area" className="w-full space-y-2">
+                {Array.from({ length: Math.ceil(generatedCodes.length / 2) }, (_, pageIndex) => (
+                  <section className="label-page grid grid-cols-2 gap-2" key={pageIndex}>
+                    {generatedCodes.slice(pageIndex * 2, pageIndex * 2 + 2).map((item, idx) => (
+                      <div key={idx} className="qr-label flex flex-row items-center justify-between border border-slate-300 border-dashed p-2 break-inside-avoid w-[35mm] h-[22mm] gap-2">
+                        <div className="qr-text-container flex flex-col justify-center min-w-0 flex-1">
+                          <div className="code-title font-black text-slate-900 leading-tight text-[11px] break-words">{item.code}</div>
+                        </div>
+                        <img src={item.img} alt={item.code} className="qr-code-img w-8 h-8 object-contain shrink-0" />
+                      </div>
+                    ))}
+                    {generatedCodes.slice(pageIndex * 2, pageIndex * 2 + 2).length === 1 && <div className="qr-label empty-label" aria-hidden="true" />}
+                  </section>
                 ))}
              </div>
           </div>

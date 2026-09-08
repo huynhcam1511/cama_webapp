@@ -45,7 +45,7 @@ export default function InboundHistoryPage() {
               <PackagePlus className="w-5 h-5 text-emerald-600" /> Quản Lý Nhập Kho
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              Danh sách {items.length} sản phẩm vừa được nhập kho gần đây.
+              Tra cứu mã suit và vị trí kho đã ghi nhận gần nhất.
             </p>
           </div>
           <Link
@@ -63,7 +63,7 @@ export default function InboundHistoryPage() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Tìm theo tên, mã QR, SKU, loại..."
+              placeholder="Tìm theo tên, mã sản phẩm, loại..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
@@ -76,25 +76,24 @@ export default function InboundHistoryPage() {
           <table className="w-full text-xs text-left">
             <thead className="uppercase bg-slate-50 text-slate-500 border-b border-slate-200 font-bold tracking-wider text-[10px]">
               <tr>
-                <th className="px-4 py-3 whitespace-nowrap">Thời Gian Nhập</th>
+                <th className="px-4 py-3 whitespace-nowrap">Thời gian ghi nhận</th>
                 <th className="px-4 py-3 whitespace-nowrap">Sản Phẩm</th>
-                <th className="px-4 py-3 whitespace-nowrap">Mã QR</th>
-                <th className="px-4 py-3 whitespace-nowrap">SKU</th>
-                <th className="px-4 py-3 whitespace-nowrap">Loại</th>
-                <th className="px-4 py-3 whitespace-nowrap text-center">Size</th>
+                <th className="px-4 py-3 whitespace-nowrap">Mã sản phẩm</th>
+                <th className="px-4 py-3 whitespace-nowrap">Vị trí đã lưu</th>
+                <th className="px-4 py-3 whitespace-nowrap">Trạng thái</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-300" />
                     Đang tải dữ liệu...
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                     <Package className="w-8 h-8 mx-auto mb-2 text-slate-300" />
                     Không tìm thấy dữ liệu nhập kho nào.
                   </td>
@@ -107,23 +106,21 @@ export default function InboundHistoryPage() {
                         <Calendar className="w-3.5 h-3.5" />
                         {item.created_at ? format(new Date(item.created_at), "HH:mm - dd/MM/yyyy") : "—"}
                       </div>
+                      <div className="mt-1 text-[10px] font-bold uppercase text-slate-400">{item.movement_type === "PUTAWAY" ? "Xếp lại kệ" : "Nhập ban đầu"}</div>
                     </td>
                     <td className="px-4 py-3 font-semibold text-slate-800 max-w-[200px] truncate" title={item.name}>
                       {item.name}
                     </td>
-                    <td className="px-4 py-3 font-mono text-emerald-600 font-medium">
-                      {item.qr_code}
-                    </td>
                     <td className="px-4 py-3 text-slate-500 font-mono">
-                      {item.sku || "—"}
+                      {item.sku || item.qr_code || "—"}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-slate-700">
+                      {[item.location_floor, item.location_shelf, item.location_tier].filter(Boolean).join(" › ") || "Chưa xác định"}
                     </td>
                     <td className="px-4 py-3">
                       <span className="px-2 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">
-                        {item.group_type || "Khác"}
+                        {item.status === "AVAILABLE" ? "Trong kho" : item.status === "MAINTENANCE" ? "Đang xử lý sự cố" : item.status === "PENDING_PUTAWAY" ? "Kho ảo · Chờ xếp kệ" : item.status || "Không rõ"}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-center font-bold">
-                      {item.size || "—"}
                     </td>
                   </tr>
                 ))

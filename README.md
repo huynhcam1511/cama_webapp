@@ -1,9 +1,13 @@
 # CAMA Wedding Studio - Web App PWA
 
+## Ngữ cảnh nghiệp vụ IT
+
+Đọc [IT_BRAIN.json](../IT_BRAIN.json) → [kế hoạch tổng thể](docs/IT_MASTER_PLAN.md) → [audit và action plan](docs/IT_AUDIT_ACTION_PLAN.md) → [sổ input thực tế](docs/IT_INPUT_REGISTER.md) khi tiếp tục công việc qua chat mới. Đây là baseline ngày 05/09/2026; phân biệt code đã quan sát, nghiệp vụ đã xác nhận và việc còn cần kiểm chứng.
+
 Dự án Hệ thống quản trị nội bộ cho CAMA Haute Couture.
 
 ## 🛠 Yêu Cầu Cài Đặt
-Hệ thống máy tính của bạn cần cài đặt **Node.js** (phiên bản 18.x hoặc 20.x). 
+Hệ thống máy tính của bạn cần cài đặt **Node.js 22 LTS**.
 *Bạn có thể tải Node.js tại: [nodejs.org](https://nodejs.org/)*
 
 ## 🚀 Hướng Dẫn Chạy Dự Án

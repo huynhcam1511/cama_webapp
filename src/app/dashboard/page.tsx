@@ -81,7 +81,7 @@ export default function DashboardHome() {
       {/* Thao tác nhanh */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { href: "/dashboard/contracts/new", label: "Hợp đồng", icon: icons.FilePlus2, color: "bg-indigo-50 text-indigo-600 border-indigo-100" },
+          { href: "/dashboard/contracts?create=1", label: "Hợp đồng", icon: icons.FilePlus2, color: "bg-indigo-50 text-indigo-600 border-indigo-100" },
           { href: "/dashboard/orders/create", label: "Tạo đơn", icon: icons.ShoppingCart, color: "bg-emerald-50 text-emerald-600 border-emerald-100" },
           { href: "/dashboard/attendance", label: "Chấm công", icon: icons.Fingerprint, color: "bg-amber-50 text-amber-600 border-amber-100" },
         ].map((action) => {

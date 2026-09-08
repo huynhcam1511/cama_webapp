@@ -51,6 +51,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultCustomerId = searchParams.get("newFor") || undefined;
+  const shouldOpenContractTypeModal = searchParams.get("create") === "1" || Boolean(defaultCustomerId);
 
   const [contracts] = useState<Contract[]>(initialContracts);
   const [allCustomers] = useState<any[]>(customers);
@@ -65,7 +66,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
   const [quickFilter, setQuickFilter] = useState('');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   
-  const [isContractTypeModalOpen, setIsContractTypeModalOpen] = useState(false);
+  const [isContractTypeModalOpen, setIsContractTypeModalOpen] = useState(shouldOpenContractTypeModal);
   
   const handleSort = (key: string) => {
     setSortConfig(prev => ({

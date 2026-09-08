@@ -118,12 +118,14 @@ export default function InventoryPickerModal({
     setMessage("");
     const result = await reserveContractInventory({
       contractId,
-      modelId: selectedModelId,
-      sizeCode: selectedSize,
-      quantity,
-      startDate: fulfillmentType === "RENTAL" ? startDate : undefined,
-      endDate: fulfillmentType === "RENTAL" ? endDate : undefined,
-      fulfillmentType,
+      selections: [{
+        modelId: selectedModelId,
+        sizeCode: selectedSize,
+        quantity,
+        startDate: fulfillmentType === "RENTAL" ? startDate : undefined,
+        endDate: fulfillmentType === "RENTAL" ? endDate : undefined,
+        fulfillmentType,
+      }]
     });
     setSaving(false);
 

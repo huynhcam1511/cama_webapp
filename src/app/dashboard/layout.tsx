@@ -213,8 +213,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       {/* Main Right Container */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen print:overflow-visible relative">
-        {/* Top Navbar */}
-        <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur border-b border-slate-200 flex items-center justify-between px-2 sm:px-6 lg:px-8 shrink-0 print:hidden shadow-sm">
+        {/* Full-page create forms own their header; do not repeat the dashboard bar. */}
+        {pathname !== "/dashboard/orders/create" && <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-2 sm:px-6 lg:px-8 shrink-0 print:hidden">
           <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -290,7 +290,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </div>
             )}
           </div>
-        </header>
+        </header>}
 
         {/* Content Area */}
         <main className="flex-1 p-0 sm:p-2 md:p-4 lg:p-6 overflow-auto print:overflow-visible print:p-0">

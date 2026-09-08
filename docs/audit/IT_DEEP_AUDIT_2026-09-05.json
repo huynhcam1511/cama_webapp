@@ -1,0 +1,864 @@
+{
+  "version": "2.0",
+  "date": "2026-09-05",
+  "findings": [
+    {
+      "id": "C01",
+      "priority": "P0",
+      "title": "API thử nghiệm có quyền đọc/ghi dữ liệu nhưng thiếu chặn truy cập",
+      "sources": [
+        {
+          "path": "src/app/api/debug/route.ts",
+          "needle": "export async function GET",
+          "line": 3
+        },
+        {
+          "path": "src/app/api/test-query/route.ts",
+          "needle": "export async function GET",
+          "line": 4
+        },
+        {
+          "path": "src/app/api/test-sign/route.ts",
+          "needle": "export async function GET",
+          "line": 4
+        },
+        {
+          "path": "src/app/api/fix-db/route.ts",
+          "needle": "export async function GET",
+          "line": 4
+        },
+        {
+          "path": "src/app/api/fix-db/virtual-warehouse/route.ts",
+          "needle": "export async function GET",
+          "line": 4
+        },
+        {
+          "path": "src/middleware.ts",
+          "needle": "if (isDashboardRoute)",
+          "line": 75
+        }
+      ],
+      "evidence": "GET debug trả một hợp đồng; test-query trả journey_tasks; test-sign đổi bucket thành public; fix-db gọi exec_sql bằng admin; virtual-warehouse chuyển vị trí hàng và xóa vị trí cũ bằng client phiên. Middleware chỉ chặn đăng nhập/trạng thái ở /dashboard, không chặn các API này.",
+      "impact": "Nếu route được triển khai và DB cho phép thao tác, người gọi có thể đọc dữ liệu hoặc gây thay đổi ngoài phạm vi. Chưa gọi các endpoint này.",
+      "fix": "Loại các route thử nghiệm khỏi bản chạy; chuyển bảo trì thành script có phạm vi rõ. Nếu còn API nội bộ, kiểm tra actor/quyền tại handler và dùng phương thức ghi phù hợp.",
+      "acceptance": "Chưa đăng nhập và tài khoản thường không đọc được debug, không đổi bucket hay vị trí; endpoint đã bỏ trả 404. Test dùng môi trường cô lập.",
+      "verification": "static",
+      "ticket": "T01",
+      "status": "open"
+    },
+    {
+      "id": "C02",
+      "priority": "P0",
+      "title": "Server actions dùng admin chưa kiểm tra quyền tại điểm vào",
+      "sources": [
+        {
+          "path": "src/app/dashboard/customers/actions.ts",
+          "needle": "export async function deleteBooking",
+          "line": 46
+        },
+        {
+          "path": "src/app/dashboard/customers/actions.ts",
+          "needle": "export async function getCustomers",
+          "line": 79
+        },
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "export async function getContractById",
+          "line": 486
+        },
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "export async function reportGarmentIncident",
+          "line": 2096
+        },
+        {
+          "path": "src/app/dashboard/policies/actions.ts",
+          "needle": "export async function getPolicyById",
+          "line": 82
+        },
+        {
+          "path": "src/app/dashboard/appointments/appointments-client.tsx",
+          "needle": "await deleteBooking(id)",
+          "line": 34
+        }
+      ],
+      "evidence": "deleteBooking dùng admin và delete trực tiếp; getCustomers/getCustomerById/getStaffs, getContractById và reportGarmentIncident cũng có đường vào thiếu guard. Policy list lọc scope nhưng getPolicyById chỉ lọc ID. Trang chi tiết chỉ kiểm tra POLICIES.view, không scope.",
+      "impact": "Người xem lịch có thể đến action xóa không yêu cầu quyền delete; người có quyền xem chính sách có thể đọc ID ngoài phạm vi. Không dựa vào nút ẩn để bảo vệ server.",
+      "fix": "Thêm guard module/action và kiểm tra đối tượng cho từng public action; tách helper nội bộ khỏi action xuất ra client; policy detail dùng cùng bộ lọc scope như list.",
+      "acceptance": "Probe deleteBooking hiện ghi DB giả mà không gọi guard. Sau sửa, thử account không quyền delete và policy ngoài department đều bị từ chối, tài khoản đúng quyền vẫn làm được.",
+      "verification": "offline",
+      "ticket": "T01",
+      "status": "open"
+    },
+    {
+      "id": "C03",
+      "priority": "P1",
+      "title": "Quyền menu, server và SQL không thống nhất",
+      "sources": [
+        {
+          "path": "src/app/dashboard/appointments/page.tsx",
+          "needle": "requirePermission(\"CUSTOMERS\", \"view\")",
+          "line": 9
+        },
+        {
+          "path": "src/app/dashboard/inventory/outbound/actions.ts",
+          "needle": "requirePermission(\"GARMENT_CATALOG\", \"create\")",
+          "line": 119
+        },
+        {
+          "path": "src/lib/rbac.ts",
+          "needle": "Temporarily disable role permissions merging",
+          "line": 73
+        },
+        {
+          "path": "supabase/migrations/20260829000001_fix_roleless_user_permissions.sql",
+          "needle": "RETURN COALESCE(v_role_permission, false)",
+          "line": 55
+        }
+      ],
+      "evidence": "Menu có APPOINTMENTS và INVENTORY_OUTBOUND, nhưng page/action lại kiểm tra CUSTOMERS/GARMENT_CATALOG. TypeScript bỏ merge quyền role; SQL has_module_permission vẫn fallback role.",
+      "impact": "Người được cấp đúng module theo menu vẫn có thể bị chặn; quyền DB có thể rộng hơn kết quả server cho cùng tài khoản.",
+      "fix": "Chốt ma trận quyền liên module, dùng chung quy tắc role/user override; giữ quyền lịch sử đã được người dùng yêu cầu cho đến khi xác nhận quy tắc thay thế.",
+      "acceptance": "Ma trận gồm role-only, user allow, user deny, roleless, disabled và admin; menu/action/RLS cho kết quả đồng nhất.",
+      "verification": "static",
+      "ticket": "T02",
+      "status": "open"
+    },
+    {
+      "id": "C04",
+      "priority": "P0",
+      "title": "Giữ nhiều món cùng lúc ghi đè JSON hợp đồng",
+      "sources": [
+        {
+          "path": "src/app/dashboard/contracts/_components/contract-form.tsx",
+          "needle": "const reservations = await Promise.all",
+          "line": 667
+        },
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "const currentMeta = parseMetadata(currentContract.notes || null)",
+          "line": 1858
+        },
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "const { error: updateError } = await supabase.from(\"contracts\").update({ notes: stringifyMetadata(meta)",
+          "line": 1948
+        },
+        {
+          "path": "src/app/dashboard/customer-journey/actions.ts",
+          "needle": "updatePayload.notes = JSON.stringify",
+          "line": 118
+        }
+      ],
+      "evidence": "Form gọi reserveContractInventory song song cho nhiều selection. Mỗi action đọc notes rồi ghi lại toàn bộ JSON; Journey và các writer khác cũng read–merge–write riêng.",
+      "impact": "Ngay một người lưu nhiều món có thể mất một phần danh sách giữ hàng. Hai hợp đồng tranh cùng món cũng chưa có khóa/constraint reservation ở DB trong đường này.",
+      "fix": "Đưa giữ nhiều món thành một thao tác atomic tại DB, có kiểm tra tồn và khoảng ngày dưới lock; dùng UUID tài sản/sự kiện và version conflict cho các writer JSON còn lại.",
+      "acceptance": "Probe hiện hai request success nhưng final notes còn một món. Sau sửa: hai dòng giữ được đủ; hai khách tranh món chỉ một thành công; metadata người khác không bị mất.",
+      "verification": "offline",
+      "ticket": "T03",
+      "status": "open"
+    },
+    {
+      "id": "C05",
+      "priority": "P0",
+      "title": "Lưu/khôi phục hợp đồng chưa bao trọn bảng con",
+      "sources": [
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "await supabase.from(\"contract_services\").delete().eq(\"contract_id\", contractId)",
+          "line": 1591
+        },
+        {
+          "path": "src/app/dashboard/customer-journey/actions.ts",
+          "needle": "await supabase.from(\"journey_tasks\").delete()",
+          "line": 194
+        },
+        {
+          "path": "supabase/migrations/20260814000001_contract_version_history.sql",
+          "needle": "CREATE OR REPLACE FUNCTION public.restore_contract_version",
+          "line": 113
+        }
+      ],
+      "evidence": "updateContract ghi cha rồi delete/insert services qua request khác, không đọc error hai bước con; Journey xóa task rồi insert. Version trigger đã tồn tại cho row contracts; restore chỉ update contracts, không khôi phục services/payment_installments/journey_tasks theo cùng snapshot.",
+      "impact": "Cha/con có thể lệch khi lỗi giữa bước; restore có thể làm UI đọc JSON cũ trong khi bảng con giữ bản mới.",
+      "fix": "Transaction cho aggregate hợp đồng và task; xác định snapshot bao gồm bảng con hoặc rebuild projections có đối soát. Tái sử dụng version store có sẵn, không tạo lịch sử song song.",
+      "acceptance": "Inject lỗi insert dịch vụ/task phải rollback. Restore một bản có thay đổi dịch vụ, thu tiền, task phải cho dữ liệu nhất quán ở các màn hình và truy vết actor.",
+      "verification": "static",
+      "ticket": "T03",
+      "status": "open"
+    },
+    {
+      "id": "C06",
+      "priority": "P0",
+      "title": "Thu tiền đóng hợp đồng và có thể báo thành công khi ghi sổ thất bại",
+      "sources": [
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "export async function recordPaymentTransaction",
+          "line": 940
+        },
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "status: newTotalPaid >= currentContract.total_amount ? \"COMPLETED\"",
+          "line": 1013
+        },
+        {
+          "path": "src/app/dashboard/customer-journey/actions.ts",
+          "needle": ".in(\"status\", [\"EFFECTIVE\", \"CONFIRMED\", \"IN_PROGRESS\"])",
+          "line": 18
+        }
+      ],
+      "evidence": "recordPaymentTransaction đặt contracts.status=COMPLETED khi thu đủ, dù execution_status chưa hoàn tất; insert payment_installments không kiểm tra error. normalizeContract ưu tiên payments trong JSON. Nhánh cashflow chỉ chạy khi lần đầu đạt DEPOSITED/FULLY_PAID; lần thu sau có thể không vào nhánh.",
+      "impact": "Hợp đồng biến mất khỏi danh sách Journey khi chỉ mới thu đủ; số thu UI và sổ giao dịch có thể lệch. Chưa chứng minh cashflow table tồn tại trên môi trường chạy.",
+      "fix": "Tách trạng thái tiền và thực hiện; transaction ghi ledger rồi tổng hợp; kiểm tra số tiền hữu hạn/dương, khóa chống lặp. Đối chiếu các đường initial payment, sửa installment, recordPayment và hoàn tiền.",
+      "acceptance": "Probe thu đủ khi execution IN_PROGRESS chuyển COMPLETED; lỗi ledger giả vẫn success. Sau sửa thu đủ vẫn giữ việc chưa xong; lỗi ledger không tăng paid_amount; retry chỉ một phiếu.",
+      "verification": "offline",
+      "ticket": "T04",
+      "status": "open"
+    },
+    {
+      "id": "C07",
+      "priority": "P1",
+      "title": "Hủy hợp đồng và đồng bộ sự kiện thiếu nguồn điều phối duy nhất",
+      "sources": [
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "export async function cancelContract",
+          "line": 1118
+        },
+        {
+          "path": "supabase/migrations/20260829000002_sync_contract_event_orders.sql",
+          "needle": "IF NEW.deleted_at IS NOT NULL",
+          "line": 41
+        },
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "const newEvents = Array.isArray(payload.events)",
+          "line": 1461
+        }
+      ],
+      "evidence": "cancelContract chỉ cập nhật contracts. Trigger sync_contract_event_orders return sớm với CANCELLED/deleted; nhánh app cũng đồng bộ event, trong khi trigger đồng bộ cùng dữ liệu. Trigger luôn viết notes tự sinh của order khi match.",
+      "impact": "Hủy hợp đồng không tự hủy đơn/giải phóng RESERVED_SALE trong các đường đã đọc. Sửa notes từ module khác có thể ghi lại ghi chú order tự sinh. Không khẳng định cứ chạy cả hai là sinh đơn trùng.",
+      "fix": "Chọn một bộ điều phối sự kiện; event_id thành quan hệ rõ, tách ghi chú vận hành khỏi marker; xử lý cancel/delete/restore và release đúng reservation.",
+      "acceptance": "Ca hai event trùng tên, đổi tên, xóa hết event, hủy hợp đồng đã giữ bán; mỗi event đúng một order, ghi chú vận hành còn, kho được giải phóng đúng.",
+      "verification": "static",
+      "ticket": "T05",
+      "status": "open"
+    },
+    {
+      "id": "C08",
+      "priority": "P0",
+      "title": "Mã món trong hợp đồng được tính lại khác QR vật lý",
+      "sources": [
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "const sequence = allInstances.findIndex",
+          "line": 1911
+        },
+        {
+          "path": "src/app/dashboard/orders/actions.ts",
+          "needle": ".in(\"qr_code\", targetGarmentCodes)",
+          "line": 124
+        },
+        {
+          "path": "supabase/migrations/20260829000005_inventory_factory_size_codes.sql",
+          "needle": "v_size_code := concat_ws",
+          "line": 29
+        }
+      ],
+      "evidence": "reserveContractInventory dùng ordinal trên toàn bộ model để tạo garment_code; SQL cấp mã theo factory+size. instance.qr_code đã đọc nhưng không dùng làm mã ghi vào hợp đồng.",
+      "impact": "Model nhiều size hoặc có lịch sử nhập/xóa có thể tạo mã giả; updateOrderStatus tìm theo QR không cập nhật được món thật.",
+      "fix": "Ghi garment_instance_id và QR có sẵn; bỏ mọi suy diễn ordinal ở client/action. Audit các liên kết hiện có bằng UUID để lập bản sửa preview.",
+      "acceptance": "Probe size48-001 và size50-001 tạo garment_code size50-002. Sau sửa mã hợp đồng trùng QR thật; giao đúng UUID dù mã hiển thị thay đổi.",
+      "verification": "offline",
+      "ticket": "T03",
+      "status": "open"
+    },
+    {
+      "id": "C09",
+      "priority": "P1",
+      "title": "Chọn đơn xuất kho làm mất contract_id",
+      "sources": [
+        {
+          "path": "src/app/dashboard/inventory/outbound/actions.ts",
+          "needle": ".select(\"id, order_code, contract_id, return_date",
+          "line": 80
+        },
+        {
+          "path": "src/app/dashboard/inventory/outbound/new/page.tsx",
+          "needle": "setContractId(contract?.id || \"\")",
+          "line": 368
+        }
+      ],
+      "evidence": "getOutboundOrders chọn order.contract_id nhưng nested contract chỉ có contract_code/customer, không có id. UI lại lấy contract?.id nên truyền chuỗi rỗng; action chuyển thành null.",
+      "impact": "Phiếu có order_id nhưng thiếu contract_id, ảnh hưởng tra cứu hợp đồng/khách trong tài sản.",
+      "fix": "Dùng order.contract_id ở UI; server tự derive contract_id từ order_id và kiểm tra hai tham chiếu khớp, không tin payload độc lập.",
+      "acceptance": "Chọn đơn có hợp đồng và xuất: session giữ đúng contract_id. Gửi contract khác đơn phải bị từ chối hoặc chuẩn hóa theo nguồn đơn.",
+      "verification": "static",
+      "ticket": "T06",
+      "status": "open"
+    },
+    {
+      "id": "C10",
+      "priority": "P0",
+      "title": "RPC xuất kho không kiểm tra quyền/trạng thái/quan hệ tại DB",
+      "sources": [
+        {
+          "path": "supabase/migrations/20260828000000_add_expected_return_date.sql",
+          "needle": "SECURITY DEFINER",
+          "line": 7
+        },
+        {
+          "path": "supabase/migrations/20260828000000_add_expected_return_date.sql",
+          "needle": "v_staff_id :=",
+          "line": 22
+        },
+        {
+          "path": "src/app/dashboard/inventory/outbound/new/page.tsx",
+          "needle": "productsOnLocation.map(p =>",
+          "line": 256
+        },
+        {
+          "path": "src/app/dashboard/inventory/outbound/actions.ts",
+          "needle": "status: payload.reason === \"Giao khách\" ? \"RENTED\" : \"MAINTENANCE\"",
+          "line": 133
+        }
+      ],
+      "evidence": "Định nghĩa mới nhất trong migration lấy staff_id/status từ payload, không kiểm tra auth.uid/quyền, món thuộc đơn, trạng thái nguồn, khóa hàng hoặc request_id. UI hiện chọn mọi món trên kệ, không gọi searchGarmentInstance. Giao khách luôn RENTED, còn Đi chụp/Khác thành MAINTENANCE; Orders giao thuê lại ghi DELIVERED.",
+      "impact": "Có thể xuất lại món đã bán/đang xuất hoặc sai đơn nếu đường DB này được triển khai; hai phiếu cạnh tranh không bị chặn. Ba lớp dùng khác bộ trạng thái.",
+      "fix": "Viết lại RPC có actor từ phiên, permission guard, allowlist transition, khóa món, kiểm tra reservation và chống lặp; transaction đã có trong function nên tập trung bổ sung các invariant, không nói chưa có transaction.",
+      "acceptance": "Role không quyền gọi RPC thất bại; sold/maintenance không xuất trái phép; hai phiên xuất cùng món chỉ một phiếu; thuê/bán/đi chụp cập nhật đúng trạng thái và ledger.",
+      "verification": "static",
+      "ticket": "T06",
+      "status": "open"
+    },
+    {
+      "id": "C11",
+      "priority": "P1",
+      "title": "Sự cố/giải quyết/xếp kệ chưa atomic và chống lặp chưa bền",
+      "sources": [
+        {
+          "path": "src/app/dashboard/orders/actions.ts",
+          "needle": "const submissionWindow = Math.floor(Date.now() / 10_000)",
+          "line": 348
+        },
+        {
+          "path": "src/app/dashboard/orders/actions.ts",
+          "needle": "if (incidentError?.code === \"23505\") return { error: null }",
+          "line": 394
+        },
+        {
+          "path": "src/app/dashboard/order-incidents/actions.ts",
+          "needle": "if (status === \"RESOLVED\" && data?.order_id)",
+          "line": 49
+        },
+        {
+          "path": "src/app/dashboard/inventory/inbound/actions.ts",
+          "needle": "export async function putAwaySuit",
+          "line": 80
+        }
+      ],
+      "evidence": "Incident insert trước các ghi kho/order; duplicate trả success ngay cả khi lần trước lỗi ở bước sau. ID phụ thuộc cửa sổ 10 giây. Resolve cập nhật incident rồi món/order; putaway đổi món rồi insert movement không đọc error/affected rows.",
+      "impact": "Retry có thể tạo trùng qua ranh giới 10 giây hoặc bỏ dở đồng bộ; hai putaway có thể cùng báo success, lịch sử thiếu/trùng.",
+      "fix": "Request UUID bền qua retry; atomic incident + movement + order projection, kiểm tra món thuộc order/contract; resolve và putaway kiểm tra trạng thái và affected rows.",
+      "acceptance": "Inject lỗi sau insert incident và retry, hai lần putaway, nhiều sự cố trên cùng món; không success giả, chỉ một movement hợp lệ và chỉ khả dụng khi đủ điều kiện.",
+      "verification": "static",
+      "ticket": "T07",
+      "status": "open"
+    },
+    {
+      "id": "C12",
+      "priority": "P1",
+      "title": "Hai luồng sự cố dùng khác nguồn và khác quyết định nghiệp vụ",
+      "sources": [
+        {
+          "path": "src/app/dashboard/contracts/[id]/contract-detail-view.tsx",
+          "needle": "<IncidentReportModal",
+          "line": 534
+        },
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "export async function reportGarmentIncident",
+          "line": 2096
+        },
+        {
+          "path": "src/app/dashboard/orders/actions.ts",
+          "needle": "export async function reportOrderIncident",
+          "line": 311
+        },
+        {
+          "path": "src/app/dashboard/contracts/actions.ts",
+          "needle": "export async function markGarmentReturned",
+          "line": 2040
+        }
+      ],
+      "evidence": "Modal hợp đồng đang gọi reportGarmentIncident: đánh LIQUIDATED, cộng bồi thường, chỉ trừ inventory_items nếu có inventory_item_id. Luồng Orders ghi order_incidents và MAINTENANCE ở garments_inventory. markGarmentReturned chỉ đổi JSON; ReturnScanner có file nhưng không thấy import vào trang hiện hành.",
+      "impact": "Cùng một sự cố có thể bị coi là thanh lý hoặc bảo trì theo màn hình; hàng kiểu mới không được sửa kho ở đường legacy.",
+      "fix": "Hợp nhất report incident theo UUID và quy trình đã chốt; chỉ thanh lý bằng quyết định riêng. Truy vết caller trước khi loại helper cũ, không đánh đồng helper tồn tại với tính năng đang dùng.",
+      "acceptance": "Ca báo lỗi cùng món từ Hợp đồng và Orders cho cùng bản ghi nghiệp vụ; xử lý sửa được không bị thanh lý; trả hàng cập nhật kho/QC theo quy tắc đã chốt.",
+      "verification": "static",
+      "ticket": "T07",
+      "status": "open"
+    },
+    {
+      "id": "C13",
+      "priority": "P1",
+      "title": "CRM và lịch hẹn không đồng bộ đúng khi bỏ ngày hoặc có nhiều lịch",
+      "sources": [
+        {
+          "path": "src/app/dashboard/customers/actions.ts",
+          "needle": "async function syncAppointment",
+          "line": 111
+        },
+        {
+          "path": "src/app/dashboard/customers/actions.ts",
+          "needle": "if (data && appointment_date)",
+          "line": 161
+        },
+        {
+          "path": "src/app/dashboard/customers/actions.ts",
+          "needle": "export async function updateCustomer",
+          "line": 172
+        }
+      ],
+      "evidence": "updateCustomer chỉ gọi sync khi appointment_date có giá trị nên nhánh xóa lịch bên trong không chạy khi bỏ ngày. Lookup dùng maybeSingle cho toàn bộ SALE_BOOKING của khách; nhiều lịch gây lỗi bị bỏ qua. Các ghi lịch không trả lỗi về kết quả lưu khách.",
+      "impact": "Lịch cũ vẫn hiện dù người dùng bỏ lịch; có thể báo lưu khách thành công nhưng không tạo được hẹn.",
+      "fix": "Phân biệt field bị bỏ qua với yêu cầu xóa; dùng appointment ID và trạng thái hủy thay xóa lịch sử; chốt nhiều lịch/khách. Ghi đồng bộ có kiểm tra lỗi.",
+      "acceptance": "Probe bỏ ngày không đụng schedule. Sau sửa: giữ nguyên khi không gửi field, hủy đúng lịch khi yêu cầu, khách có hai hẹn không tạo thêm ngoài ý muốn.",
+      "verification": "offline",
+      "ticket": "T08",
+      "status": "open"
+    },
+    {
+      "id": "C14",
+      "priority": "P1",
+      "title": "Đăng ký lịch tự APPROVED và chuyển tuần không tải dữ liệu mới",
+      "sources": [
+        {
+          "path": "src/app/dashboard/schedules/staff/actions.ts",
+          "needle": "export async function createWeeklySchedules",
+          "line": 121
+        },
+        {
+          "path": "src/app/dashboard/schedules/staff/staff-schedules-view.tsx",
+          "needle": "await createWeeklySchedules([payload])",
+          "line": 108
+        },
+        {
+          "path": "src/app/dashboard/schedules/staff/page.tsx",
+          "needle": "const schedules = await getStaffSchedules",
+          "line": 17
+        },
+        {
+          "path": "src/app/dashboard/schedules/staff/staff-schedules-view.tsx",
+          "needle": "const handleNextWeek",
+          "line": 66
+        }
+      ],
+      "evidence": "UI nghỉ/tăng ca gọi createWeeklySchedules, server ghi APPROVED với quyền create. Tăng ca optimistic lại PENDING. Page chỉ fetch tháng hiện tại, nút tuần chỉ đổi currentDate; không có fetch theo tuần mới.",
+      "impact": "Trạng thái duyệt trước/sau tải lại khác nhau; tuần ngoài tháng ban đầu thiếu dữ liệu lịch.",
+      "fix": "Chốt tự duyệt hay cần duyệt theo loại lịch; server là nguồn trạng thái. Load theo date range tuần và cache key, xử lý timezone ngày cuối tháng.",
+      "acceptance": "Tạo nghỉ/tăng ca bằng quyền create-only; trạng thái đúng policy và UI. Xem tuần giao tháng/tháng sau có dữ liệu đã lưu, không mất ngày cuối tháng.",
+      "verification": "static",
+      "ticket": "T09",
+      "status": "open"
+    },
+    {
+      "id": "C15",
+      "priority": "P1",
+      "title": "Tổng quan trộn số liệu cứng với dữ liệu thật và link tạo hợp đồng sai",
+      "sources": [
+        {
+          "path": "src/app/dashboard/page.tsx",
+          "needle": "450.000.000đ",
+          "line": 139
+        },
+        {
+          "path": "src/app/dashboard/page.tsx",
+          "needle": "href: \"/dashboard/contracts/new\"",
+          "line": 84
+        },
+        {
+          "path": "src/app/dashboard/page.tsx",
+          "needle": "const groupOrder",
+          "line": 77
+        },
+        {
+          "path": "src/app/dashboard/sales-kpi-card.tsx",
+          "needle": "Mục tiêu Tháng 8",
+          "line": 17
+        }
+      ],
+      "evidence": "Quick Stats hardcode 450 triệu, 124 hợp đồng, 15 khách; KPI có giá trị và tháng cứng. Quick action /contracts/new không có page new, có thể rơi vào [id]; create page thật là /contracts/create. groupOrder thiếu INVENTORY_GROUP.",
+      "impact": "Người dùng có thể đọc số minh họa như kết quả thực tế; nút tạo sai đường; kho không hiện trong nhóm thẻ Home.",
+      "fix": "Thay số cứng bằng truy vấn có định nghĩa chỉ số hoặc hiển thị chưa có dữ liệu; sửa route, thêm nhóm kho theo quyền. Phân biệt snapshot KPI lịch sử nếu vẫn giữ.",
+      "acceptance": "Tạo/sửa một ca thử làm đổi đúng số; không còn số giả dưới nhãn hiện tại; nút tạo mở form create; tài khoản có quyền thấy nhóm kho.",
+      "verification": "static",
+      "ticket": "T10",
+      "status": "open"
+    },
+    {
+      "id": "C16",
+      "priority": "P1",
+      "title": "Nhập kho có transaction nhưng chưa chống gửi lặp và định danh mẫu cần chốt",
+      "sources": [
+        {
+          "path": "supabase/migrations/20260829000005_inventory_factory_size_codes.sql",
+          "needle": "CREATE OR REPLACE FUNCTION public.complete_inventory_declaration_impl",
+          "line": 55
+        },
+        {
+          "path": "supabase/migrations/20260829000005_inventory_factory_size_codes.sql",
+          "needle": "ON CONFLICT (base_sku) DO UPDATE SET",
+          "line": 101
+        },
+        {
+          "path": "src/app/dashboard/inventory/catalog/actions.ts",
+          "needle": "export async function completeInventoryDeclaration",
+          "line": 61
+        }
+      ],
+      "evidence": "RPC wrapper kiểm quyền và SQL nhập model/session/lines/instances trong một function. Mỗi lần gọi tạo session/món mới, chưa có request ID. Mẫu khóa bằng factory_code chuẩn hóa; nhập lại cùng mã cập nhật nhiều trường model.",
+      "impact": "Retry sau mất mạng có thể nhập đôi; cùng factory nhưng khác màu/biến thể có thể ghi đè thuộc tính mẫu nếu nghiệp vụ coi là mẫu khác.",
+      "fix": "Bổ sung idempotency cho phiếu nhập; xác nhận khóa mẫu factory hay factory+biến thể. Validate vị trí và tổng size ở server/DB; bảo toàn metadata khi nhập bổ sung.",
+      "acceptance": "Gửi lại cùng request chỉ một session và đúng N món; hai request nhập thực sự khác vẫn cộng đúng. Nhập màu/size khác không đổi dữ liệu ngoài phạm vi đã chốt.",
+      "verification": "static",
+      "ticket": "T11",
+      "status": "open"
+    },
+    {
+      "id": "C17",
+      "priority": "P1",
+      "title": "Cấp mã và lịch sử migration chưa đủ để triển khai lặp lại an toàn",
+      "sources": [
+        {
+          "path": "src/utils/code-generator.ts",
+          "needle": "const { data, error } = await supabase",
+          "line": 11
+        },
+        {
+          "path": "supabase/migrations/20260829000002_sync_contract_event_orders.sql",
+          "needle": "AFTER INSERT OR UPDATE OF notes, status, deleted_at",
+          "line": 132
+        },
+        {
+          "path": "supabase/migrations/20260829000002_sync_contract_event_orders.sql",
+          "needle": "SET updated_at = updated_at",
+          "line": 138
+        }
+      ],
+      "evidence": "Allocator app đọc max rồi +1 không khóa. Có bốn cặp migration cùng prefix version. Backfill sync event chỉ SET updated_at trong khi trigger chỉ nghe notes/status/deleted_at nên không kích hoạt sync. Không thấy định nghĩa journey_tasks/cashflow/payroll_deductions trong 66 migration đã scan.",
+      "impact": "Đồng thời có thể sinh mã trùng; dựng môi trường mới khó tái lập đúng schema. Không suy ra bảng production chắc chắn thiếu.",
+      "fix": "Dùng sequence/RPC cấp mã; lập manifest version/checksum, đối chiếu migration đã áp dụng trước khi đổi tên; sửa backfill explicit theo event; bổ sung baseline schema thiếu sau khi đối chiếu DB.",
+      "acceptance": "Probe hai allocator cùng CUST-000010. Sau sửa chạy đồng thời không trùng; bootstrap DB sạch và replay hợp lệ; backfill thực sự tạo/cập nhật đơn cho fixture cũ.",
+      "verification": "offline",
+      "ticket": "T12",
+      "status": "open"
+    },
+    {
+      "id": "C18",
+      "priority": "P1",
+      "title": "Build bỏ qua TypeScript/lint nên cần cổng kiểm tra độc lập",
+      "sources": [
+        {
+          "path": "next.config.mjs",
+          "needle": "ignoreBuildErrors: true",
+          "line": 4
+        },
+        {
+          "path": "next.config.mjs",
+          "needle": "ignoreDuringBuilds: true",
+          "line": 7
+        },
+        {
+          "path": "package.json",
+          "needle": "\"lint\": \"next lint\"",
+          "line": 12
+        }
+      ],
+      "evidence": "Đã chạy tsc --noEmit --incremental false: exit 0; next lint exit 0 có warnings. Build config đang bỏ qua cả hai; package không có test script.",
+      "impact": "Build thành công không chứng minh nghiệp vụ đúng; lỗi kiểu/lint mới có thể qua build nếu không chạy gate riêng.",
+      "fix": "Thêm bước typecheck/lint có kiểm soát trong quy trình, ưu tiên regression test cho các luồng dữ liệu đã tái hiện. Không dành đợt đầu để sửa toàn bộ cảnh báo ảnh.",
+      "acceptance": "Typecheck/lint qua; các test atomicity, permissions, reservation, payment, outbound và migration nằm trong gate và thật sự fail khi tái đưa lỗi.",
+      "verification": "static",
+      "ticket": "T12",
+      "status": "open"
+    },
+    {
+      "id": "C19",
+      "priority": "P1",
+      "title": "Tài sản chưa phản ánh đủ trạng thái và có cache cũ sau thao tác",
+      "sources": [
+        {
+          "path": "src/app/dashboard/inventory/locations/page.tsx",
+          "needle": "OUTBOUND: assets.filter(a => a.status === \"RENTED\")",
+          "line": 73
+        },
+        {
+          "path": "src/lib/inventory-asset-prefetch.ts",
+          "needle": "const CACHE_TTL = 60_000",
+          "line": 18
+        },
+        {
+          "path": "src/app/dashboard/inventory/locations/actions.ts",
+          "needle": ".limit(500)",
+          "line": 40
+        }
+      ],
+      "evidence": "Tab Đang xuất chỉ đếm RENTED, Orders lại ghi DELIVERED; danh mục chưa có nhóm SOLD/RESERVED_SALE. Cache browser 60 giây không có invalidation hàm ghi trong code đã scan. Assets fetch toàn bộ không phân trang, outbound chỉ lấy 500 session.",
+      "impact": "Số đếm bỏ sót trạng thái; quay lại sau xuất/putaway có thể thấy dữ liệu cũ; quan hệ xuất gần nhất của món có thể thiếu khi vượt giới hạn.",
+      "fix": "Thống nhất enum với T06, tính count phía DB, phân trang; invalidate cache sau thao tác, thêm refresh và trạng thái lỗi rõ.",
+      "acceptance": "DELIVERED/SOLD/RESERVED_SALE hiển thị đúng nhóm; xuất rồi quay lại thấy ngay; fixture trên giới hạn trang không làm tổng count sai.",
+      "verification": "static",
+      "ticket": "T10",
+      "status": "open"
+    },
+    {
+      "id": "C20",
+      "priority": "P1",
+      "title": "Nhánh tự động hóa nhân sự/lương còn giá trị ví dụ và bỏ qua lỗi",
+      "sources": [
+        {
+          "path": "src/app/dashboard/orders/actions.ts",
+          "needle": "amount: 200000",
+          "line": 139
+        },
+        {
+          "path": "src/app/dashboard/schedules/operation/actions.ts",
+          "needle": "await supabase.from(\"attendance\").insert",
+          "line": 362
+        },
+        {
+          "path": "src/app/dashboard/schedules/operation/actions.ts",
+          "needle": "Check time overlap simplified",
+          "line": 335
+        }
+      ],
+      "evidence": "ISSUE qua updateOrderStatus chèn khấu trừ PENDING 200000; createOperationSchedule chèn attendance với comment giả lập, còn schema trong repo có attendance_logs. Conflict lịch chỉ so cùng ngày/location, không so giờ. Chưa có DB verification cho các bảng giả lập.",
+      "impact": "Đề xuất lương không đúng quy định hoặc lặp; phân công có thể bị hiểu như chấm công. Cảnh báo trùng phòng không phân biệt khung giờ.",
+      "fix": "Tách phân công khỏi chấm công; cấu hình chính sách sự cố có nguồn xác nhận và chống lặp; bỏ/hoàn thiện automation giả lập sau khi đối chiếu schema; so khoảng giờ cho conflict.",
+      "acceptance": "Đổi ISSUE nhiều lần không tạo nhiều đề xuất; không đánh dấu đã làm chỉ từ lịch phân công; hai lịch cùng phòng khác giờ không bị cảnh báo trùng giờ.",
+      "verification": "static",
+      "ticket": "T09",
+      "status": "open"
+    }
+  ],
+  "tickets": [
+    {
+      "id": "T01",
+      "priority": "P0",
+      "depends_on": [],
+      "findings": [
+        "C01",
+        "C02"
+      ],
+      "title": "Chặn đường truy cập/ghi dữ liệu ngoài quyền",
+      "scope": "API test/debug + public admin actions + policy scope",
+      "implementation": "Đóng endpoint test; kiểm quyền tại action; lọc scope theo bản ghi.",
+      "deliverable": "Code/routes, action guard matrix, regression quyền",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    },
+    {
+      "id": "T02",
+      "priority": "P1",
+      "depends_on": [
+        "T01"
+      ],
+      "findings": [
+        "C03"
+      ],
+      "title": "Đồng bộ quyền menu → action → SQL",
+      "scope": "APPOINTMENTS, INVENTORY_OUTBOUND, RBAC TypeScript/SQL",
+      "implementation": "Lập ma trận quyền hiện tại và sửa mapping; xác nhận chế độ role/user trước khi thay chính sách.",
+      "deliverable": "Một ma trận quyền có kết quả kiểm thử",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    },
+    {
+      "id": "T03",
+      "priority": "P0",
+      "depends_on": [
+        "T01"
+      ],
+      "findings": [
+        "C04",
+        "C05",
+        "C08"
+      ],
+      "title": "Sửa mất dữ liệu và sai mã giữ hàng",
+      "scope": "Contract form/actions, Journey, reservation DB, version/restore",
+      "implementation": "Bỏ song song ghi chung JSON, atomic aggregate/reservation, dùng UUID/QR thật; tích hợp version hiện có.",
+      "deliverable": "Migration/RPC mới, action gọi thống nhất, kiểm thử concurrency/rollback/restore",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    },
+    {
+      "id": "T04",
+      "priority": "P0",
+      "depends_on": [
+        "T03"
+      ],
+      "findings": [
+        "C06"
+      ],
+      "title": "Tách thu tiền khỏi hoàn thành thực hiện",
+      "scope": "Payment actions, normalization, Journey filters",
+      "implementation": "Một ledger thu, tổng hợp atomic; không đóng hợp đồng chỉ vì thu đủ; chống trùng phiếu.",
+      "deliverable": "Quy tắc trạng thái + test thu nhiều đợt và lỗi sổ",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    },
+    {
+      "id": "T05",
+      "priority": "P1",
+      "depends_on": [
+        "T03"
+      ],
+      "findings": [
+        "C07"
+      ],
+      "title": "Chuẩn hóa event → order và hủy hợp đồng",
+      "scope": "Contract actions + SQL sync trigger",
+      "implementation": "Một owner sync; event ID ổn định; notes riêng; cancel/restore xử lý đơn và giữ hàng.",
+      "deliverable": "Mapping event/order, migration đối soát, test đổi/hủy",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    },
+    {
+      "id": "T06",
+      "priority": "P0",
+      "depends_on": [
+        "T02",
+        "T03"
+      ],
+      "findings": [
+        "C09",
+        "C10"
+      ],
+      "title": "Sửa xuất kho đúng đơn, đúng món, đúng trạng thái",
+      "scope": "Outbound form/actions/RPC, Orders trạng thái",
+      "implementation": "derive contract từ order; DB guard/lock/idempotency; thống nhất RENTED/DELIVERED và SALE.",
+      "deliverable": "State transition matrix + RPC xuất và kiểm thử cạnh tranh",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    },
+    {
+      "id": "T07",
+      "priority": "P1",
+      "depends_on": [
+        "T05",
+        "T06"
+      ],
+      "findings": [
+        "C11",
+        "C12"
+      ],
+      "title": "Hợp nhất sự cố → xử lý → xếp kệ",
+      "scope": "Contract incident, Orders, order-incidents, inbound putaway",
+      "implementation": "Một nguồn sự cố, atomic writes, request ID bền, check quan hệ món/đơn; loại đường legacy sau đối soát.",
+      "deliverable": "Workflow sự cố và test retry/resolve/putaway",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    },
+    {
+      "id": "T08",
+      "priority": "P1",
+      "depends_on": [
+        "T01"
+      ],
+      "findings": [
+        "C13"
+      ],
+      "title": "Sửa CRM ↔ lịch hẹn",
+      "scope": "Customers actions/form + Appointments",
+      "implementation": "Tri-state bỏ qua/đổi/hủy lịch; appointment ID rõ; phản hồi lỗi đồng bộ; chốt nhiều hẹn/khách.",
+      "deliverable": "Đặc tả lịch hẹn + test xóa ngày/nhiều lịch",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    },
+    {
+      "id": "T09",
+      "priority": "P1",
+      "depends_on": [
+        "T02"
+      ],
+      "findings": [
+        "C14",
+        "C20"
+      ],
+      "title": "Sửa lịch làm việc và tự động hóa nhân sự",
+      "scope": "Staff/operation schedules + Orders ISSUE",
+      "implementation": "Query theo tuần; status duyệt đồng nhất; phân công tách attendance; chính sách khấu trừ cấu hình và chống lặp.",
+      "deliverable": "Quy tắc duyệt/lương có nguồn + test lịch và quyền",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    },
+    {
+      "id": "T10",
+      "priority": "P1",
+      "depends_on": [
+        "T04",
+        "T06"
+      ],
+      "findings": [
+        "C15",
+        "C19"
+      ],
+      "title": "Làm Tổng quan/Tài sản phản ánh dữ liệu thật",
+      "scope": "Dashboard/KPI, registry, assets/cache",
+      "implementation": "Bỏ số cứng hoặc gắn nhãn snapshot; sửa route; count server, pagination, invalidate cache.",
+      "deliverable": "Từ điển KPI + kết quả đối soát và test điều hướng",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    },
+    {
+      "id": "T11",
+      "priority": "P1",
+      "depends_on": [
+        "T02"
+      ],
+      "findings": [
+        "C16"
+      ],
+      "title": "Chống nhập kho trùng và chốt định danh mẫu",
+      "scope": "Catalog declaration + intake RPC",
+      "implementation": "request ID cho phiếu nhập; xác nhận factory/variant key; validate server và bảo toàn metadata.",
+      "deliverable": "Migration nhập kho + test replay/nhập bổ sung",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    },
+    {
+      "id": "T12",
+      "priority": "P1",
+      "depends_on": [],
+      "findings": [
+        "C17",
+        "C18"
+      ],
+      "title": "Chốt baseline schema, cấp mã và cổng kiểm chứng",
+      "scope": "Migration manifest, code allocator, package/build checks",
+      "implementation": "Đối chiếu DB trước khi áp migration; sửa backfill; sequence; tsc/lint/regression gate.",
+      "deliverable": "Manifest DB và báo cáo bootstrap/replay; suite regression",
+      "owner": "agent triển khai; chủ nghiệp vụ xác nhận các quy tắc còn mở",
+      "status": "planned"
+    }
+  ],
+  "checks": [
+    {
+      "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false --pretty false",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "command": "node node_modules/next/dist/bin/next lint",
+      "exit_code": 0,
+      "result": "passed_with_warnings_hook_dependencies_and_images"
+    },
+    {
+      "command": "node scripts/audit-it-offline.cjs",
+      "exit_code": 0,
+      "result": "6 current-code behaviours reproduced with mocked DB; not production E2E"
+    }
+  ]
+}

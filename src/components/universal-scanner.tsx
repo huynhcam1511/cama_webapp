@@ -38,7 +38,7 @@ export default function UniversalScanner({
       location_tier: location.tier,
     }));
     if (!fullPage) onClose();
-    router.push(`/dashboard/inventory/catalog/new?${params.toString()}`);
+    router.push(`/dashboard/inventory/inbound/putaway?${params.toString()}`);
   };
 
   const openOutboundForm = (location: { floor: string; shelf: string; tier: string }) => {
@@ -220,7 +220,7 @@ export default function UniversalScanner({
                         
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
                           <h4 className="font-bold text-sm leading-tight text-slate-800 line-clamp-2">{p.name}</h4>
-                          <code className="block text-xs font-mono text-blue-600 mt-1 bg-blue-50 w-max px-1.5 py-0.5 rounded">{p.qr_code}</code>
+                          <code className="block text-xs font-mono text-blue-600 mt-1 bg-blue-50 w-max px-1.5 py-0.5 rounded">{p.sku || p.qr_code}</code>
                           <div className="text-xs text-slate-500 mt-1">Size: <strong className="text-slate-700">{p.size_code || '—'}</strong></div>
                         </div>
                       </div>

@@ -586,7 +586,7 @@ export async function restoreContractVersion(contractId: string, versionId: numb
     });
 
     if (error) throw error;
-    revalidatePath("/dashboard/contracts");
+  revalidatePath("/dashboard/contracts");
     revalidatePath(`/dashboard/contracts/${contractId}`);
     revalidatePath(`/dashboard/contracts/${contractId}/edit`);
     return { success: true };
@@ -919,6 +919,7 @@ export async function createContract(payload: {
       payload
     );
 
+  if (contract.id) await syncContractEventOrders(contract.id);
     revalidatePath("/dashboard/contracts");
     revalidatePath(`/dashboard/contracts/${contract.id}`);
     return { success: true, data: contract };
@@ -938,173 +939,33 @@ export async function recordPaymentTransaction(
     content: string;
     receipt_attachment_url?: string;
     notes?: string;
+    requestId?: string;
   }
 ) {
   await requirePermission("STUDIO_CONTRACTS", "update");
   const supabase = createAdminClient();
-  const currentContract = await getContractById(contractId);
-  if (!currentContract) {
-    return { success: false, error: "Hợp đồng không tồn tại" };
-  }
 
-  const receiptCode = `PT-2026-${String(Math.floor(Math.random() * 90000 + 10000))}`;
-  const newPayment: ContractPayment = {
-    id: `pay-${Date.now()}`,
-    contract_id: contractId,
-    receipt_code: receiptCode,
-    amount: payload.amount,
-    payment_date: new Date().toISOString(),
-    payment_method: payload.payment_method,
-    account_fund: payload.account_fund || "Tài khoản Ngân hàng CAMA",
-    collector_name: payload.collector_name || "Kế Toán Studio",
-    content: payload.content || "Thu tiền đợt hợp đồng",
-    receipt_attachment_url: payload.receipt_attachment_url || "",
-    notes: payload.notes || "",
-    status: "COMPLETED",
-    created_by: payload.collector_name || "Kế Toán Studio",
-    created_at: new Date().toISOString(),
-  };
+  const requestId = payload.requestId || `req-${Date.now()}`;
 
-  const updatedPayments = [...currentContract.payments, newPayment];
-  const newTotalPaid = updatedPayments
-    .filter((p) => p.status === "COMPLETED")
-    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const { data: rpcResult, error: rpcError } = await supabase.rpc("record_payment_transaction", {
+    p_contract_id: contractId,
+    p_amount: payload.amount,
+    p_payment_method: payload.payment_method,
+    p_account_fund: payload.account_fund || "Tài khoản Ngân hàng CAMA",
+    p_collector_name: payload.collector_name || "Kế Toán Studio",
+    p_content: payload.content || "Thu tiền đợt hợp đồng",
+    p_receipt_url: payload.receipt_attachment_url || "",
+    p_notes: payload.notes || "",
+    p_request_id: requestId
+  });
 
-  let newPaymentStatus: PaymentStatus = "UNPAID";
-  if (currentContract.total_amount === 0) {
-    newPaymentStatus = "VALUE_UNDETERMINED";
-  } else if (newTotalPaid >= currentContract.total_amount && currentContract.total_amount > 0) {
-    newPaymentStatus = "FULLY_PAID";
-  } else if (newTotalPaid > 0) {
-    newPaymentStatus = newTotalPaid >= currentContract.required_deposit ? "DEPOSITED" : "PARTIALLY_PAID";
-  }
-
-  const newActivity: ContractActivity = {
-    id: `act-${Date.now()}`,
-    actor_name: payload.collector_name || "Kế Toán Studio",
-    action_type: "RECORD_PAYMENT",
-    content: `Ghi nhận phiếu thu ${receiptCode}: ${new Intl.NumberFormat("vi-VN").format(payload.amount)} ₫ (${payload.content})`,
-    created_at: new Date().toISOString(),
-  };
-
-  const metaData = {
-    ...parseMetadata(currentContract.notes || null),
-    paper_contract_number: currentContract.paper_contract_number,
-    branch: currentContract.branch,
-    assigned_staff_name: currentContract.assigned_staff_name,
-    created_by_name: currentContract.created_by_name,
-    updated_by_name: payload.collector_name || "Kế Toán Studio",
-    subtotal_amount: currentContract.subtotal_amount,
-    discount_amount: currentContract.discount_amount,
-    discount_type: currentContract.discount_type,
-    surcharge_amount: currentContract.surcharge_amount,
-    total_amount: currentContract.total_amount,
-    paid_amount: newTotalPaid,
-    required_deposit: currentContract.required_deposit,
-    contract_status: newTotalPaid >= currentContract.total_amount ? "COMPLETED" : currentContract.contract_status,
-    payment_status: newPaymentStatus,
-    execution_status: currentContract.execution_status,
-    debt_status: (currentContract.total_amount === 0) ? "NO_DEBT" : (newTotalPaid >= currentContract.total_amount ? "FULLY_COLLECTED" : "IN_TERM" as DebtStatus),
-    payment_due_date: currentContract.payment_due_date,
-    items: currentContract.items,
-    payments: updatedPayments,
-    checklist: currentContract.checklist,
-    schedules: currentContract.schedules,
-    garments: currentContract.garments,
-    documents: currentContract.documents,
-    activities: [newActivity, ...currentContract.activities],
-  };
-
-  // Update contracts row
-  const { error } = await supabase
-    .from("contracts")
-    .update({
-      paid_amount: newTotalPaid,
-      status: newTotalPaid >= currentContract.total_amount ? "COMPLETED" : currentContract.contract_status,
-      notes: stringifyMetadata(metaData),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", contractId);
-
-  if (error) {
-    console.error("Error recording payment:", error);
-    return { success: false, error: error.message };
-  }
-
-  // Also insert into payment_installments for backward compatibility
-  await supabase.from("payment_installments").insert([
-    {
-      contract_id: contractId,
-      installment_type: newTotalPaid >= currentContract.total_amount ? "FINAL" : "PARTIAL",
-      amount: payload.amount,
-      payment_date: new Date().toISOString(),
-      payment_method: payload.payment_method,
-      status: "PAID",
-      receipt_url: payload.receipt_attachment_url || null,
-      notes: stringifyMetadata({
-        receipt_code: receiptCode,
-        collector_name: payload.collector_name,
-        account_fund: payload.account_fund,
-      }),
-    },
-  ]);
-
-  // Automation 1 & 2: Kích hoạt khi vừa đạt trạng thái Đã Cọc hoặc Đã Thu Đủ
-  if (
-    (newPaymentStatus === "DEPOSITED" || newPaymentStatus === "FULLY_PAID") &&
-    currentContract.payment_status !== "DEPOSITED" &&
-    currentContract.payment_status !== "FULLY_PAID"
-  ) {
-    // Automation 1: Sinh Lịch Trình Vận Hành từ meta.schedules
-    try {
-      const schedulesToCreate = (currentContract.schedules || []).map((sch: any) => ({
-        title: sch.title || "Lịch hẹn hợp đồng " + currentContract.contract_code,
-        event_type: sch.milestone_type === "TRY_DRESS" ? "DRESS_TRY_ON" : sch.milestone_type === "SHOOT" ? "FITTING" : "CUSTOMER_APPOINTMENT",
-        customer_id: currentContract.customer_id,
-        contract_id: contractId,
-        date: sch.scheduled_at ? sch.scheduled_at.split("T")[0] : new Date().toISOString().split("T")[0],
-        start_time: "09:00",
-        end_time: "11:00",
-        location: sch.location || "Studio",
-        status: "SCHEDULED",
-        priority: "NORMAL",
-        schedule_category: "OPERATION_TASK",
-        created_by: payload.collector_name || "System"
-      }));
-      
-      if (schedulesToCreate.length > 0) {
-        await supabase.from("operation_schedules").insert(schedulesToCreate);
-      }
-    } catch (err) {
-      console.error("Automation 1 Error:", err);
-    }
-
-    // Automation 2: Đẩy sang hệ thống Thu Chi Kế Toán (Cashflow)
-    try {
-      // Giả lập đẩy sang bảng cashflow (nếu có)
-      await supabase.from("cashflow").insert([
-        {
-          transaction_type: "INCOME",
-          amount: payload.amount,
-          category: "Thu Tiền Hợp Đồng",
-          reference_id: contractId,
-          reference_type: "CONTRACT",
-          payment_method: payload.payment_method,
-          account_fund: payload.account_fund || "Tiền Mặt",
-          description: payload.content || "Tự động hạch toán thu cọc hợp đồng",
-          transaction_date: new Date().toISOString(),
-          created_by: payload.collector_name || "System"
-        }
-      ]);
-    } catch (err) {
-      console.error("Automation 2 Error:", err);
-    }
-  }
+  if (rpcError) return { success: false, error: rpcError.message };
 
   revalidatePath("/dashboard/contracts");
   revalidatePath(`/dashboard/contracts/${contractId}`);
   return { success: true };
 }
+
 
 export async function cancelContract(contractId: string, reason: string, refundAmount: number = 0) {
   await requirePermission("STUDIO_CONTRACTS", "update");
@@ -1120,31 +981,49 @@ export async function cancelContract(contractId: string, reason: string, refundA
     created_at: new Date().toISOString(),
   };
 
+  const oldMeta = parseMetadata(currentContract.notes || null);
+  const oldGarments = Array.isArray(oldMeta.garments) ? oldMeta.garments : [];
+
+  const updatedGarments = oldGarments.map((g: any) => ({
+    ...g,
+    reservation_status: "CANCELLED"
+  }));
+
   const metaData = {
-    ...parseMetadata(currentContract.notes || null),
+    ...oldMeta,
+    garments: updatedGarments,
     contract_status: "CANCELLED" as ContractStatus,
     cancel_reason: reason,
     canceled_at: new Date().toISOString(),
     canceled_by_name: "Admin",
     refund_amount: refundAmount,
-    activities: [newActivity, ...currentContract.activities],
+    activities: [newActivity, ...(Array.isArray(oldMeta.activities) ? oldMeta.activities : [])],
   };
 
-  const { error } = await supabase
-    .from("contracts")
-    .update({
+  const { error } = await supabase.from("contracts").update({
       status: "CANCELLED",
       notes: stringifyMetadata(metaData),
       updated_at: new Date().toISOString(),
-    })
-    .eq("id", contractId);
+  }).eq("id", contractId);
 
   if (error) return { success: false, error: error.message };
+
+  const reservedGarmentIds = oldGarments.filter((g: any) => g.fulfillment_type === "SALE" && !["RETURNED", "CANCELLED", "LIQUIDATED"].includes(g.reservation_status)).map((g: any) => g.garment_instance_id).filter(Boolean);
+
+  if (reservedGarmentIds.length > 0) {
+    await supabase.from("garments_inventory").update({ status: "AVAILABLE", updated_at: new Date().toISOString() }).in("id", reservedGarmentIds).eq("status", "RESERVED_SALE");
+  }
+
+  const { data: linkedOrders } = await supabase.from("orders").select("id").eq("contract_id", contractId);
+  if (linkedOrders && linkedOrders.length > 0) {
+    await supabase.from("orders").update({ completion_status: "CANCELLED" }).in("id", linkedOrders.map((o: any) => o.id));
+  }
 
   revalidatePath("/dashboard/contracts");
   revalidatePath(`/dashboard/contracts/${contractId}`);
   return { success: true };
 }
+
 
 export async function addContractSchedule(contractId: string, schedule: Omit<ContractSchedule, "id">) {
   await requirePermission("STUDIO_CONTRACTS", "update");
@@ -1827,118 +1706,59 @@ export async function searchContractInventory(
 
 export async function reserveContractInventory(payload: {
   contractId: string;
-  modelId: string;
-  sizeCode: string;
-  quantity: number;
-  startDate?: string;
-  endDate?: string;
-  fulfillmentType: "RENTAL" | "SALE";
+  selections: {
+    modelId: string;
+    sizeCode: string;
+    quantity: number;
+    startDate?: string;
+    endDate?: string;
+    fulfillmentType: "RENTAL" | "SALE";
+  }[];
 }) {
   await requirePermission("STUDIO_CONTRACTS", "update");
   const supabase = createAdminClient();
-  const currentContract = await getContractById(payload.contractId);
-  if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại." };
-  if (payload.fulfillmentType === "RENTAL" && (!payload.startDate || !payload.endDate)) return { success: false, error: "Vui lòng chọn ngày lấy và ngày trả." };
-
-  const currentMeta = parseMetadata(currentContract.notes || null);
-  const alreadyReserved = (Array.isArray(currentMeta.garments) ? currentMeta.garments : []).filter((garment: any) =>
-    garment.model_id === payload.modelId &&
-    garment.size === payload.sizeCode &&
-    !["RETURNED", "CANCELLED", "LIQUIDATED"].includes(garment.reservation_status) &&
-    (payload.fulfillmentType === "SALE" || (garment.deliver_date === payload.startDate && garment.return_date === payload.endDate))
-  ).slice(0, payload.quantity);
-
-  // Chọn lại đúng món mà chính hợp đồng này đã giữ trước đó: nối lại vào dòng
-  // thay vì trừ thêm một chiếc nữa.
-  if (alreadyReserved.length === payload.quantity) {
-    let linked = false;
-    if (Array.isArray(currentMeta.items)) {
-      currentMeta.items = currentMeta.items.map((item: any) => {
-        const selection = item?.inventory_selection;
-        if (linked || selection?.modelId !== payload.modelId || selection?.size !== payload.sizeCode) return item;
-        linked = true;
-        return {
-          ...item,
-          inventory_selection: {
-            ...selection,
-            codes: alreadyReserved.map((garment: any) => garment.garment_code),
-            startDate: payload.startDate,
-            endDate: payload.endDate,
-            status: "RESERVED",
-          },
-        };
-      });
-    }
-    const { error: relinkError } = await supabase.from("contracts").update({ notes: stringifyMetadata(currentMeta), updated_at: new Date().toISOString() }).eq("id", payload.contractId);
-    if (relinkError) return { success: false, error: relinkError.message };
-    revalidatePath("/dashboard/orders");
-    const { data: relinkedOrders } = await supabase.from("orders").select("id").eq("contract_id", payload.contractId);
-    for (const order of relinkedOrders || []) revalidatePath(`/dashboard/orders/${order.id}`);
-    return { success: true, garments: alreadyReserved };
-  }
-
-  const searchResult = await searchContractInventory("", payload.startDate || "", payload.endDate || "", payload.fulfillmentType);
-  if (!searchResult.success) return searchResult;
-  const availableModel: any = searchResult.models.find((model: any) => model.id === payload.modelId);
-  if (!availableModel || (availableModel.sizes[payload.sizeCode] || 0) < payload.quantity) return { success: false, error: "Số lượng khả dụng vừa thay đổi. Vui lòng chọn lại." };
-
-  const { data: model, error } = await supabase.from("garment_models").select("*, instances:garments_inventory(id,qr_code,size_code,status,created_at)").eq("id", payload.modelId).single();
-  if (error || !model) return { success: false, error: "Không tìm thấy sản phẩm trong kho." };
-
-  const availableIds = new Set<string>(availableModel.available_instance_ids[payload.sizeCode] || []);
-  const allInstances = [...(model.instances || [])].sort((a: any, b: any) => String(a.created_at || a.id).localeCompare(String(b.created_at || b.id)));
-  const selected = allInstances.filter((instance: any) => instance.status === "AVAILABLE" && instance.size_code === payload.sizeCode && availableIds.has(instance.id)).slice(0, payload.quantity);
-  if (selected.length < payload.quantity) return { success: false, error: "Không còn đủ sản phẩm khả dụng. Vui lòng tải lại." };
-
-  const meta = currentMeta;
-  const garments = Array.isArray(meta.garments) ? meta.garments : [];
-  const additions = selected.map((instance: any) => {
-    const sequence = allInstances.findIndex((item: any) => item.id === instance.id) + 1;
-    return {
-      id: `gar-${crypto.randomUUID()}`,
-      garment_instance_id: instance.id,
-      model_id: model.id,
-      garment_code: `${model.base_sku}-${payload.sizeCode}-${String(sequence).padStart(3, "0")}`,
-      product_name: model.name,
-      product_image_url: model.image_url || null,
-      product_type: model.category || model.group_type,
-      size: payload.sizeCode,
-      deliver_date: payload.startDate || null,
-      return_date: payload.endDate || null,
-      reservation_status: "RESERVED",
-      fulfillment_type: payload.fulfillmentType,
-      fitting_notes: "",
-    };
+  
+  const { data: finalGarments, error } = await supabase.rpc("reserve_garments_atomic", {
+    p_contract_id: payload.contractId,
+    p_selections: payload.selections
   });
-  meta.garments = [...garments, ...additions];
-  if (Array.isArray(meta.items)) {
-    let linked = false;
-    meta.items = meta.items.map((item: any) => {
-      const selection = item?.inventory_selection;
-      if (linked || selection?.modelId !== payload.modelId || selection?.size !== payload.sizeCode || selection?.status === "RESERVED") return item;
-      linked = true;
-      return {
-        ...item,
-        inventory_selection: {
-          ...selection,
-          codes: additions.map((garment: any) => garment.garment_code),
-          startDate: payload.startDate,
-          endDate: payload.endDate,
-          status: "RESERVED",
-        },
-      };
-    });
+  
+  if (error) return { success: false, error: error.message };
+  
+  const currentContract = await getContractById(payload.contractId);
+  if (currentContract) {
+    const currentMeta = parseMetadata(currentContract.notes || null);
+    if (Array.isArray(currentMeta.items)) {
+      const additions = finalGarments.filter((g: any) => g.reservation_status === "RESERVED");
+      for (const selection of payload.selections) {
+        let linked = false;
+        currentMeta.items = currentMeta.items.map((item: any) => {
+          const sel = item?.inventory_selection;
+          if (linked || sel?.modelId !== selection.modelId || sel?.size !== selection.sizeCode || sel?.status === "RESERVED") return item;
+          linked = true;
+          const matchingAdditions = additions.filter((a: any) => a.model_id === selection.modelId && a.size === selection.sizeCode);
+          return {
+            ...item,
+            inventory_selection: {
+              ...sel,
+              codes: matchingAdditions.map((garment: any) => garment.garment_code),
+              startDate: selection.startDate,
+              endDate: selection.endDate,
+              status: "RESERVED",
+            },
+          };
+        });
+      }
+      currentMeta.activities = [{ id: `act-${Date.now()}`, actor_name: "Nhân viên", action_type: "UPDATE_CONTRACT", content: `Giữ ${additions.length} sản phẩm`, created_at: new Date().toISOString() }, ...(Array.isArray(currentMeta.activities) ? currentMeta.activities : [])];
+      await supabase.from("contracts").update({ notes: stringifyMetadata(currentMeta), updated_at: new Date().toISOString() }).eq("id", payload.contractId);
+    }
   }
-  meta.activities = [{ id: `act-${Date.now()}`, actor_name: "Nhân viên Hợp đồng", action_type: "UPDATE_CONTRACT", content: `Giữ ${payload.quantity} sản phẩm ${model.name}, size ${payload.sizeCode} (${payload.fulfillmentType === "SALE" ? "mua bán" : "cho thuê"})`, created_at: new Date().toISOString() }, ...(Array.isArray(meta.activities) ? meta.activities : [])];
-  const { error: updateError } = await supabase.from("contracts").update({ notes: stringifyMetadata(meta), updated_at: new Date().toISOString() }).eq("id", payload.contractId);
-  if (updateError) return { success: false, error: updateError.message };
-  if (payload.fulfillmentType === "SALE") await supabase.from("garments_inventory").update({ status: "RESERVED_SALE", updated_at: new Date().toISOString() }).in("id", selected.map((item: any) => item.id));
+
   revalidatePath(`/dashboard/contracts/${payload.contractId}`);
   revalidatePath("/dashboard/orders");
-  const { data: linkedOrders } = await supabase.from("orders").select("id").eq("contract_id", payload.contractId);
-  for (const order of linkedOrders || []) revalidatePath(`/dashboard/orders/${order.id}`);
-  return { success: true, garments: additions };
+  return { success: true, garments: finalGarments };
 }
+
 
 export async function checkInventoryAvailabilityAndSearch(
   factoryCode: string,
@@ -2163,7 +1983,8 @@ export async function reportGarmentIncident(
       .update({ notes: stringifyMetadata(meta), updated_at: new Date().toISOString() })
       .eq("id", contractId);
 
-    revalidatePath(`/dashboard/contracts/${contractId}`);
+    await syncContractEventOrders(contractId);
+  revalidatePath(`/dashboard/contracts/${contractId}`);
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -2195,3 +2016,35 @@ export async function reportIncidentFromScanner(
 }
 
 
+
+
+export async function syncContractEventOrders(contractId: string) {
+  const supabase = createAdminClient();
+  const contract = await getContractById(contractId);
+  if (!contract || !contract.schedules) return;
+  
+  const schedules = Array.isArray(contract.schedules) ? contract.schedules : [];
+  
+  for (const schedule of schedules) {
+    if (!schedule.id) continue;
+    
+    let status = "PENDING";
+    if (schedule.milestone_type === "SHOOT") status = "PREPARING";
+    
+    const { error } = await supabase.from("orders").upsert({
+      contract_id: contractId,
+      event_id: schedule.id,
+      customer_id: contract.customer_id,
+      order_code: `ORD-${contract.contract_code || contractId.substring(0,8)}-${schedule.title?.substring(0,3).toUpperCase() || 'EVT'}`,
+      order_type: schedule.milestone_type === "SHOOT" ? "PHOTOGRAPHY" : "RENTAL",
+      order_date: schedule.scheduled_at || contract.contract_date,
+      expected_delivery_date: schedule.scheduled_at,
+      total_amount: 0,
+      payment_status: "UNPAID",
+      execution_status: "PREPARING",
+      delivery_status: "PENDING",
+      completion_status: "PREPARING",
+      notes: schedule.title
+    }, { onConflict: 'contract_id, event_id', ignoreDuplicates: true }); 
+  }
+}

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requirePermission } from "@/lib/rbac";
 
 export async function getOutboundHistory() {
-  await requirePermission("GARMENT_CATALOG", "view");
+  await requirePermission("INVENTORY_OUTBOUND", "view");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("inventory_outbound_sessions")
@@ -73,7 +73,7 @@ export async function getOutboundHistory() {
 }
 
 export async function getOutboundOrders() {
-  await requirePermission("GARMENT_CATALOG", "view");
+  await requirePermission("INVENTORY_OUTBOUND", "view");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("orders")
@@ -116,7 +116,7 @@ export async function searchGarmentInstance(qrCode: string) {
 }
 
 export async function submitOutbound(payload: any) {
-  await requirePermission("GARMENT_CATALOG", "create");
+  await requirePermission("INVENTORY_OUTBOUND", "create");
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { success: false, error: "Phiên đăng nhập hết hạn" };

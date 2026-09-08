@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import * as icons from "lucide-react";
 import { format } from "date-fns";
 import { Order, OrderStatus } from "../actions";
@@ -12,6 +13,15 @@ const UI_STEPS = [
   { id: 'XU_LY', label: 'Xử lý Kho', statuses: ['ISSUE'] },
   { id: 'HOAN_TAT', label: 'Hoàn tất', statuses: ['COMPLETED'] }
 ];
+
+const getNextStatus = (status: OrderStatus): OrderStatus | null => {
+  if (status === "WAITING_RETURN") return "COMPLETED";
+  if (status === "ISSUE") return "COMPLETED";
+  const stepIndex = UI_STEPS.findIndex(step => step.statuses.includes(status));
+  return stepIndex >= 0 && stepIndex < UI_STEPS.length - 1
+    ? UI_STEPS[stepIndex + 1].statuses[0] as OrderStatus
+    : null;
+};
 
 const ImageWithFallback = ({ src, alt, className, fallbackIcon: FallbackIcon = icons.Shirt }: any) => {
   const [error, setError] = React.useState(false);
@@ -56,7 +66,8 @@ export default function OrderDetailMobile({
   handlePicChange,
   isUpdatingPic
 }: any) {
-  
+  const router = useRouter();
+
   const [showOrderInfo, setShowOrderInfo] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -68,8 +79,9 @@ export default function OrderDetailMobile({
   
   // Incident Modal State
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
-  const [incidentForm, setIncidentForm] = useState({ description: '', penalty_amount: 0, bill_image: '', resolution: 'DEDUCT_FROM_DEPOSIT' });
+  const [incidentForm, setIncidentForm] = useState({ garment_code: '', description: '', penalty_amount: 0, bill_image: '', resolution: 'DEDUCT_FROM_DEPOSIT' });
   const [isSubmittingIncident, setIsSubmittingIncident] = useState(false);
+  const incidentSubmissionRef = useRef<string | null>(null);
   const [isUploadingBill, setIsUploadingBill] = useState(false);
 
   const { deductAmount, extraAmount } = useMemo(() => {
@@ -123,7 +135,7 @@ export default function OrderDetailMobile({
     setViewingStepIndex(getUiStepIndex(currentOrder.completion_status));
   }, [currentOrder.completion_status]);
 
-  const nextStatus = actualStepIndex < UI_STEPS.length - 1 ? UI_STEPS[actualStepIndex + 1].statuses[0] as OrderStatus : null;
+  const nextStatus = getNextStatus(currentOrder.completion_status);
   const isReadOnly = viewingStepIndex !== actualStepIndex;
 
   const getTasksForNextStatus = () => {
@@ -404,6 +416,22 @@ export default function OrderDetailMobile({
             </div>
             <div className="p-4 overflow-y-auto space-y-4">
               <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Mã suit gặp sự cố</label>
+                <select
+                  required
+                  value={incidentForm.garment_code}
+                  onChange={e => setIncidentForm({ ...incidentForm, garment_code: e.target.value })}
+                  className="w-full border border-slate-200 rounded-lg p-3 text-sm bg-white"
+                >
+                  <option value="">-- Chọn mã suit trong đơn --</option>
+                  {garments.map((garment: any) => (
+                    <option key={garment.garment_code} value={garment.garment_code}>
+                      {garment.garment_code}{garment.product_location ? ` — Vị trí cũ: ${garment.product_location}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Mô tả tình trạng</label>
                 <textarea 
                   value={incidentForm.description}
@@ -464,25 +492,33 @@ export default function OrderDetailMobile({
               <button onClick={() => setIsIncidentModalOpen(false)} className="flex-1 py-3 bg-white text-slate-700 font-bold text-sm rounded-xl border border-slate-200">Hủy</button>
               <button 
                 onClick={async () => {
+                  if (incidentSubmissionRef.current) return;
+                  const submissionId = crypto.randomUUID();
+                  incidentSubmissionRef.current = submissionId;
                   setIsSubmittingIncident(true);
                   try {
                     const { reportOrderIncident } = await import('../actions');
-                    await reportOrderIncident(currentOrder.id, contract?.id, {
+                    const result = await reportOrderIncident(currentOrder.id, contract?.id, {
                       ...incidentForm,
+                      id: submissionId,
                       deductAmount,
                       extraAmount,
                       type: 'DAMAGE',
                       created_by_id: currentOrder.pic_id || 'system'
                     });
+                    if (result.error) throw new Error(result.error);
                     setIsIncidentModalOpen(false);
+                    setIncidentForm({ garment_code: '', description: '', penalty_amount: 0, bill_image: '', resolution: 'DEDUCT_FROM_DEPOSIT' });
+                    router.refresh();
                     alert("Đã ghi nhận sự cố!");
-                  } catch (e) {
-                    alert("Lỗi ghi nhận.");
+                  } catch (e: any) {
+                    alert(`Lỗi ghi nhận: ${e?.message || 'Vui lòng thử lại.'}`);
                   } finally {
+                    incidentSubmissionRef.current = null;
                     setIsSubmittingIncident(false);
                   }
                 }}
-                disabled={isSubmittingIncident || incidentForm.penalty_amount <= 0 || !incidentForm.description}
+                disabled={isSubmittingIncident || !incidentForm.garment_code || incidentForm.penalty_amount <= 0 || !incidentForm.description}
                 className="flex-1 py-3 bg-rose-600 text-white font-bold text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isSubmittingIncident ? <icons.Loader2 className="w-4 h-4 animate-spin" /> : <icons.CheckCircle className="w-4 h-4" />}

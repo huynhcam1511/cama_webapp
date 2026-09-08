@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as icons from "lucide-react";
-import { Order, OrderStatus, updateOrderStatus, updateOrderChecklist, createOrder, updateOrderPic } from "./actions";
+import type { Order, OrderStatus } from "./actions";
+import { updateOrderStatus, updateOrderChecklist, createOrder, updateOrderPic } from "./actions";
 import { format, differenceInDays } from "date-fns";
 import { vi } from "date-fns/locale";
 import { CustomDatePicker } from "@/components/ui/date-picker";
@@ -275,7 +276,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
         {/* Return Alerts */}
         {(() => {
           const returnAlerts = orders.filter(o => {
-            if (o.completion_status !== 'DELIVERED' && o.completion_status !== 'WAITING_RETURN') return false;
+            if (o.delivery_status !== 'DELIVERED' && o.delivery_status !== 'WAITING_RETURN') return false;
             if (!o.return_date) return false;
             const dt = new Date(o.return_date);
             dt.setHours(23, 59, 59, 999); // End of the return day
@@ -502,7 +503,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                         
                         const isCancelled = order.completion_status === 'CANCELLED';
                         const isIssue = order.completion_status === 'ISSUE';
-                        const isGiaoCompleted = ['DELIVERED', 'WAITING_RETURN', 'COMPLETED', 'ISSUE'].includes(order.completion_status);
+                        const isGiaoCompleted = ['DELIVERED', 'RETURNED'].includes(order.delivery_status) || ['COMPLETED', 'ISSUE'].includes(order.completion_status);
                         const isTraCompleted = ['COMPLETED', 'ISSUE'].includes(order.completion_status);
                         
                         let progressPercent = 0;

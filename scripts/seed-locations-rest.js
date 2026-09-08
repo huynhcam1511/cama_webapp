@@ -31,6 +31,11 @@ async function seedLocations() {
     locationsToInsert.push({ floor_name: 'Tầng 01', shelf_name: i.toString().padStart(2, '0') });
   }
 
+  // Tầng 02: mã 30–45
+  for (let i = 30; i <= 45; i++) {
+    locationsToInsert.push({ floor_name: 'Tầng 02', shelf_name: i.toString().padStart(2, '0') });
+  }
+
   // Tầng 04: 0 (Just the floor)
   locationsToInsert.push({ floor_name: 'Tầng 04', shelf_name: null });
 

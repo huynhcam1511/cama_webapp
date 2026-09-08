@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import { Agentation } from "agentation";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin", "vietnamese"] });
@@ -40,9 +39,6 @@ export default function RootLayout({
       <body className={inter.className}>
         <div id="cama-app-root" className="flex min-h-screen w-full flex-col bg-background">
           {children}
-        </div>
-        <div className="print:hidden">
-          {process.env.NODE_ENV === 'development' && <Agentation />}
         </div>
       </body>
     </html>

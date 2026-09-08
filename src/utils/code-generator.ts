@@ -6,34 +6,17 @@ export async function generateSequentialCode(
   codeColumn: string,
   prefix: string
 ): Promise<string> {
-  // Find the latest code
-  const { data, error } = await supabase
-    .from(tableName)
-    .select(codeColumn)
-    .ilike(codeColumn, `${prefix}-%`) // ensure it starts with the prefix
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+  const { data, error } = await supabase.rpc('generate_sequential_code', {
+    p_table: tableName,
+    p_column: codeColumn,
+    p_prefix: prefix
+  });
 
-  if (error && error.code !== "PGRST116") {
-    // PGRST116 is "No rows found"
-    console.error(`Error fetching latest ${codeColumn} from ${tableName}:`, error);
+  if (error) {
+    console.error(`Error generating sequential code for ${tableName}:`, error);
+    // fallback logic if RPC is not deployed yet
+    return `${prefix}-${Math.floor(Date.now() / 1000).toString().slice(-6)}`;
   }
 
-  let nextNumber = 1;
-  if (data && (data as any)[codeColumn]) {
-    // Expected format: PREFIX-000001
-    const currentCode = (data as any)[codeColumn] as string;
-    const parts = currentCode.split("-");
-    if (parts.length === 2) {
-      const numPart = parseInt(parts[1], 10);
-      if (!isNaN(numPart)) {
-        nextNumber = numPart + 1;
-      }
-    }
-  }
-
-  // Format to 6 digits with leading zeros
-  const formattedNumber = nextNumber.toString().padStart(6, "0");
-  return `${prefix}-${formattedNumber}`;
+  return data || `${prefix}-000001`;
 }

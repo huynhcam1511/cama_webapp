@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/rbac";
+import sharp from "sharp";
 
 export async function getInventoryCatalog() {
   await requirePermission("GARMENT_CATALOG", "view");
@@ -94,9 +95,16 @@ export async function uploadGarmentImage(formData: FormData) {
   }
 
   const extension = (file.name.split(".").pop() || "jpg").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-  const path = `${auth.user.id}/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const { error } = await admin.storage.from(bucket).upload(path, buffer, { contentType: file.type, upsert: false });
+  const path = `${auth.user.id}/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.webp`;
+  const originalBuffer = Buffer.from(await file.arrayBuffer());
+  
+  // Nén ảnh bằng sharp
+  const compressedBuffer = await sharp(originalBuffer)
+    .resize(1200, 1600, { fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 80 })
+    .toBuffer();
+
+  const { error } = await admin.storage.from(bucket).upload(path, compressedBuffer, { contentType: "image/webp", upsert: false });
   if (error) return { success: false, error: error.message };
 
   const { data: signed, error: signedError } = await admin.storage.from(bucket).createSignedUrl(path, 3600);

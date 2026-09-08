@@ -9,7 +9,6 @@ import { PrintableContract } from "../printable-contract";
 import { ContractAuditDrawer } from "./contract-audit-drawer";
 import { ContractStatus, ExecutionStatus, DebtStatus } from "../types";
 import { useLayoutScale } from "@/hooks/use-layout-scale";
-import InventoryPickerModal from "./inventory-picker-modal";
 
 interface ContractFormProps {
   isOpen?: boolean;
@@ -70,8 +69,7 @@ type ServiceRow = {
   price: number;
   notes: string;
   usage_events: string[];
-  inventory_selection?: InventorySelection;
-};
+  };
 
 const shortDate = (value?: string) => {
   if (!value) return "";
@@ -185,8 +183,7 @@ export default function ContractForm({
   
   const [uploadingInstallmentIndex, setUploadingInstallmentIndex] = useState<number | null>(null);
   const [openEventDropdown, setOpenEventDropdown] = useState<number | null>(null);
-  const [inventoryPickerRow, setInventoryPickerRow] = useState<number | null>(null);
-  const [pendingInventory, setPendingInventory] = useState<Record<number, { modelId: string; size: string; quantity: number; startDate?: string; endDate?: string }>>({});
+    const [pendingInventory, setPendingInventory] = useState<Record<number, { modelId: string; size: string; quantity: number; startDate?: string; endDate?: string }>>({});
 
   // Auto-fill logic when phone changes
   useEffect(() => {
@@ -336,8 +333,7 @@ export default function ContractForm({
           price: item.unit_price || item.price || 0,
           notes: item.notes || "",
           usage_events: item.usage_events || [],
-          inventory_selection: item.inventory_selection,
-        }));
+                  }));
         while (loadedServices.length < 10) {
           loadedServices.push({ category: "", detail: "", quantity: 1, price: 0, notes: "", usage_events: [] });
         }
@@ -520,8 +516,7 @@ export default function ContractForm({
       amount: (Number(s.price) || 0) * (Number(s.quantity) || 1),
       notes: s.notes,
       usage_events: s.usage_events,
-      inventory_selection: s.inventory_selection,
-      display_order: idx + 1
+            display_order: idx + 1
     }));
 
     if (activeItems.length === 0) {
@@ -530,12 +525,6 @@ export default function ContractForm({
       return;
     }
 
-    const missingInventorySelection = services.some((service) => INVENTORY_CATEGORIES.has(service.category) && !service.inventory_selection && !isEditMode);
-    if (missingInventorySelection) {
-      setErrorMsg("Vui lòng chọn sản phẩm từ kho cho các dòng trang phục.");
-      setLoading(false);
-      return;
-    }
 
     if (defaultContractType !== "SALES") {
       const missingEvents = activeItems.some(item => !item.usage_events || item.usage_events.length === 0);
@@ -664,18 +653,21 @@ export default function ContractForm({
       if (res.success) {
         const targetId = isEditMode && initialData?.id ? initialData.id : ((res as any).data?.id || (res as any).contractId);
         if (targetId && Object.keys(pendingInventory).length > 0) {
-          const reservations = await Promise.all(Object.values(pendingInventory).map((selection) => reserveContractInventory({
-            contractId: targetId,
+          const bulkPayload = Object.values(pendingInventory).map((selection) => ({
             modelId: selection.modelId,
             sizeCode: selection.size,
             quantity: selection.quantity,
             startDate: selection.startDate,
             endDate: selection.endDate,
-            fulfillmentType: defaultContractType === "SALES" ? "SALE" : "RENTAL",
-          })));
-          const failedReservation = reservations.find((reservation) => !reservation.success);
-          if (failedReservation) {
-            setErrorMsg(`Hợp đồng đã được tạo nhưng có sản phẩm chưa giữ được: ${failedReservation.error || "Vui lòng chọn lại trong hợp đồng."}`);
+            fulfillmentType: defaultContractType === "SALES" ? "SALE" : "RENTAL" as "SALE" | "RENTAL",
+          }));
+          const reservation = await reserveContractInventory({
+            contractId: targetId,
+            selections: bulkPayload,
+          });
+          
+          if (!reservation.success) {
+            setErrorMsg(`Hợp đồng đã được tạo nhưng có sản phẩm chưa giữ được: ${reservation.error || "Vui lòng chọn lại trong hợp đồng."}`);
             router.push(`/dashboard/contracts/${targetId}/edit`);
             return;
           }
@@ -932,16 +924,10 @@ export default function ContractForm({
                                 updated[idx].category = e.target.value;
                                 if (wasInventory !== willBeInventory) {
                                   updated[idx].detail = "";
-                                  updated[idx].inventory_selection = undefined;
-                                }
+                                                                  }
                                 setServices(updated);
                                 if (wasInventory && !willBeInventory) {
-                                  setPendingInventory((current) => {
-                                    const next = { ...current };
-                                    delete next[idx];
-                                    return next;
-                                  });
-                                }
+                                                                  }
                               }}
                               className="w-full bg-white border border-slate-200 rounded px-1 py-1 text-[11px] font-medium outline-none focus:border-amber-500 text-slate-700"
                             >
@@ -950,52 +936,7 @@ export default function ContractForm({
                             </select>
                           </td>
                           <td className="px-1 py-1 align-top">
-                            {INVENTORY_CATEGORIES.has(item.category) ? (
-                              <button
-                                type="button"
-                                onClick={() => setInventoryPickerRow(idx)}
-                                className={`h-14 w-full overflow-hidden rounded-lg border p-1.5 text-left transition-colors ${item.inventory_selection ? "border-indigo-200 bg-indigo-50 hover:bg-indigo-100" : "border-dashed border-slate-300 bg-white hover:border-indigo-300 hover:bg-indigo-50/50"}`}
-                                title={item.inventory_selection ? "Đổi sản phẩm đã chọn" : "Chọn sản phẩm thực tế từ kho"}
-                              >
-                                {item.inventory_selection ? (
-                                  <span className="flex h-full min-w-0 gap-1.5">
-                                    <span className="h-full w-9 shrink-0 overflow-hidden rounded-md bg-white">
-                                      {item.inventory_selection.imageUrl ? (
-                                        <img src={item.inventory_selection.imageUrl} alt="" className="h-full w-full object-cover" />
-                                      ) : (
-                                        <PackageSearch className="m-2 h-5 w-5 text-slate-300" />
-                                      )}
-                                    </span>
-                                    <span className="min-w-0 flex-1">
-                                      <span className="flex items-start justify-between gap-1">
-                                        <span className="block truncate text-[10px] font-bold text-slate-900">{item.inventory_selection.name}</span>
-                                        <span className="shrink-0 text-[8px] font-bold text-indigo-600">Đổi</span>
-                                      </span>
-                                      <span className="block truncate text-[8px] font-semibold text-indigo-600">
-                                        {item.inventory_selection.baseSku} · Size {item.inventory_selection.size} · SL {item.inventory_selection.quantity}
-                                      </span>
-                                      <span className="block truncate text-[8px] text-slate-500">
-                                        {item.inventory_selection.startDate && item.inventory_selection.endDate
-                                          ? `${shortDate(item.inventory_selection.startDate)} → ${shortDate(item.inventory_selection.endDate)}`
-                                          : item.inventory_selection.location || "Chưa có vị trí"}
-                                      </span>
-                                    </span>
-                                  </span>
-                                ) : item.detail ? (
-                                  <span className="flex h-full flex-col justify-center">
-                                    <span className="block truncate text-[10px] font-semibold text-slate-600">{item.detail}</span>
-                                    <span className="mt-0.5 flex items-center gap-1 text-[8px] font-bold text-amber-600">
-                                      <PackageSearch className="h-3 w-3" /> Chưa liên kết kho — Chọn ngay
-                                    </span>
-                                  </span>
-                                ) : (
-                                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-600">
-                                    <PackageSearch className="h-3.5 w-3.5" /> Chọn sản phẩm từ kho...
-                                  </span>
-                                )}
-                              </button>
-                            ) : (
-                              <input
+                            <input
                                 type="text"
                                 placeholder="Nhập tên dịch vụ chi tiết..."
                                 value={item.detail}
@@ -1006,7 +947,6 @@ export default function ContractForm({
                                 }}
                                 className="w-full bg-transparent border-b border-slate-200 focus:border-amber-500 rounded-none px-1 py-1 text-[11px] outline-none text-slate-800"
                               />
-                            )}
                           </td>
                           <td className="px-1 py-1 align-top">
                             <input 
@@ -1520,61 +1460,7 @@ export default function ContractForm({
         isOpen={isAuditDrawerOpen} 
         onClose={() => setIsAuditDrawerOpen(false)} 
       />
-      {inventoryPickerRow !== null && (
-        <InventoryPickerModal
-          isOpen={true}
-          onClose={() => setInventoryPickerRow(null)}
-          contractId={initialData?.id || ""}
-          contractType={defaultContractType}
-          browseOnly={true}
-          initialStartDate={(() => {
-            const eventName = services[inventoryPickerRow]?.usage_events?.[0];
-            const selectedEvent = events.find((event) => event.name === eventName);
-            return selectedEvent?.pickup_date || selectedEvent?.event_date || "";
-          })()}
-          initialEndDate={(() => {
-            const eventName = services[inventoryPickerRow]?.usage_events?.[0];
-            const selectedEvent = events.find((event) => event.name === eventName);
-            return selectedEvent?.return_date || selectedEvent?.event_date || "";
-          })()}
-          onSelected={(selection) => {
-            setServices((current) => current.map((service, index) => {
-              if (index !== inventoryPickerRow) return service;
-              const codes = selection.codes.join(", ");
-              return {
-                ...service,
-                detail: `${selection.name} · Size ${selection.size}`,
-                quantity: selection.quantity,
-                notes: codes ? `${service.notes ? `${service.notes} · ` : ""}Mã kho: ${codes}` : service.notes,
-                inventory_selection: {
-                  modelId: selection.modelId,
-                  name: selection.name,
-                  baseSku: selection.baseSku,
-                  imageUrl: selection.imageUrl,
-                  location: selection.location,
-                  size: selection.size,
-                  quantity: selection.quantity,
-                  codes: selection.codes,
-                  startDate: selection.startDate,
-                  endDate: selection.endDate,
-                  status: "PENDING",
-                },
-              };
-            }));
-            setPendingInventory((current) => ({
-              ...current,
-              [inventoryPickerRow]: {
-                modelId: selection.modelId,
-                size: selection.size,
-                quantity: selection.quantity,
-                startDate: selection.startDate,
-                endDate: selection.endDate,
-              },
-            }));
-          }}
-          onSaved={() => setInventoryPickerRow(null)}
-        />
-      )}
+      
     </div>
   );
 }

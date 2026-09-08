@@ -41,6 +41,13 @@ export default function InventoryCatalogPage() {
            <option value="ALL">Tất cả hãng sản xuất</option>
            {suppliers.map(value => <option key={value}>{value}</option>)}
         </select>
+        <Link
+          href="/dashboard/inventory/catalog/new"
+          className="hidden md:flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-indigo-700"
+        >
+          <Plus size={18} />
+          Thêm sản phẩm
+        </Link>
       </div>
 
       {historyError && <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800"><strong>Lịch sử chưa sẵn sàng.</strong> Backend lịch sử nhập kho chưa được khởi tạo.</div>}
