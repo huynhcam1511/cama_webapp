@@ -44,11 +44,31 @@ export default function AttendanceWidget() {
     });
   };
 
+  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
+  const STORE_LAT = 21.028511; // Thay bằng tọa độ thật của cửa hàng
+  const STORE_LNG = 105.804817; // Thay bằng tọa độ thật của cửa hàng
+
   const handleAction = async (type: "in" | "out") => {
     setActionLoading(true);
     try {
       // 1. Get GPS
       let locData = undefined;
+      let reason = undefined;
+      
       try {
         const position = await getLocation();
         locData = {
@@ -56,15 +76,29 @@ export default function AttendanceWidget() {
           lng: position.coords.longitude,
           accuracy: position.coords.accuracy
         };
-      } catch (err) {
-        if (!confirm("Không thể lấy vị trí GPS (hoặc bạn đã từ chối). Bạn có chắc muốn tiếp tục chấm công không có GPS?")) {
-          setActionLoading(false);
-          return;
+        
+        const distance = getDistance(locData.lat, locData.lng, STORE_LAT, STORE_LNG);
+        if (distance > 50) {
+          const inputReason = prompt("Bạn đang ở ngoài bán kính 50m của cửa hàng. Nếu bạn đi công tác hoặc có lý do khác, vui lòng nhập lý do chấm công:");
+          if (!inputReason || inputReason.trim() === "") {
+            alert("Bạn cần nhập lý do khi chấm công ngoài cửa hàng!");
+            setActionLoading(false);
+            return;
+          }
+          reason = inputReason.trim();
         }
+      } catch (err) {
+        const inputReason = prompt("Không thể lấy vị trí GPS (hoặc bạn đã từ chối). Vui lòng nhập lý do chấm công (VD: Lỗi GPS, Đi công tác...):");
+        if (!inputReason || inputReason.trim() === "") {
+            alert("Bạn cần nhập lý do khi không có GPS!");
+            setActionLoading(false);
+            return;
+        }
+        reason = inputReason.trim();
       }
 
       // 2. Call API
-      const res = type === "in" ? await checkIn(locData) : await checkOut(locData);
+      const res = type === "in" ? await checkIn(locData, reason) : await checkOut(locData, reason);
       
       if (res.success) {
         alert(res.message);
