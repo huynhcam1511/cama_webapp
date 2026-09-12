@@ -2,11 +2,7 @@
 
 import KpiDashboardPage from "./kpi/page";
 
-/** Dùng chung số liệu với module KPI, không giữ số minh họa riêng ở Tổng Quan. */
+/** Cùng một nguồn số liệu cho trang Tổng quan và trang KPI riêng. */
 export default function SalesKpiCard() {
-  return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/60">
-      <KpiDashboardPage />
-    </section>
-  );
+  return <KpiDashboardPage />;
 }

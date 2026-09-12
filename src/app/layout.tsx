@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { AgentationToolbar } from "@/components/agentation-toolbar";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin", "vietnamese"] });
@@ -40,6 +41,7 @@ export default function RootLayout({
         <div id="cama-app-root" className="flex min-h-screen w-full flex-col bg-background">
           {children}
         </div>
+        <AgentationToolbar />
       </body>
     </html>
   );

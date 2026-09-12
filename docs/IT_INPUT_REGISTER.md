@@ -1,6 +1,6 @@
 # Sổ input thực tế và quyết định IT
 
-Cập nhật: 05/09/2026. Không lưu dữ liệu nhận dạng khách hàng ở đây; dùng ID hoặc ví dụ đã ẩn thông tin khi ghi ca thực tế.
+Cập nhật: 09/09/2026. Không lưu dữ liệu nhận dạng khách hàng ở đây; dùng ID hoặc ví dụ đã ẩn thông tin khi ghi ca thực tế.
 
 ## Input đã nhận
 
@@ -11,6 +11,7 @@ Cập nhật: 05/09/2026. Không lưu dữ liệu nhận dạng khách hàng ở
 | I003 | Ảnh sidebar + registry | 11 mục điều hướng như master plan | observed; chưa chứng minh workflow |
 | I005 | Người dùng, chat 08/09/2026 | Chính sách KPI, thưởng/phạt và hoa hồng áp dụng từ 01/09: 2% chia phòng váy+suit, 2% hoa hồng Hiền. Thưởng lên hẹn (30k), đơn váy (50k), view (100k/10k views, 30k/clip). Phạt chấm công 50k-100k. | user_confirmed |
 | I006 | Người dùng, chat 08/09/2026 | Đổi luồng: Bỏ chọn sản phẩm trong Hợp đồng. Đơn hàng độc lập kho. Luồng kho: lúc làm đơn mới chụp ảnh -> nhập kho -> xuất kho. Yêu cầu làm đơn giản, review dropdown form nhập/xuất kho đồng nhất. | user_confirmed |
+| I007 | Người dùng, chat 09/09/2026 + ảnh `/dashboard` | Dashboard chỉ giữ ba thao tác nhanh, việc cần chú ý và khối kết quả tính tiền; bỏ toàn bộ launcher module vì đã có sidebar; tránh giao diện lạm dụng card. | user_confirmed |
 
 Chưa nhận ca giao dịch cụ thể, trường dữ liệu đang vướng, danh sách module đã nhập xong hay quy tắc trạng thái được chủ nghiệp vụ xác nhận trong chat này. (Trừ các chính sách vừa chốt ở I005, I006).
 
@@ -36,6 +37,7 @@ Chưa nhận ca giao dịch cụ thể, trường dữ liệu đang vướng, da
 | D001 | Lưu brain JSON, audit và kế hoạch MD từ thực tế | user_confirmed | Chat hiện tại |
 | D002 | IT_BRAIN.json là chỉ mục IT mới, giữ nguyên tài liệu lịch sử | proposed — cách tổ chức áp dụng trong baseline | Agent đề xuất |
 | D003 | Gỡ chọn sản phẩm khỏi Hợp đồng. Đơn hàng độc lập Kho. Workflow kho: chụp ảnh -> nhập -> xuất tại thời điểm làm đơn. | user_confirmed | Chat 08/09/2026 |
+| D004 | Dashboard bỏ launcher module và ba KPI rời; đưa tổng doanh thu/hợp đồng mới vào khối tính tiền, đưa khách chờ hẹn vào việc cần chú ý; chỉ hiện nhóm việc có số lượng lớn hơn 0. | user_confirmed | Chat 09/09/2026 |
 
 Chưa chốt nguồn kho chuẩn (đang chờ chỉnh dropdown đồng nhất), state machine, điều kiện bắt buộc từ lịch hẹn sang hợp đồng, chính sách khấu trừ. Các chính sách hoa hồng (I005) đã được chốt và sẽ đưa vào cơ chế tính toán Dashboard/KPI.
 
@@ -51,3 +53,7 @@ Ghi ngày; input/decision mới; file đổi; action hoàn tất và bằng ch�
 ### Cập nhật sau yêu cầu scan kỹ code — 05/09/2026
 
 I004 (user_confirmed): người dùng yêu cầu scan kỹ code trước khi lập action plan cụ thể. Đã thay backlog sơ bộ bằng C01–C20/T01–T12; lịch sử v1 được giữ trong IT_BRAIN.json và docs/audit/IT_AUDIT_ACTION_PLAN_v1.md. Typecheck và lint qua; 6 probe offline tái hiện lỗi, chưa production E2E. Bước tiếp theo là T12 baseline + T01, rồi T03. Quy tắc nghiệp vụ chưa có nguồn xác nhận vẫn để mở.
+
+### Dashboard gọn và nối lại KPI — 09/09/2026
+
+I007/D004 (user_confirmed): đã bỏ launcher module và KPI minh họa viết cứng; dashboard còn thao tác nhanh → việc cần chú ý → kết quả tính tiền. KPI đổi từ embedded relation `contracts → contract_items` sang truy vấn tường minh qua `contract_id` để không phụ thuộc schema cache. Typecheck và production build đạt; kiểm tra UI có đăng nhập chưa thực hiện vì phiên localhost dừng tại Google login.

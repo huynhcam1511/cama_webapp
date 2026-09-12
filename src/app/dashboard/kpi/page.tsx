@@ -1,115 +1,29 @@
 "use client";
-
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarCheck2, CheckCircle2, ChevronRight, CircleDollarSign, Loader2, Scissors, Shirt, TrendingUp, Video } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { AlertTriangle, ArrowRight, Loader2, Scale, Settings2, Target } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { usePermissions } from "@/hooks/use-permissions";
 
-type Stats = {
-  salesRevenue: number; dressRevenue: number; suitRevenue: number;
-  appointments: number; arrivals: number; signedContracts: number;
-  completedDressOrders: number; approvedClips: number;
-  approvedViewMilestones: number; attendanceFund: number;
-};
+type Metric={id:string;scope_type:string;target_value:number;weight:number;kpi_definitions:{code:string;name:string;unit:string;direction:string};result:{actual_value:number|null;progress_percent:number|null;score:number|null;calculation_status:string;calculated_at:string|null;error_message:string|null;source_count:number}|null};
+type Payload={period:{id:string;label:string;status:string;locked_at:string|null}|null;metrics:Metric[];freshness:string|null};
+const money=new Intl.NumberFormat("vi-VN",{style:"currency",currency:"VND",maximumFractionDigits:0});
 
-const EMPTY: Stats = { salesRevenue: 0, dressRevenue: 0, suitRevenue: 0, appointments: 0, arrivals: 0, signedContracts: 0, completedDressOrders: 0, approvedClips: 0, approvedViewMilestones: 0, attendanceFund: 0 };
-const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
-const normalize = (value: unknown) => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-const isDress = (value: unknown) => /(vay|bridal|ao dai)/.test(normalize(value));
-const isSuit = (value: unknown) => /(suit|vest|chu re)/.test(normalize(value));
-
-function monthRange(month: string) {
-  const [year, monthNumber] = month.split("-").map(Number);
-  return {
-    start: `${year}-${String(monthNumber).padStart(2, "0")}-01`,
-    next: new Date(Date.UTC(year, monthNumber, 1)).toISOString().slice(0, 10),
-  };
-}
-
-function allocatedRevenue(contract: any, matcher: (value: unknown) => boolean) {
-  const items = contract.contract_items || [];
-  const total = items.reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
-  const matched = items.filter((item: any) => matcher(item.category)).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
-  if (total > 0 && matched > 0) return Number(contract.paid_amount || 0) * matched / total;
-  return matcher(contract.notes) ? Number(contract.paid_amount || 0) : 0;
-}
-
-export default function KpiDashboardPage() {
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
-  const [stats, setStats] = useState<Stats>(EMPTY);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      setLoading(true); setError("");
-      const db = createClient();
-      const { start, next } = monthRange(month);
-      const [contractsRes, schedulesRes, ordersRes, marketingRes, fundRes] = await Promise.all([
-        db.from("contracts").select("id, paid_amount, assigned_staff_name, notes, contract_status, status, contract_items(category, amount)").gte("contract_date", start).lt("contract_date", next),
-        db.from("operation_schedules").select("*").eq("schedule_category", "SALE_BOOKING").gte("date", start).lt("date", next),
-        db.from("orders").select("service_type, completion_status, updated_at").eq("completion_status", "COMPLETED").gte("updated_at", `${start}T00:00:00`).lt("updated_at", `${next}T00:00:00`),
-        db.from("marketing_submissions").select("content_type, current_views, status, approved_at").eq("status", "APPROVED").gte("approved_at", `${start}T00:00:00`).lt("approved_at", `${next}T00:00:00`),
-        db.from("kpi_transactions").select("amount, transaction_type, created_at").eq("transaction_type", "PENALTY").gte("created_at", `${start}T00:00:00`).lt("created_at", `${next}T00:00:00`),
-      ]);
-      if (!mounted) return;
-      const fatal = contractsRes.error || schedulesRes.error || ordersRes.error;
-      if (fatal) { setError(fatal.message); setLoading(false); return; }
-      const contracts = (contractsRes.data || []).filter((c: any) => !/(cancel|huy|refund)/.test(normalize(c.contract_status || c.status)));
-      const schedules = schedulesRes.data || [];
-      const marketing = marketingRes.data || [];
-      setStats({
-        salesRevenue: contracts.filter((c: any) => normalize(`${c.assigned_staff_name || ""} ${c.notes || ""}`).includes("hien")).reduce((s: number, c: any) => s + Number(c.paid_amount || 0), 0),
-        dressRevenue: contracts.reduce((s: number, c: any) => s + allocatedRevenue(c, isDress), 0),
-        suitRevenue: contracts.reduce((s: number, c: any) => s + allocatedRevenue(c, isSuit), 0),
-        appointments: schedules.length,
-        arrivals: schedules.filter((x: any) => normalize(x.status) === "completed" || /(den|arrived|chot|won)/.test(normalize(x.result))).length,
-        signedContracts: contracts.length,
-        completedDressOrders: (ordersRes.data || []).filter((x: any) => isDress(x.service_type)).length,
-        approvedClips: marketing.filter((x: any) => x.content_type === "VIDEO_CLIP").length,
-        approvedViewMilestones: marketing.filter((x: any) => x.content_type === "VIEW_MILESTONE").reduce((s: number, x: any) => s + Math.floor(Number(x.current_views || 0) / 10000), 0),
-        attendanceFund: Math.abs((fundRes.data || []).reduce((s: number, x: any) => s + Number(x.amount || 0), 0)),
-      });
-      setLoading(false);
-    }
-    load();
-    return () => { mounted = false; };
-  }, [month]);
-
-  const monthLabel = useMemo(() => { const [y, m] = month.split("-"); return `Tháng ${Number(m)}/${y}`; }, [month]);
-  const dressReward = stats.completedDressOrders * 50_000;
-  const clipReward = stats.approvedClips * 30_000;
-  const viewReward = stats.approvedViewMilestones * 100_000;
-
-  return <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div><h1 className="text-2xl font-bold text-slate-900">Kết quả tính tiền</h1><p className="mt-1 text-sm text-slate-500">Số liệu để đối soát hoa hồng, thưởng và thu quỹ.</p></div>
-      <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">Kỳ tính<input type="month" value={month} onChange={e => setMonth(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-800 outline-none focus:border-indigo-500" /></label>
-    </header>
-    {error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">Không tải được dữ liệu: {error}</div>}
-    {loading ? <div className="flex min-h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500"><Loader2 className="mr-2 h-5 w-5 animate-spin" />Đang tổng hợp {monthLabel}...</div> : <>
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card icon={TrendingUp} title="Doanh thu phòng Kinh doanh (Hiền)" value={money.format(stats.salesRevenue)} note="Tiền thực thu từ hợp đồng Hiền phụ trách" tone="indigo" />
-        <Card icon={Scissors} title="Doanh thu phòng Váy" value={money.format(stats.dressRevenue)} note="Tiền thực thu phân bổ cho dịch vụ váy" tone="rose" />
-        <Card icon={Shirt} title="Doanh thu phòng Suit" value={money.format(stats.suitRevenue)} note="Tiền thực thu phân bổ cho dịch vụ suit" tone="sky" />
-      </section>
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-5 flex items-center justify-between"><div><h2 className="font-bold text-slate-900">Kết quả phễu khách hàng</h2><p className="mt-1 text-xs text-slate-500">Số lượng trong {monthLabel.toLowerCase()}</p></div><CalendarCheck2 className="h-6 w-6 text-emerald-500" /></div>
-        <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-2 text-center"><Step value={stats.appointments} label="Khách đã hẹn" /><ChevronRight className="h-5 w-5 text-slate-300" /><Step value={stats.arrivals} label="Đến thành công" accent /><ChevronRight className="h-5 w-5 text-slate-300" /><Step value={stats.signedContracts} label="Hợp đồng đã ký" /></div>
-      </section>
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card icon={CheckCircle2} title="Đơn váy hoàn tất" value={`${stats.completedDressOrders} đơn`} note={`${stats.completedDressOrders} × 50.000đ = ${money.format(dressReward)}`} tone="emerald" />
-        <Card icon={Video} title="Clip & mốc view hợp lệ" value={`${stats.approvedClips} clip · ${stats.approvedViewMilestones} mốc`} note={`${money.format(clipReward)} + ${money.format(viewReward)} = ${money.format(clipReward + viewReward)}`} tone="amber" />
-        <Card icon={CircleDollarSign} title="Thu quỹ chấm công" value={money.format(stats.attendanceFund)} note="Tổng các khoản đã xác nhận trong kỳ" tone="slate" />
-      </section>
-    </>}
+export default function KpiDashboardPage(){
+  const embedded=usePathname()==="/dashboard";const {hasPermission,isLoading:permissionsLoading}=usePermissions();
+  const [month,setMonth]=useState(new Date().toISOString().slice(0,7));const [payload,setPayload]=useState<Payload>({period:null,metrics:[],freshness:null});const [loading,setLoading]=useState(true);const [error,setError]=useState("");
+  useEffect(()=>{let mounted=true;async function load(){setLoading(true);setError("");try{const response=await fetch(`/api/kpi/dashboard?month=${month}`,{cache:"no-store"});const body=await response.json();if(!response.ok)throw new Error(String(body.error||"").includes("kpi_periods")?"Cơ sở dữ liệu KPI chưa được khởi tạo.":body.error||"Không thể tải KPI.");if(mounted)setPayload(body)}catch(cause){if(mounted)setError(cause instanceof Error?cause.message:"Không thể tải KPI.")}finally{if(mounted)setLoading(false)}}if(!permissionsLoading)void load();return()=>{mounted=false}},[month,permissionsLoading]);
+  const visibleMetrics=embedded?payload.metrics.slice(0,4):payload.metrics;const needsAttention=useMemo(()=>payload.metrics.filter(item=>item.result?.calculation_status==="ERROR"||item.result?.calculation_status==="NO_DATA"||(item.result?.progress_percent!=null&&item.result.progress_percent<80)),[payload.metrics]);
+  const content = <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <header className={`flex gap-3 border-b border-slate-200 ${embedded?"items-center justify-between px-4 py-3":"flex-col px-4 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-5"}`}><div className="min-w-0"><h1 className={`${embedded?"text-base":"text-lg"} truncate font-semibold text-slate-950`}>Kết quả KPI</h1>{!embedded&&<p className="mt-1 text-sm text-slate-500">Mục tiêu và kết quả đã duyệt theo phạm vi được phép xem.</p>}</div><div className="flex shrink-0 flex-wrap items-center gap-2">{!embedded&&hasPermission("KPI_PERFORMANCE","update")&&<Link href="/dashboard/kpi/setup" className="button-secondary"><Settings2 className="h-4 w-4"/>Từ điển</Link>}{!embedded&&hasPermission("KPI_PERFORMANCE","view")&&<Link href="/dashboard/kpi/assignments" className="button-secondary"><Target className="h-4 w-4"/>Giao mục tiêu</Link>}{!embedded&&hasPermission("KPI_PERFORMANCE","view")&&<Link href="/dashboard/kpi/reconciliation" className="button-secondary"><Scale className="h-4 w-4"/>Đối soát</Link>}<label className="flex items-center gap-2 text-xs font-medium text-slate-600">{!embedded&&"Kỳ"}<input aria-label="Kỳ KPI" type="month" value={month} onChange={e=>setMonth(e.target.value)} className={`${embedded?"w-[142px]":""} h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-emerald-500 sm:px-3 sm:text-sm`}/></label></div></header>
+    {error&&<div className="border-b border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div>}{loading?<div className={`flex items-center justify-center text-sm text-slate-500 ${embedded?"min-h-32":"min-h-56"}`}><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Đang tải kết quả...</div>:!payload.period?<Empty compact={embedded} title="Chưa thiết lập kỳ KPI" detail="Hãy giao mục tiêu cho kỳ này trước khi xem kết quả."/>:visibleMetrics.length===0?<Empty compact={embedded} title="Chưa có KPI trong phạm vi của bạn" detail="KPI chưa được giao hoặc chưa được duyệt."/>:<><div className={`grid ${embedded?"grid-cols-2":"sm:grid-cols-2 lg:grid-cols-3"}`}>{visibleMetrics.map(item=><MetricBlock key={item.id} metric={item} compact={embedded}/>)}</div><div className="flex items-center justify-between gap-3 border-t border-slate-200 px-4 py-3 text-[11px] text-slate-500 sm:px-5 sm:text-xs"><span className="shrink-0">{payload.period.label}</span><span className="truncate text-right">{payload.freshness?`Cập nhật ${new Date(payload.freshness).toLocaleString("vi-VN")}`:"Chưa tính kết quả"}</span></div>{needsAttention.length>0&&!embedded&&<div className="border-t border-amber-200 bg-amber-50/60 px-4 py-4 sm:px-5"><div className="flex items-center gap-2 text-sm font-semibold text-amber-900"><AlertTriangle className="h-4 w-4"/>{needsAttention.length} KPI cần chú ý</div><Link href="/dashboard/kpi/assignments" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-amber-800 hover:underline">Xem chi tiết và tính lại <ArrowRight className="h-3 w-3"/></Link></div>}</>}
   </div>;
+
+  return <>
+    {embedded ? content : <section className="mx-auto max-w-7xl p-4 md:p-6">{content}</section>}
+    <style jsx global>{`.button-secondary{display:inline-flex;height:2.25rem;align-items:center;gap:.5rem;border-radius:.5rem;border:1px solid rgb(226 232 240);padding:0 .75rem;font-size:.75rem;font-weight:500;color:rgb(51 65 85)}.button-secondary:hover{border-color:rgb(110 231 183);color:rgb(4 120 87)}`}</style>
+  </>;
 }
 
-const tones = { indigo: "bg-indigo-50 text-indigo-600", rose: "bg-rose-50 text-rose-600", sky: "bg-sky-50 text-sky-600", emerald: "bg-emerald-50 text-emerald-600", amber: "bg-amber-50 text-amber-600", slate: "bg-slate-100 text-slate-600" };
-function Card({ icon: Icon, title, value, note, tone }: { icon: any; title: string; value: string; note: string; tone: keyof typeof tones }) {
-  return <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-4"><div className="min-w-0"><p className="text-sm font-semibold text-slate-500">{title}</p><p className="mt-2 break-words text-2xl font-black tracking-tight text-slate-900">{value}</p></div><div className={`rounded-xl p-3 ${tones[tone]}`}><Icon className="h-5 w-5" /></div></div><p className="mt-4 border-t border-slate-100 pt-3 text-xs leading-5 text-slate-500">{note}</p></article>;
-}
-function Step({ value, label, accent = false }: { value: number; label: string; accent?: boolean }) {
-  return <div className={`rounded-xl px-2 py-4 ${accent ? "bg-emerald-50" : "bg-slate-50"}`}><div className={`text-2xl font-black ${accent ? "text-emerald-600" : "text-slate-900"}`}>{value}</div><div className="mt-1 text-xs font-semibold text-slate-500">{label}</div></div>;
-}
+function MetricBlock({metric,compact=false}:{metric:Metric;compact?:boolean}){const result=metric.result;const ready=result&&["READY","LOCKED"].includes(result.calculation_status);const unit=metric.kpi_definitions.unit;const format=(value:number)=>unit==="VND"?money.format(value):`${Number(value).toLocaleString("vi-VN",{maximumFractionDigits:1})}${unit==="PERCENT"?"%":""}`;return <div className={`${compact?"min-w-0 px-3 py-4 even:border-l":"px-4 py-5 sm:px-5 lg:border-r"} border-b border-slate-100`}><div className="flex min-w-0 items-start justify-between gap-2"><p className={`${compact?"truncate text-xs":"text-sm"} font-medium text-slate-700`}>{metric.kpi_definitions.name}</p>{!compact&&<span className="text-[11px] text-slate-400">{metric.scope_type==="COMPANY"?"Công ty":metric.scope_type==="DEPARTMENT"?"Phòng":"Cá nhân"}</span>}</div><p className={`${compact?"mt-2 truncate text-base":"mt-3 text-2xl"} font-semibold tabular-nums tracking-tight text-slate-950`}>{ready&&result.actual_value!=null?format(result.actual_value):"Chưa có dữ liệu"}</p><div className={`mt-2 flex items-center justify-between gap-2 text-slate-500 ${compact?"text-[10px]":"text-xs"}`}><span className="truncate">Mục tiêu {format(Number(metric.target_value))}</span><span className="shrink-0">{ready&&result.progress_percent!=null?`${Number(result.progress_percent).toLocaleString("vi-VN",{maximumFractionDigits:1})}%`:"—"}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${Number(result?.progress_percent||0)>=100?"bg-emerald-500":Number(result?.progress_percent||0)>=80?"bg-amber-400":"bg-rose-400"}`} style={{width:`${Math.min(Number(result?.progress_percent||0),100)}%`}}/></div>{!compact&&result?.error_message&&<p className="mt-2 text-xs text-amber-700">{result.error_message}</p>}</div>}
+function Empty({title,detail,compact=false}:{title:string;detail:string;compact?:boolean}){return <div className={`flex flex-col items-center justify-center px-4 text-center ${compact?"min-h-36":"min-h-56"}`}><p className="font-medium text-slate-800">{title}</p><p className="mt-1 text-sm text-slate-500">{detail}</p><Link href="/dashboard/kpi/assignments" className="mt-4 text-sm font-medium text-emerald-700 hover:underline">Mở phần giao KPI</Link></div>}
