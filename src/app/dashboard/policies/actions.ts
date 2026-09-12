@@ -1,39 +1,110 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission, requireActiveUser } from "@/lib/rbac";
 
-export async function getPolicies() {
-  const user = await requireActiveUser();
+/**
+ * 1. GET POLICIES (MASTER VIEW)
+ */
+export async function getPolicies(filters?: { document_type_id?: string; department_id?: string }) {
+  await requireActiveUser();
+  await requirePermission("POLICIES", "view");
+
   const supabase = createAdminClient();
   
-  // Lấy role và department của user
-  const { data: dbUser } = await supabase
-    .from("users")
-    .select("role_id, department_id, roles(role_code)")
-    .eq("id", user.id)
-    .single();
+  let query = supabase
+    .from("policies")
+    .select(`
+      id,
+      code,
+      name,
+      description,
+      document_type_id,
+      department_id,
+      target_audience_id,
+      created_at,
+      policy_versions (
+        id,
+        version_name,
+        effective_date,
+        file_url
+      )
+    `)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
 
-  const isSuperAdmin = (dbUser?.roles as any)?.role_code === "SUPER_ADMIN";
-
-  let query = supabase.from("policies").select("*").order("created_at", { ascending: false });
-
-  // Nếu không phải Super Admin, lọc policy theo scope
-  if (!isSuperAdmin) {
-    query = query.or(
-      `policy_scope.eq.GENERAL,and(policy_scope.eq.DEPARTMENT,target_id.eq.${dbUser?.department_id}),and(policy_scope.eq.ROLE,target_id.eq.${dbUser?.role_id}),and(policy_scope.eq.SPECIFIC_USER,target_id.eq.${user.id})`
-    );
+  if (filters?.document_type_id) {
+    query = query.eq("document_type_id", filters.document_type_id);
+  }
+  if (filters?.department_id) {
+    query = query.eq("department_id", filters.department_id);
   }
 
   const { data, error } = await query;
+  
   if (error) {
     console.error("Error fetching policies:", error);
     return [];
   }
-  return data || [];
+
+  // Lọc ra phiên bản hiện hành (effective_date gần nhất và <= today)
+  const today = new Date().toISOString().split('T')[0];
+  
+  const mappedData = data.map((policy: any) => {
+    // Sort versions by effective_date DESC
+    const versions = policy.policy_versions || [];
+    versions.sort((a: any, b: any) => new Date(b.effective_date).getTime() - new Date(a.effective_date).getTime());
+    
+    // Find active version
+    const activeVersion = versions.find((v: any) => v.effective_date <= today) || versions[0] || null;
+
+    return {
+      ...policy,
+      active_version: activeVersion,
+      versions_count: versions.length
+    };
+  });
+
+  return mappedData;
 }
 
+/**
+ * 2. GET POLICY DETAIL
+ */
+export async function getPolicyById(id: string) {
+  await requireActiveUser();
+  await requirePermission("POLICIES", "view");
+
+  const supabase = createAdminClient();
+  
+  const { data, error } = await supabase
+    .from("policies")
+    .select(`
+      *,
+      policy_versions (
+        *
+      )
+    `)
+    .eq("id", id)
+    .is("deleted_at", null)
+    .single();
+
+  if (error) {
+    console.error("Error fetching policy detail:", error);
+    return null;
+  }
+
+  // Sort versions descending by effective_date
+  if (data.policy_versions) {
+    data.policy_versions.sort((a: any, b: any) => new Date(b.effective_date).getTime() - new Date(a.effective_date).getTime());
+  }
+
+  return data;
+}
+
+/**
+ * 3. SAVE POLICY (Thêm mới hoặc Cập nhật thông tin chung)
+ */
 export async function savePolicy(isNew: boolean, policyData: any) {
   const user = await requireActiveUser();
   if (isNew) {
@@ -45,64 +116,118 @@ export async function savePolicy(isNew: boolean, policyData: any) {
   const supabase = createAdminClient();
   
   const payload = {
-    title: policyData.title,
-    content: policyData.content,
-    policy_scope: policyData.policy_scope,
-    target_id: policyData.target_id || null,
-    is_active: policyData.is_active,
-    attachment_url: policyData.attachment_url || null,
+    name: policyData.name,
+    description: policyData.description || null,
+    document_type_id: policyData.document_type_id || null,
+    department_id: policyData.department_id || null,
+    target_audience_id: policyData.target_audience_id || null,
+    // (Bỏ qua code ở client gửi lên, thay bằng tự động sinh hoặc logic khác nếu cần)
   };
 
   if (isNew) {
-    const { error } = await supabase.from("policies").insert([
-      { ...payload, created_by: user.id }
-    ]);
+    // Todo: Tạo mã tự động chuẩn hoá (ví dụ: POLI-000001)
+    const code = "POLI-" + Date.now().toString().slice(-6); // Tạm thời dùng Date.now, cần đổi sang sequence
+    
+    const { data: insertedData, error } = await supabase.from("policies").insert([
+      { ...payload, code }
+    ]).select().single();
+    
     if (error) return { success: false, error: error.message };
+    return { success: true, data: insertedData };
   } else {
     const { error } = await supabase
       .from("policies")
-      .update({ ...payload, updated_at: new Date().toISOString() })
-      .eq("id", policyData.id);
+      .update(payload)
+      .eq("id", policyData.id)
+      .is("deleted_at", null);
+      
     if (error) return { success: false, error: error.message };
+    return { success: true };
   }
-
-  return { success: true };
 }
 
+/**
+ * 4. DELETE POLICY (Soft Delete)
+ */
 export async function deletePolicy(id: string) {
   await requirePermission("POLICIES", "delete");
   const supabase = createAdminClient();
   
-  const { error } = await supabase.from("policies").delete().eq("id", id);
+  const { error } = await supabase
+    .from("policies")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+    
   if (error) return { success: false, error: error.message };
   
   return { success: true };
 }
 
-export async function getPolicyById(id: string) {
-  const user = await requireActiveUser();
+/**
+ * 5. SAVE POLICY VERSION (Thêm hoặc sửa dòng version)
+ */
+export async function savePolicyVersion(isNew: boolean, versionData: any) {
+  await requireActiveUser();
+  await requirePermission("POLICIES", isNew ? "create" : "update");
+
   const supabase = createAdminClient();
   
-  const { data: dbUser } = await supabase
-    .from("users")
-    .select("role_id, department_id, roles(role_code)")
-    .eq("id", user.id)
-    .single();
+  const payload = {
+    policy_id: versionData.policy_id,
+    version_name: versionData.version_name,
+    effective_date: versionData.effective_date,
+    file_url: versionData.file_url || null,
+    notes: versionData.notes || null,
+  };
 
-  const isSuperAdmin = (dbUser?.roles as any)?.role_code === "SUPER_ADMIN";
-
-  let query = supabase.from("policies").select("*").eq("id", id);
-
-  if (!isSuperAdmin) {
-    query = query.or(
-      `policy_scope.eq.GENERAL,and(policy_scope.eq.DEPARTMENT,target_id.eq.${dbUser?.department_id}),and(policy_scope.eq.ROLE,target_id.eq.${dbUser?.role_id}),and(policy_scope.eq.SPECIFIC_USER,target_id.eq.${user.id})`
-    );
+  if (isNew) {
+    const { error } = await supabase.from("policy_versions").insert([payload]);
+    if (error) return { success: false, error: error.message };
+  } else {
+    const { error } = await supabase
+      .from("policy_versions")
+      .update({ ...payload, updated_at: new Date().toISOString() })
+      .eq("id", versionData.id);
+    if (error) return { success: false, error: error.message };
   }
 
-  const { data, error } = await query.single();
-  if (error) {
-    console.error("Error fetching policy:", error);
-    return null;
+  return { success: true };
+}
+
+/**
+ * 6. DELETE POLICY VERSION
+ */
+export async function deletePolicyVersion(id: string) {
+  await requirePermission("POLICIES", "delete");
+  const supabase = createAdminClient();
+  
+  const { error } = await supabase.from("policy_versions").delete().eq("id", id);
+  if (error) return { success: false, error: error.message };
+  
+  return { success: true };
+}
+
+/**
+ * 7. GET MASTER DATA OPTIONS (Danh mục dùng chung)
+ */
+export async function getPolicyMasterData() {
+  await requireActiveUser();
+  const supabase = createAdminClient();
+  // Lấy toàn bộ từ bảng master_data thay vì nhiều bảng rời rạc
+  const { data: masterData, error: mdError } = await supabase
+    .from("master_data")
+    .select("id, type, code, name, parent_code")
+    .in("type", ["DOCUMENT_TYPE", "TARGET_AUDIENCE", "DEPARTMENT"])
+    .order("sort_order", { ascending: true });
+
+  if (mdError) {
+    console.error("Error fetching master data:", mdError);
+    return { documentTypes: [], targetAudiences: [], departments: [] };
   }
-  return data;
+
+  return {
+    documentTypes: masterData?.filter(item => item.type === "DOCUMENT_TYPE") || [],
+    targetAudiences: masterData?.filter(item => item.type === "TARGET_AUDIENCE") || [],
+    departments: masterData?.filter(item => item.type === "DEPARTMENT") || []
+  };
 }

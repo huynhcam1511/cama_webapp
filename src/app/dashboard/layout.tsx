@@ -153,7 +153,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* Navigation Items */}
-        <div className="p-3 space-y-6 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="p-3 space-y-6 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
           {/* Dynamic Sidebar Groups */}
           {SIDEBAR_GROUP_ORDER.map(groupCode => {
             const groupModules = sidebarModules.filter(m => m.group === groupCode);
