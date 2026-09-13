@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as icons from "lucide-react";
-import { deleteBooking } from "../customers/actions";
+import { deleteBooking, saveBooking } from "../customers/actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -14,7 +14,61 @@ export default function AppointmentsClient({ initialData, users }: { initialData
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [createError, setCreateError] = useState("");
+  const [formData, setFormData] = useState({
+    customer_name: "",
+    customer_phone: "",
+    date: new Date().toISOString().split("T")[0],
+    start_time: "10:00",
+    source: "Facebook - Cama Haute Couture",
+    primary_assignee_id: "",
+    service_group: "BRIDAL",
+    service_content: "Thuê váy",
+    status: "CHỜ XÁC NHẬN",
+    result: "CHƯA CẬP NHẬT",
+    wedding_date: "",
+  });
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("create=true")) {
+      setIsCreateOpen(true);
+    }
+  }, []);
+
+  const handleCreateBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setCreateError("");
+
+    const res = await saveBooking(formData);
+    setSubmitting(false);
+
+    if (res.error) {
+      setCreateError(res.error);
+    } else {
+      if (res.data) {
+        setBookings([res.data, ...bookings]);
+      }
+      setIsCreateOpen(false);
+      setFormData({
+        customer_name: "",
+        customer_phone: "",
+        date: new Date().toISOString().split("T")[0],
+        start_time: "10:00",
+        source: "Facebook - Cama Haute Couture",
+        primary_assignee_id: "",
+        service_group: "BRIDAL",
+        service_content: "Thuê váy",
+        status: "CHỜ XÁC NHẬN",
+        result: "CHƯA CẬP NHẬT",
+        wedding_date: "",
+      });
+      router.refresh();
+    }
+  };
 
   const uniqueSources = Array.from(new Set(bookings.map(b => b.source).filter(Boolean)));
 
@@ -60,13 +114,14 @@ export default function AppointmentsClient({ initialData, users }: { initialData
           </h2>
           <p className="text-sm text-slate-500 mt-1">Quản lý lịch hẹn, theo dõi tình trạng tư vấn và chốt sales</p>
         </div>
-        <Link
-          href="/dashboard/appointments/create"
-          className="hidden sm:flex bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors items-center gap-2 shrink-0"
+        <button
+          type="button"
+          onClick={() => setIsCreateOpen(true)}
+          className="hidden sm:flex bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors items-center gap-2 shrink-0 cursor-pointer shadow-sm"
         >
           <icons.Plus className="w-4 h-4" />
           Thêm Lịch Hẹn
-        </Link>
+        </button>
       </div>
 
       {/* Search & Filter */}
@@ -281,13 +336,225 @@ export default function AppointmentsClient({ initialData, users }: { initialData
       
       {/* Mobile FAB */}
       <div className="md:hidden fixed bottom-20 right-4 z-50">
-        <Link
-          href="/dashboard/appointments/create"
-          className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+        <button
+          type="button"
+          onClick={() => setIsCreateOpen(true)}
+          className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors cursor-pointer"
         >
           <icons.Plus className="w-6 h-6" />
-        </Link>
+        </button>
       </div>
+
+      {/* Modal Thêm Lịch Hẹn Mới */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-8">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                  <icons.CalendarPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base">Thêm Lịch Hẹn Mới</h3>
+                  <p className="text-xs text-slate-500">Tạo lịch tư vấn hoặc thử đồ cho khách hàng</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <icons.X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateBooking} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Tên khách hàng / Cặp đôi <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="VD: Hải Yến Trấn"
+                    value={formData.customer_name}
+                    onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Số điện thoại <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="VD: 0901234567"
+                    value={formData.customer_phone}
+                    onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Ngày hẹn <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Giờ hẹn <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={formData.start_time}
+                    onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nhóm dịch vụ
+                  </label>
+                  <select
+                    value={formData.service_group}
+                    onChange={(e) => setFormData({ ...formData, service_group: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  >
+                    <option value="BRIDAL">BRIDAL</option>
+                    <option value="SUIT">SUIT</option>
+                    <option value="COMBO BRIDAL + SUIT">COMBO BRIDAL + SUIT</option>
+                    <option value="WEDDING STUDIO">WEDDING STUDIO</option>
+                    <option value="TSTT">TSTT</option>
+                    <option value="KHÁC">KHÁC</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Dịch vụ chi tiết / Nội dung
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: Thuê váy, Thử đồ, Tư vấn..."
+                    value={formData.service_content}
+                    onChange={(e) => setFormData({ ...formData, service_content: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nguồn tiếp cận
+                  </label>
+                  <select
+                    value={formData.source}
+                    onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  >
+                    <option value="Facebook - Cama Haute Couture">Facebook - Cama Haute Couture</option>
+                    <option value="Facebook - Cama Suit">Facebook - Cama Suit</option>
+                    <option value="Zalo">Zalo</option>
+                    <option value="KHÁCH CŨ">KHÁCH CŨ</option>
+                    <option value="Hotline">Hotline</option>
+                    <option value="Khác">Khác</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nhân viên phụ trách (PIC)
+                  </label>
+                  <select
+                    value={formData.primary_assignee_id}
+                    onChange={(e) => setFormData({ ...formData, primary_assignee_id: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  >
+                    <option value="">-- Chọn nhân viên --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>{u.full_name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Trạng thái
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  >
+                    <option value="CHỜ XÁC NHẬN">CHỜ XÁC NHẬN</option>
+                    <option value="ĐÃ XÁC NHẬN">ĐÃ XÁC NHẬN</option>
+                    <option value="ĐÃ ĐẾN">ĐÃ ĐẾN</option>
+                    <option value="KHÔNG ĐẾN">KHÔNG ĐẾN</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Ngày cưới (nếu có)
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.wedding_date}
+                    onChange={(e) => setFormData({ ...formData, wedding_date: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {createError && (
+                <div className="p-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg font-medium">
+                  {createError}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                >
+                  {submitting ? (
+                    <>
+                      <icons.Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang lưu...
+                    </>
+                  ) : (
+                    <>
+                      <icons.Plus className="w-3.5 h-3.5" /> Tạo lịch hẹn
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
