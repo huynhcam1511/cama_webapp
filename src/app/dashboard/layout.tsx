@@ -120,26 +120,34 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         }`}
       >
         {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between border-b border-slate-200 shrink-0 relative px-4 overflow-hidden">
+        <div className="h-16 flex items-center justify-between border-b border-slate-200 shrink-0 relative px-3 overflow-hidden">
           <Link 
             href="/dashboard" 
-            className={`flex items-center gap-3 overflow-hidden group whitespace-nowrap transition-all duration-300 ${
-              !isMobileMenuOpen && isCollapsed ? 'opacity-0 w-0 -translate-x-4' : 'opacity-100 w-full translate-x-0'
-            }`}
+            className="flex items-center gap-2.5 overflow-hidden group whitespace-nowrap p-1 rounded-lg"
+            title="CAMA HAUTE COUTURE"
           >
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-              <span className="text-white font-bold text-sm">CH</span>
+            <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 shadow-sm bg-[#113D3E] flex items-center justify-center group-hover:scale-105 transition-transform p-1.5 border border-[#113D3E]/20">
+              <img 
+                src="/cama_icon_gold.png" 
+                alt="CAMA Haute Couture" 
+                className="w-full h-full object-contain"
+              />
             </div>
-            <div className="flex flex-col overflow-hidden">
-              <span className="font-bold text-sm tracking-tight text-slate-800 leading-none group-hover:text-amber-600 transition-colors truncate">
+            <div className={`flex flex-col overflow-hidden transition-all duration-300 ${
+              !isMobileMenuOpen && isCollapsed ? 'opacity-0 w-0 -translate-x-4 pointer-events-none' : 'opacity-100 w-auto translate-x-0'
+            }`}>
+              <span className="font-bold text-sm tracking-tight text-slate-800 leading-none group-hover:text-amber-700 transition-colors truncate font-serif">
                 CAMA HAUTE
               </span>
-              <span className="text-[10px] text-slate-500 mt-0.5">Studio System</span>
+              <span className="text-[9px] text-slate-500 mt-1 uppercase tracking-wider font-sans font-medium">Studio System</span>
             </div>
           </Link>
           <button 
             onClick={() => setIsPinned(!isPinned)}
-            className={`absolute right-4 p-1.5 rounded-lg transition-colors hidden md:block shrink-0 ${isPinned ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-100'}`}
+            className={`p-1.5 rounded-lg transition-colors hidden md:block shrink-0 ${
+              !isMobileMenuOpen && isCollapsed ? 'hidden' : ''
+            } ${isPinned ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-100'}`}
+            title={isPinned ? "Thu gọn sidebar" : "Ghim sidebar"}
           >
             <icons.Menu className="w-5 h-5" />
           </button>

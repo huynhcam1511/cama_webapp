@@ -9,11 +9,14 @@ export default async function Home({ searchParams }: { searchParams: { code?: st
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 sm:p-24 bg-background">
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex flex-col gap-8">
-        <div className="text-center">
+        <div className="text-center flex flex-col items-center">
+          <div className="w-20 h-20 rounded-2xl bg-[#113D3E] p-3 shadow-xl border border-amber-500/20 mb-6 flex items-center justify-center">
+            <img src="/cama_icon_gold.png" alt="CAMA Haute Couture" className="w-full h-full object-contain" />
+          </div>
           <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-6xl mb-4 font-serif uppercase tracking-[8px]">
             CAMA Portal
           </h1>
-          <p className="mt-4 text-lg leading-8 text-muted-foreground">
+          <p className="mt-4 text-lg leading-8 text-muted-foreground font-sans">
             Hệ thống quản lý Studio Cưới chuyên nghiệp.
           </p>
         </div>

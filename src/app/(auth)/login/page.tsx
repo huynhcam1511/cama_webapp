@@ -30,10 +30,20 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="max-w-[420px] w-full bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
         {/* Header */}
-        <div className="p-8 text-center bg-slate-900 text-white relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
-          <h1 className="text-3xl font-bold tracking-tight relative z-10">CAMA</h1>
-          <p className="text-slate-300 text-sm mt-1 relative z-10">Haute Couture Management</p>
+        <div className="p-8 text-center bg-[#113D3E] text-white relative overflow-hidden flex flex-col items-center">
+          <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-200 via-transparent to-transparent"></div>
+          <div className="w-16 h-16 rounded-2xl bg-black/20 p-2.5 backdrop-blur-sm border border-white/10 mb-3 relative z-10 shadow-lg flex items-center justify-center">
+            <Image 
+              src="/cama_icon_gold.png" 
+              alt="CAMA Haute Couture" 
+              width={52} 
+              height={52} 
+              className="object-contain"
+              priority
+            />
+          </div>
+          <h1 className="text-2xl font-bold tracking-wider relative z-10 font-serif text-[#E6CFA5]">CAMA HAUTE COUTURE</h1>
+          <p className="text-emerald-100/70 text-xs mt-1 relative z-10 tracking-widest uppercase font-mono">Internal Studio Management</p>
         </div>
 
         {/* Form */}
