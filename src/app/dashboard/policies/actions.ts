@@ -27,6 +27,7 @@ export async function getPolicies(filters?: { document_type_id?: string; departm
         id,
         version_name,
         effective_date,
+        created_at,
         file_url
       )
     `)
@@ -59,8 +60,8 @@ export async function getPolicies(filters?: { document_type_id?: string; departm
     versions.sort((a: any, b: any) => {
       const timeDiff = new Date(b.effective_date).getTime() - new Date(a.effective_date).getTime();
       if (timeDiff !== 0) return timeDiff;
-      // Fallback to sorting by UUID/ID descending if dates are exactly the same
-      return b.id.localeCompare(a.id);
+      // Fallback to sorting by created_at descending if dates are exactly the same
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
     });
     
     // Find active version
@@ -102,12 +103,12 @@ export async function getPolicyById(id: string) {
     return null;
   }
 
-  // Sort versions descending by effective_date, then by id DESC
+  // Sort versions descending by effective_date, then by created_at DESC
   if (data.policy_versions) {
     data.policy_versions.sort((a: any, b: any) => {
       const timeDiff = new Date(b.effective_date).getTime() - new Date(a.effective_date).getTime();
       if (timeDiff !== 0) return timeDiff;
-      return b.id.localeCompare(a.id);
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
     });
   }
 

@@ -148,7 +148,14 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
     }
   };
 
-  const formatDate = (date: string) => new Date(date).toLocaleDateString("vi-VN");
+  const formatDateTime = (dateStr: string, createdAt?: string) => {
+    const datePart = new Date(dateStr).toLocaleDateString("vi-VN");
+    if (createdAt) {
+      const timePart = new Date(createdAt).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' });
+      return `${datePart} - ${timePart}`;
+    }
+    return datePart;
+  };
 
   return (
     <div className="space-y-6 text-slate-900 pb-12">
@@ -327,7 +334,7 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
               <thead className="bg-slate-50/50 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 <tr>
                   <th className="px-4 py-3 border-b border-slate-200">Tên phiên bản</th>
-                  <th className="px-4 py-3 border-b border-slate-200">Ngày hiệu lực</th>
+                  <th className="px-4 py-3 border-b border-slate-200">Ngày hiệu lực (Tạo lúc)</th>
                   <th className="px-4 py-3 border-b border-slate-200">File Đính kèm / Link</th>
                   <th className="px-4 py-3 border-b border-slate-200 hidden md:table-cell">Ghi chú</th>
                   <th className="px-4 py-3 border-b border-slate-200 text-right">Thao tác</th>
@@ -344,7 +351,7 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
                   versions.map((v) => (
                     <tr key={v.id} className="transition hover:bg-slate-50/50">
                       <td className="px-4 py-3 font-medium text-slate-700">{v.version_name}</td>
-                      <td className="px-4 py-3 text-slate-600">{formatDate(v.effective_date)}</td>
+                      <td className="px-4 py-3 text-slate-600">{formatDateTime(v.effective_date, v.created_at)}</td>
                       <td className="px-4 py-3">
                         {v.file_url ? (
                           <a href={v.file_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 hover:underline">
