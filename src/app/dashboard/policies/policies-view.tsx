@@ -153,10 +153,10 @@ export default function PoliciesView({ initialPolicies, permissions, masterData 
                       <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{policy.description}</p>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <span className="inline-block rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 border border-emerald-100">
+                      <p className="text-sm font-medium text-slate-700">
                         {getDocTypeName(policy.document_type_id)}
-                      </span>
-                      <p className="text-xs text-slate-500 mt-1">{getDeptName(policy.department_id)}</p>
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">{getDeptName(policy.department_id)}</p>
                     </td>
                     <td className="px-4 py-3">
                       {policy.active_version ? (
