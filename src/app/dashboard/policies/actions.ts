@@ -48,7 +48,10 @@ export async function getPolicies(filters?: { document_type_id?: string; departm
   }
 
   // Lọc ra phiên bản hiện hành (effective_date gần nhất và <= today)
-  const today = new Date().toISOString().split('T')[0];
+  // Fix timezone bug: Server is in UTC, we need Vietnam Time (UTC+7) to determine 'today'
+  const tzOffset = 7 * 60 * 60 * 1000;
+  const vnTime = new Date(Date.now() + tzOffset);
+  const today = vnTime.toISOString().split('T')[0];
   
   const mappedData = data.map((policy: any) => {
     // Sort versions by effective_date DESC
@@ -181,17 +184,18 @@ export async function savePolicyVersion(isNew: boolean, versionData: any) {
   };
 
   if (isNew) {
-    const { error } = await supabase.from("policy_versions").insert([payload]);
+    const { data, error } = await supabase.from("policy_versions").insert([payload]).select().single();
     if (error) return { success: false, error: error.message };
+    return { success: true, data };
   } else {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("policy_versions")
       .update({ ...payload, updated_at: new Date().toISOString() })
-      .eq("id", versionData.id);
+      .eq("id", versionData.id)
+      .select().single();
     if (error) return { success: false, error: error.message };
+    return { success: true, data };
   }
-
-  return { success: true };
 }
 
 /**

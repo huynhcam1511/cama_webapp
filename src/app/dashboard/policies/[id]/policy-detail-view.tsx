@@ -26,10 +26,16 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   const [editingVersion, setEditingVersion] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Get local date string YYYY-MM-DD
+  const getLocalDateString = () => {
+    return new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  };
+
   const [versionForm, setVersionForm] = useState({
     id: "",
     version_name: "",
-    effective_date: new Date().toISOString().split('T')[0],
+    effective_date: getLocalDateString(),
     file_url: "",
     notes: ""
   });
@@ -65,7 +71,7 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
       setVersionForm({
         id: "",
         version_name: `Phiên bản v${versions.length + 1}.0`,
-        effective_date: new Date().toISOString().split('T')[0],
+        effective_date: getLocalDateString(),
         file_url: "",
         notes: ""
       });
@@ -120,11 +126,11 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
     if (res.success) {
       setIsVersionModalOpen(false);
       router.refresh();
-      // Temporarily update local state for fast UI response
+      // Temporarily update local state for fast UI response using real ID from DB
       if (!editingVersion) {
-        setVersions([{ ...versionForm, id: "temp-id" }, ...versions]);
+        setVersions([res.data, ...versions]);
       } else {
-        setVersions(versions.map(v => v.id === editingVersion.id ? { ...v, ...versionForm } : v));
+        setVersions(versions.map(v => v.id === editingVersion.id ? res.data : v));
       }
     } else {
       alert("Lỗi: " + res.error);
