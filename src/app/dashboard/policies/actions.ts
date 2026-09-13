@@ -54,9 +54,14 @@ export async function getPolicies(filters?: { document_type_id?: string; departm
   const today = vnTime.toISOString().split('T')[0];
   
   const mappedData = data.map((policy: any) => {
-    // Sort versions by effective_date DESC
+    // Sort versions by effective_date DESC, then by id DESC (newest first)
     const versions = policy.policy_versions || [];
-    versions.sort((a: any, b: any) => new Date(b.effective_date).getTime() - new Date(a.effective_date).getTime());
+    versions.sort((a: any, b: any) => {
+      const timeDiff = new Date(b.effective_date).getTime() - new Date(a.effective_date).getTime();
+      if (timeDiff !== 0) return timeDiff;
+      // Fallback to sorting by UUID/ID descending if dates are exactly the same
+      return b.id.localeCompare(a.id);
+    });
     
     // Find active version
     const activeVersion = versions.find((v: any) => v.effective_date <= today) || versions[0] || null;
@@ -97,9 +102,13 @@ export async function getPolicyById(id: string) {
     return null;
   }
 
-  // Sort versions descending by effective_date
+  // Sort versions descending by effective_date, then by id DESC
   if (data.policy_versions) {
-    data.policy_versions.sort((a: any, b: any) => new Date(b.effective_date).getTime() - new Date(a.effective_date).getTime());
+    data.policy_versions.sort((a: any, b: any) => {
+      const timeDiff = new Date(b.effective_date).getTime() - new Date(a.effective_date).getTime();
+      if (timeDiff !== 0) return timeDiff;
+      return b.id.localeCompare(a.id);
+    });
   }
 
   return data;
