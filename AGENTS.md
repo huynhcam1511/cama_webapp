@@ -30,6 +30,7 @@
 - Các trang form toàn màn hình đã có tiêu đề và nút quay lại riêng không được hiển thị thêm dashboard top bar gây lặp điều hướng, đặc biệt trên mobile.
 - Dashboard top bar không dùng `sticky top-0` mặc định. Chỉ làm sticky khi người dùng yêu cầu hoặc có lý do nghiệp vụ rõ ràng.
 - Không render Agentation, Page Feedback Toolbar, Annotation Marker hoặc công cụ debug/review vào giao diện ứng dụng. Công cụ phát triển phải nằm ngoài cây UI người dùng nhìn thấy.
+- Không chạy `next build` đồng thời với `next dev` trong cùng workspace vì hai tiến trình dùng chung `.next` có thể làm route hoặc CSS của dev server trả 404. Trước khi build phải kiểm tra port/tiến trình; nếu dev server đang phục vụ cho người dùng thì chỉ chạy typecheck/lint, hoặc dừng và khởi động lại dev server sau build rồi xác minh đúng port.
 
 ## Project context
 

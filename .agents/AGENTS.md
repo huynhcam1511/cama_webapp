@@ -81,3 +81,11 @@ Chi tiết kiến trúc và quy trình phục hồi nằm tại `docs/DATA_INTEG
   - `page` (Trang đăng tải, e.g., CAMA Haute Couture, CAMA Wedding, TikTok Hiền, FBNV Cao Hùng, etc.). Note: Facebook Reels for Bridal should target CAMA Haute Couture & CAMA Wedding. TikTok should target the 2 TikTok channels.
   - `content_pillar` (Pillar nội dung, MUST be one of the 4 defined pillars).
   - `media_requirements` (Yêu cầu Media, MUST detail what media clips, images are needed, or how to film the footage).
+
+
+## QUY TẮC BẤT BIẾN VỀ UI/UX VÀ CẤU TRÚC FORM (MASTER-DETAIL & DANH MỤC):
+11. **SỰ ĐỒNG NHẤT MASTER - DETAIL**: Toàn bộ hệ thống phải tuân thủ chuẩn UI/UX sau để dễ mở rộng và bảo trì:
+    - **Màn Master (Danh sách)**: Luôn là giao diện dạng Table / Grid, đi kèm bộ filter, search, pagination và các action (Thêm, Sửa, Xóa).
+    - **Màn Detail (Form nhập liệu / Chỉnh sửa)**: Khung nhập liệu cần tuân thủ cấu trúc phân cấp. Ví dụ: Nửa trên (hoặc tab đầu) là Thông tin chung (General Info) chứa các field Text, Dropdown. Nửa dưới (hoặc tab sau) là danh sách thông tin liên quan (dạng Table phụ, Lịch sử phiên bản, Dữ liệu con).
+12. **KHÔNG DÙNG RICH TEXT EDITOR CHO VĂN BẢN CẤU TRÚC**: Với các dữ liệu dạng tài liệu dài, quy định, chính sách, tuyệt đối không dùng Rich Text Editor (nhập text trực tiếp vào form). Thay vào đó, áp dụng cơ chế **Lịch sử phiên bản (Version History)**: tải lên file đính kèm (Word, PDF) + Ngày ban hành + Tiêu đề phiên bản.
+13. **QUẢN LÝ DANH MỤC (MASTER DATA)**: Mọi dropdown chọn dữ liệu phân loại (VD: Loại văn bản, Phòng ban, Đối tượng, v.v.) BẮT BUỘC phải được load từ Database. Khi xây dựng form nhập liệu có chứa dropdown, AI phải tự động đề xuất tạo các bảng Danh mục (Categories/Dictionaries) tương ứng và giao diện (UI) để Admin có thể cấu hình thêm/sửa/xóa các danh mục này.

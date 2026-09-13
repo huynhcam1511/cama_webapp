@@ -331,7 +331,7 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
                 {versions.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-slate-500 italic">
-                      Chưa có phiên bản tài liệu nào. Bấm "Thêm phiên bản" để upload file đính kèm.
+                      Chưa có phiên bản tài liệu nào. Bấm &quot;Thêm phiên bản&quot; để upload file đính kèm.
                     </td>
                   </tr>
                 ) : (
