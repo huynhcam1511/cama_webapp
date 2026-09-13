@@ -115,53 +115,34 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         onMouseLeave={() => setIsHovered(false)}
         className={`${
           isMobileMenuOpen ? "flex fixed inset-y-0 left-0 z-50 shadow-2xl h-screen" : "hidden md:flex md:sticky md:top-0 md:h-screen z-40"
-        } flex-col bg-white border-r border-slate-200 transition-all duration-300 print:hidden ${
+        } flex-col bg-white transition-all duration-300 print:hidden ${
           !isMobileMenuOpen && isCollapsed ? "w-20" : "w-64"
         }`}
       >
-        {/* Brand Header */}
+        {/* Burger Button Header (Aligned with nav icons below) */}
         <div className="h-16 flex items-center justify-between border-b border-slate-200 shrink-0 relative px-3 overflow-hidden">
-          <Link 
-            href="/dashboard" 
-            className="flex items-center gap-2.5 overflow-hidden group whitespace-nowrap p-1 rounded-lg"
-            title="CAMA HAUTE COUTURE"
-          >
-            <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 shadow-sm bg-[#113D3E] flex items-center justify-center group-hover:scale-105 transition-transform p-1.5 border border-[#113D3E]/20">
-              <img 
-                src="/cama_icon_gold.png" 
-                alt="CAMA Haute Couture" 
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div className={`flex flex-col overflow-hidden transition-all duration-300 ${
-              !isMobileMenuOpen && isCollapsed ? 'opacity-0 w-0 -translate-x-4 pointer-events-none' : 'opacity-100 w-auto translate-x-0'
-            }`}>
-              <span className="font-bold text-sm tracking-tight text-slate-800 leading-none group-hover:text-amber-700 transition-colors truncate font-serif">
-                CAMA HAUTE
-              </span>
-              <span className="text-[9px] text-slate-500 mt-1 uppercase tracking-wider font-sans font-medium">Studio System</span>
-            </div>
-          </Link>
           <button 
             onClick={() => setIsPinned(!isPinned)}
-            className={`p-1.5 rounded-lg transition-colors hidden md:block shrink-0 ${
-              !isMobileMenuOpen && isCollapsed ? 'hidden' : ''
-            } ${isPinned ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-100'}`}
+            className="flex items-center rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors px-3 py-2.5 w-full"
             title={isPinned ? "Thu gọn sidebar" : "Ghim sidebar"}
+            aria-label="Toggle sidebar"
           >
-            <icons.Menu className="w-5 h-5" />
+            <icons.Menu className="w-5 h-5 shrink-0" />
+            <span className={`whitespace-nowrap font-medium text-xs tracking-wider uppercase text-slate-400 transition-all duration-300 ${!isMobileMenuOpen && isCollapsed ? 'opacity-0 w-0 -translate-x-4' : 'opacity-100 w-auto translate-x-0 ml-3'}`}>
+              Menu
+            </span>
           </button>
           {/* Close button for mobile menu */}
           <button 
             onClick={() => setIsMobileMenuOpen(false)}
-            className="md:hidden p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg shrink-0"
+            className="md:hidden p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg shrink-0 mr-1"
           >
             <icons.X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Navigation Items */}
-        <div className="p-3 space-y-6 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        <div className="p-3 space-y-6 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar border-r border-slate-200">
           {/* Dynamic Sidebar Groups */}
           {SIDEBAR_GROUP_ORDER.map(groupCode => {
             const groupModules = sidebarModules.filter(m => m.group === groupCode);
@@ -205,7 +186,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* Sidebar Footer Logout */}
-        <div className="p-3 border-t border-slate-200 bg-slate-50/50 overflow-hidden">
+        <div className="p-3 border-t border-r border-slate-200 bg-slate-50/50 overflow-hidden">
           <button
             onClick={handleLogout}
             className={`flex items-center text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full px-3 py-2.5`}
@@ -222,8 +203,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {/* Main Right Container */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen print:overflow-visible relative">
         {/* Full-page create forms own their header; do not repeat the dashboard bar. */}
-        {pathname !== "/dashboard/orders/create" && <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-2 sm:px-6 lg:px-8 shrink-0 print:hidden">
-          <div className="flex items-center gap-1 sm:gap-2">
+        {pathname !== "/dashboard/orders/create" && <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-3 sm:px-6 lg:px-8 shrink-0 print:hidden">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors shrink-0"
@@ -249,20 +230,38 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </Link>
               );
             })()}
-            <div className="hidden sm:flex items-center gap-2 text-sm text-slate-500 ml-2">
-              {breadcrumbs.map((crumb, idx) => (
-                <span key={idx} className="flex items-center gap-2">
-                  {idx > 0 && <span className="text-slate-300">/</span>}
-                  <span className={idx === breadcrumbs.length - 1 ? "text-slate-900 font-bold capitalize text-base" : ""}>
-                    {crumb}
-                  </span>
+
+            {/* CAMA Brand Logo - Positioned at the start of Topbar where "Tổng quan" was */}
+            <Link 
+              href="/dashboard" 
+              className="flex items-center gap-2.5 overflow-hidden group whitespace-nowrap p-1 rounded-xl hover:bg-slate-50 transition-all"
+              title="CAMA HAUTE COUTURE"
+            >
+              <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 shadow-sm bg-[#113D3E] flex items-center justify-center group-hover:scale-105 transition-transform p-1.5 border border-[#113D3E]/20">
+                <img 
+                  src="/cama_icon_gold.png" 
+                  alt="CAMA Haute Couture" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-sm sm:text-base tracking-wider text-slate-900 leading-none group-hover:text-amber-700 transition-colors font-serif">
+                  CAMA HAUTE
                 </span>
-              ))}
-            </div>
-            {/* Mobile Title - Size reduced from text-lg font-serif to text-base */}
-            <div className="sm:hidden font-bold text-slate-800 text-base capitalize truncate max-w-[150px]">
-              {breadcrumbs[breadcrumbs.length - 1]}
-            </div>
+                <span className="text-[9px] text-slate-400 mt-0.5 uppercase tracking-widest font-mono font-medium hidden sm:block">
+                  Studio System
+                </span>
+              </div>
+            </Link>
+
+            {/* Sub-page Breadcrumb / Section Label */}
+            {pathname !== "/dashboard" && currentModule && (
+              <div className="hidden sm:flex items-center gap-2 text-sm text-slate-400 pl-3 border-l border-slate-200 ml-1">
+                <span className="text-slate-800 font-medium text-sm">
+                  {currentModule.label}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
