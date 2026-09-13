@@ -60,6 +60,13 @@ export default function AppointmentsClient({ initialData, users }: { initialData
           </h2>
           <p className="text-sm text-slate-500 mt-1">Quản lý lịch hẹn, theo dõi tình trạng tư vấn và chốt sales</p>
         </div>
+        <Link
+          href="/dashboard/appointments/create"
+          className="hidden sm:flex bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors items-center gap-2 shrink-0"
+        >
+          <icons.Plus className="w-4 h-4" />
+          Thêm Lịch Hẹn
+        </Link>
       </div>
 
       {/* Search & Filter */}
@@ -270,6 +277,16 @@ export default function AppointmentsClient({ initialData, users }: { initialData
              ))
           )}
         </div>
+      </div>
+      
+      {/* Mobile FAB */}
+      <div className="md:hidden fixed bottom-20 right-4 z-50">
+        <Link
+          href="/dashboard/appointments/create"
+          className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+        >
+          <icons.Plus className="w-6 h-6" />
+        </Link>
       </div>
     </div>
   );

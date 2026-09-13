@@ -146,6 +146,13 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
            <icons.Filter className="w-5 h-5" />
            {filterProgress !== "ALL" && <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full bg-indigo-600 text-white text-[10px] font-black flex items-center justify-center">1</span>}
          </button>
+         <Link
+           href="/dashboard/customer-journey/create"
+           className="hidden md:flex bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors items-center gap-2 shrink-0"
+         >
+           <icons.Plus className="w-4 h-4" />
+           Thêm Hành Trình
+         </Link>
       </div>
 
       {/* Mobile Filter Modal */}
@@ -385,6 +392,16 @@ export default function CustomerJourneyClient({ initialContracts, initialSchedul
             </p>
           </div>
         )}
+        
+        {/* Mobile FAB */}
+        <div className="md:hidden fixed bottom-20 right-4 z-50">
+          <Link
+            href="/dashboard/customer-journey/create"
+            className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+          >
+            <icons.Plus className="w-6 h-6" />
+          </Link>
+        </div>
     </div>
   );
 }
