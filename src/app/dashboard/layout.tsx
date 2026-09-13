@@ -231,7 +231,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               );
             })()}
 
-            {/* CAMA Brand Logo - Positioned at the start of Topbar where "Tổng quan" was */}
+            {/* CAMA Brand Logo */}
             <Link 
               href="/dashboard" 
               className="flex items-center gap-2.5 overflow-hidden group whitespace-nowrap p-1 rounded-xl hover:bg-slate-50 transition-all"
@@ -244,24 +244,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   className="w-full h-full object-contain"
                 />
               </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-sm sm:text-base tracking-wider text-slate-900 leading-none group-hover:text-amber-700 transition-colors font-serif">
-                  CAMA HAUTE
-                </span>
-                <span className="text-[9px] text-slate-400 mt-0.5 uppercase tracking-widest font-mono font-medium hidden sm:block">
-                  Studio System
-                </span>
-              </div>
+              <span className="font-bold text-sm sm:text-base tracking-wider text-slate-900 group-hover:text-amber-700 transition-colors font-serif uppercase">
+                CAMA HAUTE COUTURE
+              </span>
             </Link>
-
-            {/* Sub-page Breadcrumb / Section Label */}
-            {pathname !== "/dashboard" && currentModule && (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-slate-400 pl-3 border-l border-slate-200 ml-1">
-                <span className="text-slate-800 font-medium text-sm">
-                  {currentModule.label}
-                </span>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-3">
