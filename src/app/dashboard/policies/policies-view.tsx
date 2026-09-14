@@ -130,10 +130,10 @@ export default function PoliciesView({ initialPolicies, permissions, masterData 
           <table className="w-full text-left text-sm">
             <thead className="bg-white text-xs font-semibold text-slate-500 uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-3 border-b border-slate-200">Mã VB</th>
+                <th className="px-4 py-3 border-b border-slate-200 whitespace-nowrap">Phòng ban</th>
+                <th className="px-4 py-3 border-b border-slate-200 whitespace-nowrap">Loại văn bản</th>
                 <th className="px-4 py-3 border-b border-slate-200">Tên văn bản</th>
-                <th className="px-4 py-3 border-b border-slate-200 hidden md:table-cell">Loại / Phòng ban</th>
-                <th className="px-4 py-3 border-b border-slate-200">Tình trạng</th>
+                <th className="px-4 py-3 border-b border-slate-200 whitespace-nowrap">Tình trạng</th>
                 <th className="px-4 py-3 border-b border-slate-200 text-right">Thao tác</th>
               </tr>
             </thead>
@@ -147,16 +147,19 @@ export default function PoliciesView({ initialPolicies, permissions, masterData 
               ) : (
                 filteredPolicies.map((policy) => (
                   <tr key={policy.id} className="transition hover:bg-slate-50/50">
-                    <td className="px-4 py-3 font-medium text-slate-600">{policy.code}</td>
                     <td className="px-4 py-3">
-                      <p className="font-semibold text-slate-900 line-clamp-1">{policy.name}</p>
-                      <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{policy.description}</p>
+                      <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
+                        {getDeptName(policy.department_id)}
+                      </span>
                     </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
+                    <td className="px-4 py-3">
                       <p className="text-sm font-medium text-slate-700">
                         {getDocTypeName(policy.document_type_id)}
                       </p>
-                      <p className="text-xs text-slate-400 mt-0.5">{getDeptName(policy.department_id)}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-slate-900 line-clamp-1">{policy.name}</p>
+                      <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{policy.description}</p>
                     </td>
                     <td className="px-4 py-3">
                       {policy.active_version ? (
