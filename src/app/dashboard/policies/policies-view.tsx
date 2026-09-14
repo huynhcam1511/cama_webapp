@@ -148,9 +148,9 @@ export default function PoliciesView({ initialPolicies, permissions, masterData 
                 filteredPolicies.map((policy) => (
                   <tr key={policy.id} className="transition hover:bg-slate-50/50">
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
+                      <p className="text-sm font-medium text-slate-700">
                         {getDeptName(policy.department_id)}
-                      </span>
+                      </p>
                     </td>
                     <td className="px-4 py-3">
                       <p className="text-sm font-medium text-slate-700">
