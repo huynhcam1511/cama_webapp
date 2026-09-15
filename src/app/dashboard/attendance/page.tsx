@@ -89,17 +89,28 @@ export default function AttendanceDashboardPage() {
         const distance = getDistanceFromLatLonInM(STORE_LAT, STORE_LNG, latitude, longitude);
         
         const locationData = { lat: latitude, lng: longitude, accuracy: position.coords.accuracy };
+        let reason: string | undefined = undefined;
 
         if (distance > MAX_DISTANCE_METERS) {
-          setGpsError(`Bạn đang ở cách công ty ${Math.round(distance)}m (Vượt quá bán kính cho phép ${MAX_DISTANCE_METERS}m). Vui lòng di chuyển vào trong vùng chấm công.`);
-          setCheckingIn(false);
-          return;
+          const promptReason = window.prompt(
+            `Bạn đang ở cách công ty ${Math.round(distance)}m (Vượt quá bán kính cho phép ${MAX_DISTANCE_METERS}m).\nNếu bạn đi công tác hoặc có lý do khác, vui lòng nhập lý do chấm công:`
+          );
+
+          if (!promptReason || promptReason.trim() === "") {
+            setGpsError("Bạn cần nhập lý do khi chấm công ngoài khu vực công ty!");
+            setCheckingIn(false);
+            return;
+          }
+          reason = promptReason.trim();
         }
 
-        // Call API to log attendance normally
-        const res = type === 'in' ? await checkIn(locationData) : await checkOut(locationData);
+        // Call API to log attendance with location and reason
+        const res = type === 'in' ? await checkIn(locationData, reason) : await checkOut(locationData, reason);
         if (res.success) {
-          alert(res.message || `Check-${type} thành công! Khoảng cách: ${Math.round(distance)}m`);
+          const successMsg = reason 
+            ? `Check-${type} thành công (Ngoài khu vực, cách ${Math.round(distance)}m)!\nLý do: ${reason}`
+            : (res.message || `Check-${type} thành công! Khoảng cách: ${Math.round(distance)}m`);
+          alert(successMsg);
         } else {
           alert(`Lỗi: ${res.error}`);
         }
@@ -107,9 +118,23 @@ export default function AttendanceDashboardPage() {
         fetchData(); // Reload
         checkMyAttendance();
       },
-      (error) => {
-        setGpsError("Không thể lấy vị trí GPS. Vui lòng cấp quyền vị trí cho trình duyệt.");
+      async (error) => {
+        const promptReason = window.prompt("Không thể lấy vị trí GPS (hoặc bạn đã từ chối). Vui lòng nhập lý do chấm công (VD: Lỗi GPS, Đi công tác...):");
+        if (!promptReason || promptReason.trim() === "") {
+          setGpsError("Không thể lấy vị trí GPS. Vui lòng cấp quyền vị trí hoặc nhập lý do hợp lệ.");
+          setCheckingIn(false);
+          return;
+        }
+
+        const res = type === 'in' ? await checkIn(undefined, promptReason.trim()) : await checkOut(undefined, promptReason.trim());
+        if (res.success) {
+          alert(res.message || `Check-${type} thành công không có GPS!\nLý do: ${promptReason.trim()}`);
+        } else {
+          alert(`Lỗi: ${res.error}`);
+        }
         setCheckingIn(false);
+        fetchData(); // Reload
+        checkMyAttendance();
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -174,16 +199,17 @@ export default function AttendanceDashboardPage() {
                 <th className="px-6 py-4">Nhân viên</th>
                 <th className="px-6 py-4">Giờ Vào</th>
                 <th className="px-6 py-4">Giờ Ra</th>
+                <th className="px-6 py-4">Ghi chú / Lý do</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={3} className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td>
+                  <td colSpan={4} className="p-8 text-center text-slate-400">Đang tải dữ liệu...</td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="p-8 text-center text-slate-400">Không có dữ liệu chấm công cho ngày này.</td>
+                  <td colSpan={4} className="p-8 text-center text-slate-400">Không có dữ liệu chấm công cho ngày này.</td>
                 </tr>
               ) : (
                 logs.map(log => (
@@ -197,6 +223,15 @@ export default function AttendanceDashboardPage() {
                     <td className="px-6 py-4 font-bold text-slate-700">
                       {log.check_out_time ? format(new Date(log.check_out_time), 'HH:mm:ss') : '---'}
                     </td>
+                    <td className="px-6 py-4 text-xs text-slate-600">
+                      {log.notes ? (
+                        <span className="inline-block max-w-[280px] truncate text-slate-700 font-medium" title={log.notes}>
+                          {log.notes}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">---</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -207,3 +242,5 @@ export default function AttendanceDashboardPage() {
     </div>
   );
 }
+
+
