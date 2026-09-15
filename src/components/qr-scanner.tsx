@@ -96,20 +96,12 @@ export default function QRScanner({
             }}
             constraints={{
               facingMode: { ideal: "environment" },
-              width: { ideal: 2560 },
-              height: { ideal: 1440 },
-              frameRate: { ideal: 30, min: 20 },
-              advanced: [
-                { focusMode: "continuous" } as any,
-                { exposureMode: "continuous" } as any,
-                { whiteBalanceMode: "continuous" } as any,
-              ],
+              width: { ideal: 1280, max: 1920 },
+              height: { ideal: 720, max: 1080 },
             }}
             formats={["qr_code", "data_matrix", "code_128", "code_39", "ean_13", "ean_8"]}
-            retryDelay={60}
+            retryDelay={100}
             scanDelay={250}
-            startTimeoutMs={8000}
-            settleDelayMs={250}
             styles={{
               container: {
                 width: "100%",
