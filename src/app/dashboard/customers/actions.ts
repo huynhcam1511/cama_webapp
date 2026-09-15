@@ -159,9 +159,13 @@ export async function createCustomer(customer: CustomerFormData) {
     // Tách phần appointment data
     const { appointment_date, appointment_time, appointment_type, primary_assignee_id, ...customerCore } = customer;
 
-    const sanitizedCustomer = Object.fromEntries(
+    const sanitizedCustomer: any = Object.fromEntries(
       Object.entries(customerCore).map(([k, v]) => [k, v === "" ? null : v])
     );
+
+    if (sanitizedCustomer.phone && typeof sanitizedCustomer.phone === "string") {
+      sanitizedCustomer.phone = sanitizedCustomer.phone.trim().slice(0, 20);
+    }
 
     if (!sanitizedCustomer.customer_code || String(sanitizedCustomer.customer_code).startsWith("KH-")) {
       sanitizedCustomer.customer_code = await generateSequentialCode(supabase, "customers", "customer_code", "CUST");
@@ -186,9 +190,13 @@ export async function updateCustomer(id: string, customer: CustomerFormData) {
   // Tách phần appointment data
   const { appointment_date, appointment_time, appointment_type, primary_assignee_id, ...customerCore } = customer;
 
-  const sanitizedCustomer = Object.fromEntries(
+  const sanitizedCustomer: any = Object.fromEntries(
     Object.entries(customerCore).map(([k, v]) => [k, v === "" ? null : v])
   );
+
+  if (sanitizedCustomer.phone && typeof sanitizedCustomer.phone === "string") {
+    sanitizedCustomer.phone = sanitizedCustomer.phone.trim().slice(0, 20);
+  }
 
   const { data, error } = await supabase.from("customers").update(sanitizedCustomer).eq("id", id).select().single();
   

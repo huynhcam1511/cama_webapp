@@ -37,6 +37,7 @@ export type ModuleCode =
   | "OPERATION_DASHBOARD"
   | "HR_DASHBOARD"
   | "MARKETING_DASHBOARD"
+  | "VIDEO_PERFORMANCE_REPORT"
   | "ORG_CHART";
 
 export type ModuleGroup = "DASHBOARD" | "BUSINESS" | "OPERATIONS" | "INVENTORY_GROUP" | "HR" | "ADMIN" | "FINANCE" | "MARKETING";
@@ -513,6 +514,20 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "MARKETING",
     parentCode: null,
     sortOrder: 2,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+  {
+    moduleCode: "VIDEO_PERFORMANCE_REPORT",
+    label: "Báo cáo hiệu quả Video",
+    shortLabel: "Hiệu quả Video",
+    route: "/dashboard/marketing/video-reports",
+    icon: "Video",
+    group: "MARKETING",
+    parentCode: null,
+    sortOrder: 3,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",

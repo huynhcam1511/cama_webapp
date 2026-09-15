@@ -238,6 +238,9 @@ export default function ContractForm({
   // Load initialData when in Edit mode
   useEffect(() => {
     if (isEditMode && initialData) {
+      if (initialData.customer_id) {
+        setMatchedCustomerId(initialData.customer_id);
+      }
       // General Info
       setPhoneInput(initialData.customers?.phone || "");
       setNameInput(initialData.customers?.full_name || initialData.customers?.bride_name || "");
@@ -501,14 +504,14 @@ export default function ContractForm({
       return;
     }
 
-    let finalCustomerId = matchedCustomerId;
+    let finalCustomerId = matchedCustomerId || (isEditMode ? initialData?.customer_id : "");
     if (!finalCustomerId) {
       setLoading(true);
       try {
         const custRes = await createCustomer({
           customer_code: "", // Server will auto-generate CUST-xxxxxx
-          bride_name: nameInput,
-          phone: phoneInput,
+          bride_name: nameInput.trim(),
+          phone: phoneInput.trim().slice(0, 20),
           wedding_date: weddingDate || undefined,
           source: "Khác",
           lead_status: "Đã chốt (Win)",
@@ -670,7 +673,13 @@ export default function ContractForm({
 
     try {
       let res;
-      if (isEditMode && initialData?.id) {
+      if (isEditMode) {
+        if (!initialData?.id) {
+          setErrorMsg("Lỗi: Không tìm thấy ID hợp đồng để cập nhật.");
+          submitLockRef.current = false;
+          setLoading(false);
+          return;
+        }
         res = await updateContract(initialData.id, payload);
       } else {
         res = await createContract(payload);
@@ -850,6 +859,20 @@ export default function ContractForm({
                         <div className="sm:col-span-1 flex flex-col justify-end h-full">
                           <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">Chất liệu</label>
                           <input type="text" placeholder="Mika" value={albumMaterial} onChange={(e) => setAlbumMaterial(e.target.value)} className="w-full bg-white border border-slate-200 rounded focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-1.5 py-1 text-[11px] font-medium outline-none text-slate-700" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 mt-1.5">
+                        <div className="flex flex-col justify-end h-full">
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">Ngày chụp</label>
+                          <input type="date" value={shootDate} onChange={(e) => setShootDate(e.target.value)} className="w-full bg-white border border-slate-200 rounded focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-1.5 py-1 text-[11px] font-medium outline-none text-slate-700" />
+                        </div>
+                        <div className="flex flex-col justify-end h-full">
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">Ngày giao</label>
+                          <input type="date" value={deliverDate} onChange={(e) => setDeliverDate(e.target.value)} className="w-full bg-white border border-slate-200 rounded focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-1.5 py-1 text-[11px] font-medium outline-none text-slate-700" />
+                        </div>
+                        <div className="flex flex-col justify-end h-full">
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">Địa điểm</label>
+                          <input type="text" placeholder="VD: Vũ + Studio" value={shootLocation} onChange={(e) => setShootLocation(e.target.value)} className="w-full bg-white border border-slate-200 rounded focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-1.5 py-1 text-[11px] font-medium outline-none text-slate-700" />
                         </div>
                       </div>
                       <div className="flex flex-col justify-end mt-1.5">

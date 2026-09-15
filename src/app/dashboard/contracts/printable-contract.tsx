@@ -160,8 +160,15 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               )}
 
               <div className="grid grid-cols-2 gap-x-12 gap-y-3 text-[13px] font-sans">
-                <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Quy cách Album:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.kho_album ? `${activeData.notesObj.kho_album} - ${activeData.notesObj.so_trang} trang (${activeData.notesObj.chat_lieu})` : (activeData?.kho_album ? `${activeData.kho_album} - ${activeData.so_trang} trang (${activeData.chat_lieu})` : "...")}</span></div>
+                <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Quy cách Album:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.kho_album ? `${activeData.notesObj.kho_album} - ${activeData.notesObj.so_trang || "..."} trang (${activeData.notesObj.chat_lieu || "..."})` : (activeData?.kho_album ? `${activeData.kho_album} - ${activeData.so_trang || "..."} trang (${activeData.chat_lieu || "..."})` : "...")}</span></div>
                 <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Tặng kèm / Phụ kiện:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.tang_kem || activeData?.tang_kem || activeData?.notesObj?.qua_tang || "..."}</span></div>
+                {(activeData?.notesObj?.ngay_chup || activeData?.ngay_chup || activeData?.notesObj?.ngay_giao || activeData?.ngay_giao || activeData?.notesObj?.dia_diem || activeData?.dia_diem) && (
+                  <>
+                    <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Ngày chụp:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.ngay_chup || activeData?.ngay_chup ? new Date(activeData?.notesObj?.ngay_chup || activeData?.ngay_chup).toLocaleDateString("vi-VN") : "..."}</span></div>
+                    <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Ngày giao (Album/Ảnh):</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.ngay_giao || activeData?.ngay_giao ? new Date(activeData?.notesObj?.ngay_giao || activeData?.ngay_giao).toLocaleDateString("vi-VN") : "..."}</span></div>
+                    <div className="flex justify-between border-b border-slate-200 border-dotted pb-1 col-span-2"><span className="text-slate-500">Địa điểm chụp:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.dia_diem || activeData?.dia_diem || "..."}</span></div>
+                  </>
+                )}
               </div>
               
               {(activeData?.notesObj?.userNotes || activeData?.userNotes) && (

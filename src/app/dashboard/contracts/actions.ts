@@ -114,6 +114,9 @@ function buildContractChanges(current: any, oldMeta: any, payload: any, newMeta:
     ["THÔNG TIN ALBUM", "Khổ album", oldMeta.kho_album, newMeta.kho_album],
     ["THÔNG TIN ALBUM", "Số trang", oldMeta.so_trang, newMeta.so_trang],
     ["THÔNG TIN ALBUM", "Chất liệu", oldMeta.chat_lieu, newMeta.chat_lieu],
+    ["THÔNG TIN ALBUM", "Ngày chụp", oldMeta.ngay_chup, newMeta.ngay_chup],
+    ["THÔNG TIN ALBUM", "Ngày giao", oldMeta.ngay_giao, newMeta.ngay_giao],
+    ["THÔNG TIN ALBUM", "Địa điểm", oldMeta.dia_diem, newMeta.dia_diem],
     ["THÔNG TIN ALBUM", "Tặng kèm / phụ kiện", oldMeta.tang_kem, newMeta.tang_kem],
     ["THÔNG TIN ALBUM", "Ghi chú", oldMeta.userNotes, newMeta.userNotes],
   ];
@@ -1312,6 +1315,7 @@ export async function updateContract(contractId: string, payload: any) {
         { key: 'ngay_hoi', label: 'Ngày hỏi' },
         { key: 'ngay_cuoi', label: 'Ngày cưới' },
         { key: 'ngay_chup', label: 'Ngày chụp' },
+        { key: 'ngay_giao', label: 'Ngày giao' },
         { key: 'dia_diem', label: 'Địa điểm' },
         { key: 'kho_album', label: 'Khổ Album' },
         { key: 'so_trang', label: 'Số trang' },
