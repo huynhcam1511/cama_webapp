@@ -38,7 +38,7 @@ export default function UniversalScanner({
       location_tier: location.tier,
     }));
     if (!fullPage) onClose();
-    router.push(`/dashboard/inventory/inbound/putaway?${params.toString()}`);
+    router.push(`/dashboard/inventory/catalog/new?${params.toString()}`);
   };
 
   const openOutboundForm = (location: { floor: string; shelf: string; tier: string }) => {
