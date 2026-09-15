@@ -33,6 +33,8 @@ const SERVICE_CATEGORIES = [
   "Trang điểm tiệc",
   "Hoa cưới",
   "Áo dài bưng quả",
+  "Takecare cô dâu",
+  "Tráp cưới",
   "Combo váy",
   "Combo vest",
   "Combo váy vest",
