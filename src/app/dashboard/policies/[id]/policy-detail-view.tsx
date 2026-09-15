@@ -158,14 +158,14 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
   };
 
   return (
-    <div className="space-y-6 text-slate-900 pb-12">
+    <div className="min-w-0 space-y-4 pb-12 text-slate-900 md:space-y-6">
       {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <Link href="/dashboard/policies" className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800">
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <h1 className="text-xl font-semibold sm:text-2xl">
+          <h1 className="min-w-0 break-words text-xl font-semibold leading-tight sm:text-2xl">
             {isNew ? "Thêm Văn bản / Chính sách mới" : "Chi tiết Chính sách"}
           </h1>
         </div>
@@ -178,7 +178,7 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
       </div>
 
       {/* SECTION 1: GENERAL INFO */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm">
+      <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
         <h2 className="mb-4 text-base font-semibold text-slate-800 border-b border-slate-100 pb-2">1. Thông tin chung</h2>
         <div className="grid gap-5 md:grid-cols-2">
           <div className="md:col-span-2 space-y-1.5">
@@ -314,8 +314,8 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
 
       {/* SECTION 2: VERSIONS TABLE */}
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 p-4">
-          <h2 className="text-base font-semibold text-slate-800">2. Lịch sử các phiên bản đính kèm</h2>
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/70 p-4">
+          <h2 className="min-w-0 text-base font-semibold leading-5 text-slate-800">2. Lịch sử các phiên bản đính kèm</h2>
           {canEdit && !isNew && (
             <button onClick={() => openVersionModal()} className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 shadow-sm px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
               <Plus className="h-4 w-4" /> Thêm phiên bản
@@ -329,7 +329,25 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
             <p className="text-sm text-slate-400">Sau khi lưu, hệ thống sẽ mở khóa chức năng đính kèm phiên bản.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="divide-y divide-slate-100 md:hidden">
+            {versions.length === 0 ? (
+              <p className="p-6 text-center text-sm italic text-slate-500">Chưa có phiên bản tài liệu nào.</p>
+            ) : versions.map((v) => (
+              <article key={v.id} className="min-w-0 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="break-words text-sm font-semibold text-slate-800">{v.version_name}</h3>
+                    <p className="mt-1 text-xs text-slate-500">Hiệu lực: {formatDateTime(v.effective_date, v.created_at)}</p>
+                  </div>
+                  {canEdit && <div className="flex shrink-0 gap-1"><button onClick={() => openVersionModal(v)} className="min-h-10 min-w-10 rounded-lg p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600" aria-label="Sửa phiên bản"><Edit3 className="h-4 w-4" /></button><button onClick={() => handleDeleteVersion(v.id)} className="min-h-10 min-w-10 rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600" aria-label="Xóa phiên bản"><Trash2 className="h-4 w-4" /></button></div>}
+                </div>
+                {v.notes && <p className="mt-2 break-words text-xs leading-5 text-slate-600">{v.notes}</p>}
+                {v.file_url ? <a href={v.file_url} target="_blank" rel="noreferrer" className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-700"><FileText className="h-4 w-4" /> Xem file chính sách</a> : <p className="mt-3 text-xs italic text-slate-400">Không có file</p>}
+              </article>
+            ))}
+          </div>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50/50 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 <tr>
@@ -378,6 +396,7 @@ export default function PolicyDetailView({ isNew, initialData, permissions, mast
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
 

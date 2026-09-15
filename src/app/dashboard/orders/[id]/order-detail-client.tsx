@@ -287,6 +287,17 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith("image/")) {
+      alert("Vui lòng chọn đúng định dạng hình ảnh.");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Mỗi ảnh không được vượt quá 10 MB.");
+      e.target.value = "";
+      return;
+    }
+
     setUploadingImageId(itemId);
     try {
       const fileExt = file.name.split('.').pop();
@@ -318,6 +329,7 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
       alert(`Lỗi upload ảnh QC: ${err.message || 'Xin vui lòng thử lại'}`);
     } finally {
       setUploadingImageId(null);
+      e.target.value = "";
     }
   };
 
@@ -398,6 +410,7 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
           </div>
           <p className="text-slate-500 text-sm">
             Khách hàng: <span className="font-semibold text-slate-700">{contract?.customer?.bride_name || 'Khách lẻ'}</span>
+            {currentOrder.operational_department && <span className="ml-2 rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">{currentOrder.operational_department === "VAY" ? "Phòng Váy" : currentOrder.operational_department === "SUOT" ? "Phòng Suốt" : "Phòng Vận hành"}</span>}
           </p>
         </div>
       </div>
@@ -511,6 +524,51 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
       <div className="flex flex-col lg:flex-row gap-6 -mx-4 sm:mx-0 mt-6">
         {/* Left Column - Details (Order 2 on mobile, Order 1 on Desktop) */}
         <div className="flex-1 order-2 lg:order-1 flex flex-col gap-8 sm:gap-10 space-y-0 px-4 sm:px-0">
+          {(viewingStepIndex === 1 || viewingStepIndex === 2) && (() => {
+            const evidenceKey = viewingStepIndex === 1 ? "evidence_delivery" : "evidence_return";
+            const evidenceImages = notesImages[evidenceKey] || [];
+            const isEvidenceUploading = uploadingImageId === evidenceKey;
+            const isDelivery = viewingStepIndex === 1;
+            return (
+              <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                <div className="flex flex-col gap-1 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-sm font-semibold text-slate-900">
+                      {isDelivery ? "Hình ảnh lúc giao đồ" : "Hình ảnh lúc thu hồi đồ"}
+                    </h2>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {isDelivery
+                        ? "Chụp tình trạng thực tế trước khi bàn giao cho khách."
+                        : "Chụp ngay khi nhận lại để đối chiếu rách, bung nút, dính bẩn hoặc đền bù."}
+                    </p>
+                  </div>
+                  <span className="text-xs font-medium text-slate-500">{evidenceImages.length} ảnh</span>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {evidenceImages.map((imageUrl: string, imageIndex: number) => (
+                    <div key={imageUrl} className="group relative h-24 w-24 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                      <button type="button" onClick={() => setSelectedImage(imageUrl)} className="h-full w-full">
+                        <img src={imageUrl} alt={`Bằng chứng ${imageIndex + 1}`} className="h-full w-full object-cover" />
+                      </button>
+                      {!isReadOnly && (
+                        <button type="button" onClick={() => handleDeleteImage(evidenceKey, imageUrl)} className="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1 text-white" aria-label="Xóa ảnh">
+                          <icons.X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {!isReadOnly && (
+                    <label className={`flex h-24 w-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-xs font-semibold ${isEvidenceUploading ? "border-slate-200 bg-slate-50 text-slate-400" : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}>
+                      {isEvidenceUploading ? <icons.Loader2 className="h-5 w-5 animate-spin" /> : <icons.Camera className="h-5 w-5" />}
+                      {isEvidenceUploading ? "Đang tải..." : "Chụp / tải ảnh"}
+                      <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => handleImageUpload(event, evidenceKey)} disabled={isEvidenceUploading} />
+                    </label>
+                  )}
+                </div>
+                {evidenceImages.length === 0 && isReadOnly && <p className="mt-4 text-sm italic text-slate-400">Chưa có ảnh bằng chứng ở giai đoạn này.</p>}
+              </section>
+            );
+          })()}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-4">
               <icons.Shirt className="w-4 h-4" />

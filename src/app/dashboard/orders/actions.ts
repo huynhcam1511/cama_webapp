@@ -19,6 +19,7 @@ export interface Order {
   order_code: string;
   contract_id: string;
   event_id: string | null;
+  operational_department?: string | null;
   event_date: string;
   return_date: string;
   delivery_status: string;
@@ -181,7 +182,12 @@ export async function updateOrderChecklist(id: string, checklist: OrderChecklist
   }
 }
 
-export async function saveOrderNotesAndImages(id: string, text: string, images: string[]) {
+export async function saveOrderNotesAndImages(
+  id: string,
+  text: string | Record<string, string>,
+  images: string[] | Record<string, string[]>
+) {
+  await requirePermission("ORDERS", "update");
   const supabase = createAdminClient();
   const newNotes = JSON.stringify({ text, images });
   const { error } = await supabase.from("orders").update({ notes: newNotes }).eq("id", id);

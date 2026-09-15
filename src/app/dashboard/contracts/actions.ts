@@ -2020,31 +2020,98 @@ export async function reportIncidentFromScanner(
 
 export async function syncContractEventOrders(contractId: string) {
   const supabase = createAdminClient();
-  const contract = await getContractById(contractId);
-  if (!contract || !contract.schedules) return;
-  
-  const schedules = Array.isArray(contract.schedules) ? contract.schedules : [];
-  
-  for (const schedule of schedules) {
-    if (!schedule.id) continue;
-    
-    let status = "PENDING";
-    if (schedule.milestone_type === "SHOOT") status = "PREPARING";
-    
-    const { error } = await supabase.from("orders").upsert({
-      contract_id: contractId,
-      event_id: schedule.id,
-      customer_id: contract.customer_id,
-      order_code: `ORD-${contract.contract_code || contractId.substring(0,8)}-${schedule.title?.substring(0,3).toUpperCase() || 'EVT'}`,
-      order_type: schedule.milestone_type === "SHOOT" ? "PHOTOGRAPHY" : "RENTAL",
-      order_date: schedule.scheduled_at || contract.contract_date,
-      expected_delivery_date: schedule.scheduled_at,
-      total_amount: 0,
-      payment_status: "UNPAID",
-      execution_status: "PREPARING",
-      delivery_status: "PENDING",
-      completion_status: "PREPARING",
-      notes: schedule.title
-    }, { onConflict: 'contract_id, event_id', ignoreDuplicates: true }); 
+  const { data: contract, error: contractError } = await supabase
+    .from("contracts")
+    .select("id, contract_code, customer_id, notes, status, deleted_at")
+    .eq("id", contractId)
+    .single();
+  if (contractError) throw contractError;
+  if (!contract || contract.deleted_at || ["DRAFT", "CANCELLED", "ARCHIVED"].includes(contract.status)) return;
+
+  let meta: any = {};
+  try { meta = typeof contract.notes === "string" ? JSON.parse(contract.notes || "{}") : (contract.notes || {}); } catch (_) {}
+  const events = Array.isArray(meta.events) ? meta.events.filter((event: any) => event?.name) : [];
+  const items = Array.isArray(meta.items) ? meta.items.filter((item: any) => item?.category || item?.detail || item?.item_name) : [];
+
+  const departmentFor = (category: string) => {
+    const value = String(category || "").toLocaleLowerCase("vi");
+    if (/vest|suit|suốt/.test(value)) return "SUOT";
+    if (/váy/.test(value)) return "VAY";
+    return "VAN_HANH";
+  };
+  const departmentName: Record<string, string> = {
+    VAY: "Phòng Váy",
+    SUOT: "Phòng Suốt",
+    VAN_HANH: "Phòng Vận hành",
+  };
+
+  const { data: existingData, error: existingError } = await supabase
+    .from("orders")
+    .select("id, event_id, operational_department, service_type, notes, completion_status")
+    .eq("contract_id", contractId);
+  if (existingError) throw existingError;
+  let remainingOrders = existingData || [];
+
+  for (let eventIndex = 0; eventIndex < events.length; eventIndex++) {
+    const event = events[eventIndex];
+    const eventId = event.id || `event-${eventIndex + 1}`;
+    const eventItems = items.filter((item: any) => {
+      const usageEvents = Array.isArray(item.usage_events) ? item.usage_events : [];
+      return usageEvents.length === 0 || usageEvents.includes(event.name);
+    });
+    const departments = Array.from(new Set((eventItems.length ? eventItems : [{ category: "" }]).map((item: any) => departmentFor(item.category))));
+
+    for (const department of departments) {
+      const scopedItems = eventItems.filter((item: any) => departmentFor(item.category) === department);
+      const totalValue = scopedItems.reduce((sum: number, item: any) => sum + Number(item.price || item.unit_price || 0) * Number(item.quantity || 1), 0);
+      let matchedOrder = remainingOrders.find((order: any) => order.event_id === eventId && order.operational_department === department);
+      if (!matchedOrder) {
+        matchedOrder = remainingOrders.find((order: any) =>
+          !order.operational_department &&
+          (order.event_id === eventId || String(order.notes || "").includes(`[EVENT_ID:${eventId}]`) || order.service_type === event.name)
+        );
+      }
+      const notes = JSON.stringify({
+        text: {},
+        images: {},
+        automation: { event_id: eventId, department, source: "CONTRACT" },
+      });
+      const orderData = {
+        contract_id: contractId,
+        event_id: eventId,
+        operational_department: department,
+        service_type: event.name,
+        event_date: event.pickup_date || event.event_date || null,
+        return_date: event.return_date || null,
+        total_value: totalValue,
+        notes: matchedOrder && !String(matchedOrder.notes || "").includes("Đơn hàng tự động sinh từ Hợp đồng")
+          ? matchedOrder.notes
+          : notes,
+      };
+
+      if (matchedOrder) {
+        const { error } = await supabase.from("orders").update(orderData).eq("id", matchedOrder.id);
+        if (error) throw error;
+        remainingOrders = remainingOrders.filter((order: any) => order.id !== matchedOrder.id);
+      } else {
+        const orderCode = await generateSequentialCode(supabase, "orders", "order_code", "ORDE");
+        const { error } = await supabase.from("orders").insert({
+          ...orderData,
+          order_code: orderCode,
+          completion_status: "PENDING",
+          delivery_status: "PENDING",
+          checklist: [],
+        });
+        if (error) throw error;
+      }
+    }
+  }
+
+  const obsoleteIds = remainingOrders
+    .filter((order: any) => order.event_id || String(order.notes || "").includes("Đơn hàng tự động sinh từ Hợp đồng"))
+    .map((order: any) => order.id);
+  if (obsoleteIds.length) {
+    const { error } = await supabase.from("orders").update({ completion_status: "CANCELLED", updated_at: new Date().toISOString() }).in("id", obsoleteIds);
+    if (error) throw error;
   }
 }

@@ -186,6 +186,7 @@ export default function OrderDetailMobile({
           <div className="px-3.5 pb-3 flex justify-between items-center">
              <div className="flex items-center gap-1.5 text-blue-600 font-mono text-[11px] font-bold">
                {contract?.contract_code || currentOrder.order_code}
+               {currentOrder.operational_department && <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-sans text-[9px] text-emerald-700">{currentOrder.operational_department === "VAY" ? "Phòng Váy" : currentOrder.operational_department === "SUOT" ? "Phòng Suốt" : "Phòng Vận hành"}</span>}
              </div>
              <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
                <icons.User className="w-3 h-3" /> PIC: 
@@ -330,6 +331,43 @@ export default function OrderDetailMobile({
       </div>
 
       <div className="px-3 pb-6">
+        {(viewingStepIndex === 1 || viewingStepIndex === 2) && (() => {
+          const evidenceKey = viewingStepIndex === 1 ? "evidence_delivery" : "evidence_return";
+          const evidenceImages = notesImages[evidenceKey] || [];
+          const isEvidenceUploading = uploadingImageId === evidenceKey;
+          const isDelivery = viewingStepIndex === 1;
+          return (
+            <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">{isDelivery ? "Ảnh lúc giao đồ" : "Ảnh lúc thu hồi đồ"}</h2>
+                  <p className="mt-1 text-[11px] leading-4 text-slate-500">
+                    {isDelivery ? "Ghi nhận tình trạng trước khi giao khách." : "Đối chiếu rách, bung nút, dính bẩn và đền bù."}
+                  </p>
+                </div>
+                <span className="shrink-0 text-[11px] font-semibold text-slate-500">{evidenceImages.length} ảnh</span>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {evidenceImages.map((imageUrl: string, imageIndex: number) => (
+                  <div key={imageUrl} className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                    <button type="button" onClick={() => onImageClick?.(imageUrl)} className="h-full w-full">
+                      <img src={imageUrl} alt={`Bằng chứng ${imageIndex + 1}`} className="h-full w-full object-cover" />
+                    </button>
+                    {!isReadOnly && <button type="button" onClick={() => handleDeleteImage(evidenceKey, imageUrl)} className="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1 text-white"><icons.X className="h-3 w-3" /></button>}
+                  </div>
+                ))}
+                {!isReadOnly && (
+                  <label className={`flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed text-center text-[11px] font-bold ${isEvidenceUploading ? "border-slate-200 bg-slate-50 text-slate-400" : "border-emerald-300 bg-emerald-50 text-emerald-700"}`}>
+                    {isEvidenceUploading ? <icons.Loader2 className="h-5 w-5 animate-spin" /> : <icons.Camera className="h-5 w-5" />}
+                    {isEvidenceUploading ? "Đang tải" : "Chụp / tải"}
+                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => handleImageUpload(event, evidenceKey)} disabled={isEvidenceUploading} />
+                  </label>
+                )}
+              </div>
+              {evidenceImages.length === 0 && isReadOnly && <p className="mt-3 text-xs italic text-slate-400">Chưa có ảnh bằng chứng.</p>}
+            </section>
+          );
+        })()}
         <h2 className="text-sm font-bold text-slate-800 mb-3 px-1">Sản Phẩm & Dịch Vụ</h2>
         <div className={`${items.length > 0 || garments.length > 0 ? 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden divide-y divide-slate-100' : 'space-y-3'}`}>
           {items.length === 0 && garments.length === 0 && (
