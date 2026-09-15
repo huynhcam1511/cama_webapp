@@ -83,8 +83,9 @@ export async function getOrders(filterStatus: string = "ALL"): Promise<Order[]> 
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
-  await requirePermission("ORDERS", "update");
-  const supabase = createAdminClient();
+  try {
+    await requirePermission("ORDERS", "update");
+    const supabase = createAdminClient();
   
   const { data: order } = await supabase.from("orders").select(`
     id, pic_id, order_code, service_type, contract_id,
@@ -92,7 +93,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   `).eq("id", orderId).single();
 
   const { error } = await supabase.from("orders").update({ completion_status: status }).eq("id", orderId);
-  if (error) throw new Error(error.message);
+  if (error) return { success: false, error: error.message };
 
   // Cross-module update: Inventory status based on order status
   if (order && order.contract && order.contract_id) {
@@ -155,15 +156,29 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   }
 
   revalidatePath("/dashboard/orders");
+  revalidatePath(`/dashboard/orders/${orderId}`);
+  return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Không thể cập nhật trạng thái đơn hàng";
+    console.error("Error updating order status:", message);
+    return { success: false, error: message };
+  }
 }
 
 export async function updateOrderChecklist(id: string, checklist: OrderChecklistItem[]) {
-  await requirePermission("ORDERS", "update");
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("orders").update({ checklist }).eq("id", id);
-  if (error) throw error;
-  revalidatePath("/dashboard/orders");
-  revalidatePath(`/dashboard/orders/${id}`);
+  try {
+    await requirePermission("ORDERS", "update");
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("orders").update({ checklist }).eq("id", id);
+    if (error) return { success: false, error: error.message };
+    revalidatePath("/dashboard/orders");
+    revalidatePath(`/dashboard/orders/${id}`);
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Không thể lưu checklist";
+    console.error("Error updating order checklist:", message);
+    return { success: false, error: message };
+  }
 }
 
 export async function saveOrderNotesAndImages(id: string, text: string, images: string[]) {

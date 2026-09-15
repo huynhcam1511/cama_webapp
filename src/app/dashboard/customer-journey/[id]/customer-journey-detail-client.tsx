@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as icons from "lucide-react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
@@ -205,16 +205,33 @@ export default function CustomerJourneyDetailClient({ initialContract, staffs = 
   });
 
   const [saving, setSaving] = useState(false);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const saveVersionRef = useRef(0);
   const [addingToStage, setAddingToStage] = useState<string | null>(null);
   const [addingToTask, setAddingToTask] = useState<string | null>(null);
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const [newTaskText, setNewTaskText] = useState("");
 
-  const saveToDB = async (newData: any, newNotes: string = notes) => {
+  const saveToDB = (newData: any, newNotes: string = notes) => {
+    const version = ++saveVersionRef.current;
     setSaving(true);
     const notesToSave = JSON.stringify({ userNotes: newNotes });
-    await updateCustomerJourneyData(contract.id, newData, notesToSave);
-    setSaving(false);
+    // Serialize writes so a slower, older response can never overwrite a newer edit.
+    saveQueueRef.current = saveQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        const result = await updateCustomerJourneyData(contract.id, newData, notesToSave);
+        if (!result?.success) {
+          throw new Error(result?.error || "Không thể tự động lưu hành trình");
+        }
+      })
+      .catch((error) => {
+        console.error("Journey auto-save failed:", error);
+      })
+      .finally(() => {
+        if (saveVersionRef.current === version) setSaving(false);
+      });
+    return saveQueueRef.current;
   };
 
   const toggleStage = (stageId: string) => {

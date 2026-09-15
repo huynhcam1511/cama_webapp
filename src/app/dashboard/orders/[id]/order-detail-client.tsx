@@ -129,7 +129,8 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
   const handleStatusChange = async (newStatus: OrderStatus) => {
     setIsUpdating(true);
     try {
-      await updateOrderStatus(order.id, newStatus);
+      const result = await updateOrderStatus(order.id, newStatus);
+      if (!result.success) throw new Error(result.error);
       setCurrentOrder({ ...currentOrder, completion_status: newStatus });
       setViewingStepIndex(getUiStepIndex(newStatus));
       router.refresh();
@@ -141,17 +142,22 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
   };
 
   const handleToggleChecklist = async (index: number) => {
-    const newChecklist = [...checklist];
-    newChecklist[index].done = !newChecklist[index].done;
+    if (isSavingChecklist) return;
+    const previousChecklist = checklist;
+    const newChecklist = checklist.map((item, itemIndex) =>
+      itemIndex === index ? { ...item, done: !item.done } : item
+    );
     setChecklist(newChecklist);
     
     setIsSavingChecklist(true);
     try {
       const { updateOrderChecklist } = await import('../actions');
-      await updateOrderChecklist(order.id, newChecklist);
+      const result = await updateOrderChecklist(order.id, newChecklist);
+      if (!result.success) throw new Error(result.error);
       router.refresh();
     } catch (e) {
-      alert("Lỗi lưu checklist");
+      setChecklist(previousChecklist);
+      alert("Lỗi lưu checklist: " + (e instanceof Error ? e.message : "Vui lòng thử lại"));
     } finally {
       setIsSavingChecklist(false);
     }

@@ -57,7 +57,8 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
       // In real scenario, we'll verify decodedText matches the garment's location
       try {
         const { updateOrderStatus } = await import('./actions');
-        await updateOrderStatus(pickOrder.id, 'PREPARING');
+        const result = await updateOrderStatus(pickOrder.id, 'PREPARING');
+        if (!result.success) throw new Error(result.error);
         setOrders(orders.map(o => o.id === pickOrder.id ? { ...o, completion_status: 'PREPARING' } : o));
       } catch (e) {
         console.error(e);
@@ -349,6 +350,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                       >
                         <td className="px-4 py-3 align-top pt-4">
                           <div className="font-mono font-bold text-slate-900 text-[13px]">{order.order_code}</div>
+                          {order.operational_department && <div className="mt-1 text-[10px] font-semibold text-emerald-700">{order.operational_department === "VAY" ? "Phòng Váy" : order.operational_department === "SUOT" ? "Phòng Suốt" : "Phòng Vận hành"}</div>}
                           {getLateWarning(order)}
                         </td>
                         <td className="px-4 py-3 align-top pt-4">
@@ -471,6 +473,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                            <span className="font-medium truncate max-w-[100px]">{order.pic?.full_name || 'Chưa PIC'}</span>
                         </div>
                       </div>
+                      {order.operational_department && <div className="w-fit rounded-md bg-emerald-50 px-2 py-1 text-[10.5px] font-bold text-emerald-700">{order.operational_department === "VAY" ? "Phòng Váy" : order.operational_department === "SUOT" ? "Phòng Suốt" : "Phòng Vận hành"}</div>}
                       
                       {/* Tầng 4: Realtime Timeline */}
                       <div className="pt-2 mt-1 border-t border-slate-100/50">

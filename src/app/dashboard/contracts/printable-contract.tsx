@@ -461,6 +461,7 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               background-color: white !important;
               -webkit-box-decoration-break: clone;
               box-decoration-break: clone;
+              overflow-wrap: anywhere !important;
             }
             .contract-print-content {
               margin: 0 !important;
@@ -487,6 +488,9 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               padding-top: 8mm !important;
             }
             .contract-section table { break-inside: auto; page-break-inside: auto; }
+            .contract-section table { table-layout: fixed; width: 100% !important; }
+            .contract-section td,
+            .contract-section th { overflow-wrap: anywhere; word-break: break-word; }
             .contract-section thead { display: table-header-group; }
             .contract-section tr {
               break-inside: avoid;

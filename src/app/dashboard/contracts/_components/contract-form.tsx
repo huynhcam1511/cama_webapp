@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, FileText, Plus, Trash2, Save, Loader2, DollarSign, User, Calendar, Briefcase, Settings2, Phone, Printer, Image as ImageIcon, UploadCloud, Clock, PackageSearch } from "lucide-react";
 import { createContract, updateContract, reserveContractInventory, ContractFormData, ServiceItem, InstallmentItem } from "../actions";
 import { createCustomer } from "../../customers/actions";
@@ -33,8 +33,14 @@ const SERVICE_CATEGORIES = [
   "Trang điểm tiệc",
   "Hoa cưới",
   "Áo dài bưng quả",
-  "Gói Chụp Ảnh Cưới Studio Premium",
-  "Gói Chụp Ngoại Cảnh Đà Lạt",
+  "Combo váy",
+  "Combo vest",
+  "Combo váy vest",
+  "Chụp phim trường + ngoại cảnh SG",
+  "Chụp studio",
+  "Trọn gói GOLD",
+  "Trọn gói LUXURY",
+  "Trọn gói LIMITED",
   "Gói Ngày Cưới Truyền Thống",
   "Phụ thu / Phụ phí",
   "Khác"
@@ -47,6 +53,14 @@ const INVENTORY_CATEGORIES = new Set([
   "Áo dài Chú Rể",
   "Áo dài bưng quả",
 ]);
+
+const getStaffRoleName = (staff: any) => {
+  if (staff.full_name?.toLocaleLowerCase("vi-VN").includes("quân")) {
+    return "Quản lý phòng Suit";
+  }
+
+  return staff.roles?.role_name || "";
+};
 
 type InventorySelection = {
   modelId: string;
@@ -92,6 +106,7 @@ export default function ContractForm({
 }: ContractFormProps & { initialData?: any; isEditMode?: boolean; defaultContractType?: "SERVICE" | "SALES" }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const submitLockRef = useRef(false);
   const [errorMsg, setErrorMsg] = useState("");
   
   // Initializing state directly from props (either edit data or new defaults)
@@ -474,8 +489,13 @@ export default function ContractForm({
 
   const handleSubmit = async (e?: React.FormEvent, shouldViewPdf = false) => {
     if (e) e.preventDefault();
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
+    setLoading(true);
     if (!phoneInput.trim() || !nameInput.trim()) {
       setErrorMsg("Vui lòng nhập Tên và Số điện thoại khách hàng!");
+      submitLockRef.current = false;
+      setLoading(false);
       return;
     }
 
@@ -493,12 +513,14 @@ export default function ContractForm({
         });
         if (!custRes.success) {
           setErrorMsg("Lỗi tạo khách hàng mới: " + custRes.error);
+          submitLockRef.current = false;
           setLoading(false);
           return;
         }
         finalCustomerId = custRes.data.id;
       } catch (err: any) {
         setErrorMsg(err.message === "PERMISSION_DENIED" ? "Bạn không có quyền thêm khách hàng." : (err.message || "Lỗi tạo khách hàng."));
+        submitLockRef.current = false;
         setLoading(false);
         return;
       }
@@ -521,6 +543,7 @@ export default function ContractForm({
 
     if (activeItems.length === 0) {
       setErrorMsg("LỖI: Vui lòng nhập ít nhất 1 dịch vụ/sản phẩm!");
+      submitLockRef.current = false;
       setLoading(false);
       return;
     }
@@ -530,6 +553,7 @@ export default function ContractForm({
       const missingEvents = activeItems.some(item => !item.usage_events || item.usage_events.length === 0);
       if (missingEvents) {
         setErrorMsg("LỖI BẮT BUỘC: Mỗi dịch vụ/sản phẩm phải được chọn ít nhất 1 [Sự Kiện SD] (để Vận Hành biết ngày chuẩn bị đồ)!");
+        submitLockRef.current = false;
         setLoading(false);
         return;
       }
@@ -543,6 +567,7 @@ export default function ContractForm({
       
       if (missingEventDates) {
         setErrorMsg("LỖI BẮT BUỘC: Sự kiện bạn đã chọn cho sản phẩm CHƯA CÓ NGÀY. Vui lòng điền ngày cho sự kiện đó ở mục [2. Chi Tiết Thực Hiện]!");
+        submitLockRef.current = false;
         setLoading(false);
         return;
       }
@@ -684,8 +709,11 @@ export default function ContractForm({
         }
       } else {
         setErrorMsg(res.error || "Không thể khởi tạo hợp đồng.");
+        submitLockRef.current = false;
+        setLoading(false);
       }
     } catch (err: any) {
+      submitLockRef.current = false;
       setLoading(false);
       setErrorMsg(err.message === "PERMISSION_DENIED" ? "Bạn không có quyền thực hiện thao tác này." : (err.message || "Lỗi hệ thống."));
     }
@@ -736,21 +764,24 @@ export default function ContractForm({
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5" title="Chọn nhân viên Sale">
+                    <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5" title="Chọn nhân viên Sale hoặc tự nhập tên">
                       Phụ trách (Sale)
                     </label>
-                    <select 
+                    <input
+                      type="text"
+                      list="contract-staff-suggestions"
                       value={assignedStaffInput} 
                       onChange={(e) => setAssignedStaffInput(e.target.value)} 
+                      placeholder="Chọn hoặc tự nhập tên người phụ trách..."
                       className={`w-full bg-white border border-slate-200 rounded focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-1.5 py-1 text-[11px] outline-none font-medium ${!assignedStaffInput ? 'text-slate-400' : 'text-slate-700'}`}
-                    >
-                      <option value="">Chọn Sale phụ trách...</option>
+                    />
+                    <datalist id="contract-staff-suggestions">
                       {staffs.map((staff: any) => (
                         <option key={staff.id} value={staff.full_name}>
-                          {staff.full_name} {staff.roles?.role_name ? `(${staff.roles.role_name})` : ''}
+                          {getStaffRoleName(staff)}
                         </option>
                       ))}
-                    </select>
+                    </datalist>
                   </div>
 
                   
@@ -1412,11 +1443,12 @@ export default function ContractForm({
             </button>
             <button 
               type="button" 
+              disabled={loading}
               onClick={(e) => handleSubmit(e, true)} 
-              className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-slate-900 text-white flex items-center gap-1.5 transition-all shadow-md shadow-slate-800/20"
+              className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-slate-900 text-white flex items-center gap-1.5 transition-all shadow-md shadow-slate-800/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Printer className="w-4 h-4" />
-              Lưu & Xem PDF View
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+              {loading ? "Đang lưu..." : "Lưu & Xem PDF View"}
             </button>
             <button 
               type="button" 
@@ -1425,7 +1457,7 @@ export default function ContractForm({
               className="px-5 py-2 text-sm font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-black flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20 disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Lưu Hợp Đồng
+              {loading ? "Đang lưu..." : "Lưu Hợp Đồng"}
             </button>
           </div>
         </div>

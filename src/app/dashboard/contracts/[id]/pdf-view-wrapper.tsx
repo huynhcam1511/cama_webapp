@@ -65,6 +65,15 @@ export default function PdfViewWrapper({ contract }: PdfViewWrapperProps) {
             zoom: 0.51;
           }
         }
+        @media print {
+          .mobile-print-wrapper {
+            zoom: 1 !important;
+            width: 210mm !important;
+            min-width: 210mm !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+          }
+        }
       `}} />
 
       {/* Main Content Area */}

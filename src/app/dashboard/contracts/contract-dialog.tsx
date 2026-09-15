@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, FileText, Plus, Trash2, Save, Loader2, DollarSign, User, Calendar, Briefcase, Settings2, Phone, Printer, Image as ImageIcon, UploadCloud } from "lucide-react";
 import { createContract, ContractFormData, ServiceItem, InstallmentItem } from "./actions";
 import { createCustomer } from "../customers/actions";
@@ -28,8 +28,14 @@ const SERVICE_CATEGORIES = [
   "Trang điểm tiệc",
   "Hoa cưới",
   "Áo dài bưng quả",
-  "Gói Chụp Ảnh Cưới Studio Premium",
-  "Gói Chụp Ngoại Cảnh Đà Lạt",
+  "Combo váy",
+  "Combo vest",
+  "Combo váy vest",
+  "Chụp phim trường + ngoại cảnh SG",
+  "Chụp studio",
+  "Trọn gói GOLD",
+  "Trọn gói LUXURY",
+  "Trọn gói LIMITED",
   "Gói Ngày Cưới Truyền Thống",
   "Phụ thu / Phụ phí",
   "Khác"
@@ -43,6 +49,7 @@ export default function ContractDialog({
   onSaved,
 }: ContractDialogProps) {
   const [loading, setLoading] = useState(false);
+  const submitLockRef = useRef(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   // 1. Thông Tin Chung
@@ -143,8 +150,13 @@ export default function ContractDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
+    setLoading(true);
     if (!phoneInput.trim() || !nameInput.trim()) {
       setErrorMsg("Vui lòng nhập Tên và Số điện thoại khách hàng!");
+      submitLockRef.current = false;
+      setLoading(false);
       return;
     }
 
@@ -162,12 +174,14 @@ export default function ContractDialog({
         });
         if (!custRes.success) {
           setErrorMsg("Lỗi tạo khách hàng mới: " + custRes.error);
+          submitLockRef.current = false;
           setLoading(false);
           return;
         }
         finalCustomerId = custRes.data.id;
       } catch (err: any) {
         setErrorMsg(err.message === "PERMISSION_DENIED" ? "Bạn không có quyền thêm khách hàng." : (err.message || "Lỗi tạo khách hàng."));
+        submitLockRef.current = false;
         setLoading(false);
         return;
       }
@@ -189,6 +203,7 @@ export default function ContractDialog({
 
     if (activeItems.length === 0) {
       setErrorMsg("Vui lòng nhập ít nhất 1 dịch vụ!");
+      submitLockRef.current = false;
       setLoading(false);
       return;
     }
@@ -267,8 +282,10 @@ export default function ContractDialog({
         onClose();
       } else {
         setErrorMsg(res.error || "Không thể khởi tạo hợp đồng.");
+        submitLockRef.current = false;
       }
     } catch (err: any) {
+      submitLockRef.current = false;
       setLoading(false);
       setErrorMsg(err.message === "PERMISSION_DENIED" ? "Bạn không có quyền thực hiện thao tác này." : (err.message || "Lỗi hệ thống."));
     }
@@ -748,11 +765,12 @@ export default function ContractDialog({
             </button>
             <button 
               type="button" 
+              disabled={loading}
               onClick={(e) => handleSubmit(e)} 
-              className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-slate-900 text-white flex items-center gap-2 transition-all shadow-md shadow-slate-800/20"
+              className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-slate-900 text-white flex items-center gap-2 transition-all shadow-md shadow-slate-800/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Printer className="w-4 h-4" />
-              Lưu & In PDF
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+              {loading ? "Đang lưu..." : "Lưu & In PDF"}
             </button>
             <button 
               type="button" 
@@ -761,7 +779,7 @@ export default function ContractDialog({
               className="px-5 py-2 text-sm font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-black flex items-center gap-2 transition-all shadow-md shadow-amber-500/20 disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Lưu Hợp Đồng
+              {loading ? "Đang lưu..." : "Lưu Hợp Đồng"}
             </button>
           </div>
         </div>
