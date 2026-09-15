@@ -181,7 +181,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
   };
 
   return (
-    <div className="space-y-3 sm:space-y-6 pt-2">
+    <div className={`space-y-3 sm:space-y-6 pt-2 ${selectedForPrint ? 'print:hidden' : ''}`}>
       {/* Mobile Add Contract FAB */}
       {canCreate && (
         <button

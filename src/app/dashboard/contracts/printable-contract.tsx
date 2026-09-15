@@ -395,8 +395,9 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               </div>
             </div>
           </div>
-          {/* Keeping the fixed footer inside the printed document makes Chromium repeat it on every sheet. */}
-          <div className="contract-print-footer hidden print:flex print:px-[12mm] print:pb-[2mm] border-t border-slate-200 text-[10px] font-sans justify-between items-end text-slate-500">
+
+          {/* Footer - Natural flow right below document / signatures */}
+          <div className="contract-print-footer px-6 md:px-12 pb-6 pt-4 border-t border-slate-200 text-[10px] font-sans flex justify-between items-end text-slate-500 print:mt-6 print:px-0 print:pb-2">
             <div className="space-y-0.5">
               <p>Mã HĐ: <span className="font-medium text-slate-700">{contractCode}</span></p>
               <p>Cập nhật lần cuối: <span className="text-slate-700">{lastUpdatedDate}</span></p>
@@ -405,16 +406,8 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               <p>Ngày in: <span className="text-slate-700">{printedDate}</span></p>
             </div>
             <div>
-              <span className="mr-6">Nhân viên: <span className="font-medium text-slate-700">{saleStaff}</span></span>
+              <span>Nhân viên: <span className="font-medium text-slate-700">{saleStaff}</span></span>
             </div>
-          </div>
-          <div className="contract-screen-footer print:hidden mt-auto px-10 md:px-12 pb-5 pt-3 border-t border-slate-200 text-[10px] font-sans flex justify-between items-center text-slate-500">
-            <div className="space-y-0.5">
-              <p>Mã HĐ: <span className="font-medium text-slate-700">{contractCode}</span></p>
-              <p>Cập nhật lần cuối: <span className="text-slate-700">{lastUpdatedDate}</span></p>
-            </div>
-            <p>Ngày in: <span className="text-slate-700">{printedDate}</span></p>
-            <p>Nhân viên: <span className="font-medium text-slate-700">{saleStaff}</span></p>
           </div>
         </div>
 
@@ -516,16 +509,17 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
             .contract-section th,
             .contract-section td { padding-top: 0.6mm !important; padding-bottom: 0.6mm !important; }
             .contract-print-footer {
-              position: fixed !important;
-              left: 0 !important;
-              right: 0 !important;
-              bottom: 0 !important;
-              height: 10mm;
-              z-index: 2147483647 !important;
+              position: static !important;
+              width: 100% !important;
+              height: auto !important;
+              margin-top: 4mm !important;
+              padding-top: 2mm !important;
+              padding-bottom: 2mm !important;
               padding-left: 0 !important;
               padding-right: 0 !important;
-              background: white !important;
+              background: transparent !important;
               break-inside: avoid;
+              page-break-inside: avoid;
               display: flex !important;
             }
             .contract-signatures {
