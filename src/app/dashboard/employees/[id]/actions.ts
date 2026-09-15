@@ -5,27 +5,97 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission, requireActiveUser } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 
+async function findAuthUserByEmail(
+  adminClient: ReturnType<typeof createAdminClient>,
+  email: string
+) {
+  const perPage = 100;
+
+  for (let page = 1; ; page += 1) {
+    const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage });
+
+    if (error) {
+      throw new Error("Không thể kiểm tra tài khoản xác thực: " + error.message);
+    }
+
+    const user = data.users.find(
+      candidate => candidate.email?.trim().toLowerCase() === email
+    );
+
+    if (user) return user;
+    if (data.users.length < perPage) return null;
+  }
+}
+
 export async function saveEmployee(isNew: boolean, data: any, permissions: any[]) {
-  const adminUser = await requireActiveUser();
+  await requireActiveUser();
   const supabase = createAdminClient();
   const adminClient = createAdminClient();
 
   if (isNew) {
     await requirePermission("EMPLOYEES", "create");
-    
-    // 1. Create Auth User in Supabase using Admin API
-    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-      email: data.email,
-      password: Math.random().toString(36).slice(-8) + "A1!", // Temporary password
-      email_confirm: true,
-      user_metadata: { full_name: data.full_name }
-    });
 
-    if (authError) {
-      return { error: "Không thể tạo tài khoản xác thực: " + authError.message };
+    const email = data.email.trim().toLowerCase();
+
+    // An employee may have signed in with Google before HR creates their profile.
+    // In that case, reuse the existing Auth user instead of trying to register the
+    // same email a second time.
+    let authUser;
+    try {
+      authUser = await findAuthUserByEmail(adminClient, email);
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Không thể kiểm tra tài khoản xác thực." };
     }
 
-    const userId = authData.user.id;
+    const { data: existingEmployee, error: existingEmployeeError } = await supabase
+      .from("users")
+      .select("id")
+      .ilike("email", email)
+      .maybeSingle();
+
+    if (existingEmployeeError) {
+      return { error: "Không thể kiểm tra danh sách nhân sự: " + existingEmployeeError.message };
+    }
+
+    if (existingEmployee) {
+      return { error: "Email này đã có trong danh sách nhân sự." };
+    }
+
+    let createdNewAuthUser = false;
+
+    if (!authUser) {
+      const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+        email,
+        password: Math.random().toString(36).slice(-8) + "A1!", // Temporary password
+        email_confirm: true,
+        user_metadata: { full_name: data.full_name }
+      });
+
+      if (authError) {
+        return { error: "Không thể tạo tài khoản xác thực: " + authError.message };
+      }
+
+      authUser = authData.user;
+      createdNewAuthUser = true;
+    }
+
+    const userId = authUser.id;
+
+    // Guard against an inconsistent row whose id is already linked to this Auth user.
+    const { data: existingLinkedEmployee, error: linkedEmployeeError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (linkedEmployeeError) {
+      if (createdNewAuthUser) await adminClient.auth.admin.deleteUser(userId);
+      return { error: "Không thể kiểm tra hồ sơ nhân sự: " + linkedEmployeeError.message };
+    }
+
+    if (existingLinkedEmployee) {
+      return { error: "Tài khoản đăng nhập này đã được liên kết với một nhân viên." };
+    }
 
     // 2. Insert into users table
     const { error: dbError } = await supabase.from("users").insert({
@@ -34,7 +104,7 @@ export async function saveEmployee(isNew: boolean, data: any, permissions: any[]
       full_name: data.full_name,
       gender: data.gender,
       phone: data.phone,
-      email: data.email,
+      email,
       department_id: data.department_id || null,
       team_id: data.team_id || null,
       position_id: data.position_id || null,
@@ -51,8 +121,9 @@ export async function saveEmployee(isNew: boolean, data: any, permissions: any[]
     });
 
     if (dbError) {
-      // Rollback auth user
-      await adminClient.auth.admin.deleteUser(userId);
+      // Only roll back an Auth user created by this request. Never delete an
+      // existing Google/email account that is merely being linked to HR data.
+      if (createdNewAuthUser) await adminClient.auth.admin.deleteUser(userId);
       return { error: "Không thể lưu thông tin nhân viên: " + dbError.message };
     }
 
@@ -69,11 +140,14 @@ export async function saveEmployee(isNew: boolean, data: any, permissions: any[]
       await supabase.from("user_permissions").insert(permsToInsert);
     }
 
-    // Optional: Send password reset email so user can set their password
-    await adminClient.auth.resetPasswordForEmail(data.email);
+    // A newly-created account needs a password setup email. Existing Google
+    // users can keep signing in with Google and should not receive this email.
+    if (createdNewAuthUser) {
+      await adminClient.auth.resetPasswordForEmail(email);
+    }
 
     revalidatePath("/dashboard/employees");
-    return { success: true, id: userId };
+    return { success: true, id: userId, linkedExistingAuth: !createdNewAuthUser };
 
   } else {
     await requirePermission("EMPLOYEES", "update");
