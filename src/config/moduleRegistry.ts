@@ -414,8 +414,8 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "HR",
     parentCode: null,
     sortOrder: 3,
-    showInSidebar: true,
-    showOnDashboard: true,
+    showInSidebar: false,
+    showOnDashboard: false,
     requiredAction: "view",
     isActive: true
   },

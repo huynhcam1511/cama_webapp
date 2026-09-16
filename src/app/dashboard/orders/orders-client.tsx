@@ -70,7 +70,6 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
   };
 
   const filteredOrders = orders.filter(o => {
-    if (filterDepartment !== "ALL" && (o.operational_department === "VAN_HANH" ? "UNASSIGNED" : o.operational_department || "UNASSIGNED") !== filterDepartment) return false;
     // Nếu có tìm kiếm bằng Text, hệ thống bỏ qua bộ lọc để tìm kiếm toàn bộ kho dữ liệu
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -323,10 +322,6 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
 
         {/* List Container */}
         <div className="flex-1">
-          <label className="flex items-center gap-3 py-3 text-sm">Phòng phụ trách
-          <select aria-label="Phòng phụ trách" className="border rounded-md p-2 bg-white" value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)}>
-            <option value="ALL">Tất cả</option><option value="VAY">Phòng Váy</option><option value="SUOT">Phòng Suit</option><option value="UNASSIGNED">Chưa phân phòng</option>
-          </select></label>
           {filteredOrders.length === 0 && <p className="p-4 text-sm text-slate-500">Không tìm thấy đơn hàng nào.</p>}
           {Array.from(new Set(filteredOrders.map(order => order.contract_id || order.id))).map(groupId => {
             const contractOrders = filteredOrders.filter(order => (order.contract_id || order.id) === groupId);
@@ -365,7 +360,6 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                       >
                         <td className="px-4 py-3 align-top pt-4">
                           <div className="font-mono font-bold text-slate-900 text-[13px]">{order.order_code}</div>
-                          {order.operational_department && <div className="mt-1 text-[10px] font-semibold text-emerald-700">{orderDepartmentLabel(order.operational_department)}</div>}
                           {getLateWarning(order)}
                         </td>
                         <td className="px-4 py-3 align-top pt-4">
