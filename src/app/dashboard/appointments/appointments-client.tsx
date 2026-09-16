@@ -13,7 +13,9 @@ export default function AppointmentsClient({ initialData, users }: { initialData
   const [bookings, setBookings] = useState<Booking[]>(initialData);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [monthFilter, setMonthFilter] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [createError, setCreateError] = useState("");
@@ -158,17 +160,77 @@ export default function AppointmentsClient({ initialData, users }: { initialData
     }
   };
 
-  const uniqueSources = Array.from(new Set(bookings.map(b => b.source).filter(Boolean)));
+  // Lấy danh sách tháng duy nhất từ ngày hẹn (sắp xếp giảm dần)
+  const availableMonths = Array.from(
+    new Set(
+      bookings
+        .map((b) => {
+          if (!b.date) return null;
+          const d = typeof b.date === "string" ? b.date.split("T")[0] : "";
+          return d.length >= 7 ? d.substring(0, 7) : null;
+        })
+        .filter(Boolean) as string[]
+    )
+  ).sort().reverse();
+
+  const formatMonthLabel = (m: string) => {
+    const parts = m.split("-");
+    if (parts.length < 2) return m;
+    return `Tháng ${parts[1]}/${parts[0]}`;
+  };
+
+  // Chuẩn hóa danh sách kênh tiếp cận (loại bỏ khoảng trắng thừa)
+  const uniqueSources = Array.from(
+    new Set(
+      bookings
+        .map((b) => (b.source ? b.source.trim() : ""))
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const getMonthCount = (m: string) => {
+    return bookings.filter((b) => {
+      if (!b.date) return false;
+      const d = typeof b.date === "string" ? b.date.split("T")[0] : "";
+      return d.startsWith(m);
+    }).length;
+  };
+
+  const getSourceCount = (src: string) => {
+    return bookings.filter((b) => b.source && b.source.trim() === src).length;
+  };
+
+  const currentMonthStr = new Date().toISOString().substring(0, 7);
 
   const filteredBookings = bookings.filter((b) => {
     const searchLower = searchQuery.toLowerCase();
     const matchSearch = 
       (b.customer_name || "").toLowerCase().includes(searchLower) ||
-      (b.customer_phone || "").includes(searchLower);
+      (b.customer_phone || "").includes(searchLower) ||
+      (b.service_content || "").toLowerCase().includes(searchLower);
     
-    const matchSource = sourceFilter ? b.source === sourceFilter : true;
-    return matchSearch && matchSource;
+    // Lọc theo Tháng (ngày hẹn)
+    const bookingMonth = b.date ? (typeof b.date === "string" ? b.date.split("T")[0].substring(0, 7) : "") : "";
+    const matchMonth = monthFilter ? bookingMonth === monthFilter : true;
+
+    // Lọc theo Kênh / Nguồn tiếp cận
+    const bookingSource = b.source ? b.source.trim() : "";
+    const matchSource = sourceFilter ? bookingSource === sourceFilter.trim() : true;
+
+    // Lọc theo Trạng thái
+    const matchStatus = statusFilter ? (b.status || "").toUpperCase() === statusFilter.toUpperCase() : true;
+
+    return matchSearch && matchMonth && matchSource && matchStatus;
   });
+
+  const isFiltered = Boolean(searchQuery || monthFilter || sourceFilter || statusFilter);
+
+  const resetFilters = () => {
+    setSearchQuery("");
+    setMonthFilter("");
+    setSourceFilter("");
+    setStatusFilter("");
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa lịch hẹn này?")) return;
@@ -275,53 +337,146 @@ export default function AppointmentsClient({ initialData, users }: { initialData
         </button>
       </div>
 
-      {/* Search & Filter */}
-      <div className="p-3 sm:p-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row gap-3">
-        <div className="flex gap-2 flex-1 w-full">
-          <div className="relative flex-1">
+      {/* Search & Filter Bar */}
+      <div className="p-3 sm:p-4 border-b border-slate-200 bg-slate-50 flex flex-col gap-3">
+        {/* Hàng 1: Search & Các dropdown lọc */}
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
+          {/* Ô tìm kiếm */}
+          <div className="sm:col-span-4 relative">
             <icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Tìm theo Tên khách..."
+              placeholder="Tìm theo tên khách, SĐT, dịch vụ..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
+              className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg pl-9 pr-8 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none shadow-xs"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <icons.X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          
-          {/* Mobile Action Buttons */}
-          <div className="flex sm:hidden gap-1.5 shrink-0">
-            <div className="relative">
-               <select
-                  value={sourceFilter}
-                  onChange={(e) => setSourceFilter(e.target.value)}
-                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-               >
-                 <option value="">Tất cả</option>
-                 {uniqueSources.map(source => (
-                   <option key={source} value={source}>{source}</option>
-                 ))}
-               </select>
-               <div className={`flex items-center justify-center w-9 h-9 rounded-lg border ${sourceFilter ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600'}`}>
-                 <icons.Filter className="w-4 h-4" />
-               </div>
+
+          {/* Dropdown Lọc Theo Tháng */}
+          <div className="sm:col-span-3 relative">
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-xs focus-within:ring-2 focus-within:ring-blue-500">
+              <icons.Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+              <select
+                value={monthFilter}
+                onChange={(e) => setMonthFilter(e.target.value)}
+                className="w-full bg-transparent text-slate-800 text-xs outline-none cursor-pointer font-medium"
+              >
+                <option value="">Tất cả các tháng ({bookings.length})</option>
+                {availableMonths.map((m) => (
+                  <option key={m} value={m}>
+                    {formatMonthLabel(m)} ({getMonthCount(m)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Dropdown Lọc Theo Kênh */}
+          <div className="sm:col-span-3 relative">
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-xs focus-within:ring-2 focus-within:ring-blue-500">
+              <icons.Globe className="w-4 h-4 text-indigo-600 shrink-0" />
+              <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value)}
+                className="w-full bg-transparent text-slate-800 text-xs outline-none cursor-pointer font-medium truncate"
+              >
+                <option value="">Tất cả kênh tiếp cận ({bookings.length})</option>
+                {uniqueSources.map((source) => (
+                  <option key={source} value={source}>
+                    {source} ({getSourceCount(source)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Dropdown Lọc Theo Trạng Thái */}
+          <div className="sm:col-span-2 relative">
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-xs focus-within:ring-2 focus-within:ring-blue-500">
+              <icons.Filter className="w-4 h-4 text-slate-400 shrink-0" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full bg-transparent text-slate-800 text-xs outline-none cursor-pointer font-medium"
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="CHỜ XÁC NHẬN">Chờ xác nhận</option>
+                <option value="ĐÃ XÁC NHẬN">Đã xác nhận</option>
+                <option value="ĐÃ ĐẾN">Đã đến</option>
+                <option value="KHÔNG ĐẾN">Không đến</option>
+              </select>
             </div>
           </div>
         </div>
 
-        {/* Desktop Filter */}
-        <div className="hidden sm:flex items-center gap-2">
-          <icons.Filter className="w-4 h-4 text-slate-400" />
-          <select
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
-            className="bg-white text-slate-800 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-48 shadow-sm"
-          >
-            <option value="">Tất cả Nguồn tiếp cận</option>
-            {uniqueSources.map(source => (
-              <option key={source} value={source}>{source}</option>
-            ))}
-          </select>
+        {/* Hàng 2: Quick Chips & Tóm tắt kết quả */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200/60">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full text-xs">
+            <span className="text-[11px] font-semibold text-slate-400 shrink-0 flex items-center gap-1">
+              <icons.Tag className="w-3 h-3" /> Lọc nhanh:
+            </span>
+
+            {/* Chip Tháng này */}
+            {availableMonths.includes(currentMonthStr) && (
+              <button
+                type="button"
+                onClick={() => setMonthFilter(monthFilter === currentMonthStr ? "" : currentMonthStr)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
+                  monthFilter === currentMonthStr
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                📅 Tháng này ({getMonthCount(currentMonthStr)})
+              </button>
+            )}
+
+            {/* Chips Kênh phổ biến */}
+            {uniqueSources.slice(0, 5).map((src) => {
+              const isActive = sourceFilter === src;
+              return (
+                <button
+                  key={src}
+                  type="button"
+                  onClick={() => setSourceFilter(isActive ? "" : src)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
+                    isActive
+                      ? "bg-indigo-600 text-white shadow-xs"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {src} ({getSourceCount(src)})
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 ml-auto text-xs">
+            <span className="text-slate-500 text-[11.5px]">
+              Hiển thị <b className="text-slate-800">{filteredBookings.length}</b> / {bookings.length} lịch
+            </span>
+            {isFiltered && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors cursor-pointer"
+                title="Xóa toàn bộ bộ lọc"
+              >
+                <icons.RotateCcw className="w-3 h-3" />
+                Xóa lọc
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
