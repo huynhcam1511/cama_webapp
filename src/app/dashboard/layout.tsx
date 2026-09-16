@@ -203,7 +203,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {/* Main Right Container */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen print:overflow-visible relative">
         {/* Full-page create forms own their header; do not repeat the dashboard bar. */}
-        {pathname !== "/dashboard/orders/create" && <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-3 sm:px-6 lg:px-8 shrink-0 print:hidden">
+        {pathname !== "/dashboard/orders/create" && <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-3 sm:px-6 lg:px-8 shrink-0 print:hidden">
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -266,9 +266,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               aria-label="Quét QR vị trí kệ hoặc tủ trong kho"
             >
               <icons.QrCode className="w-4 h-4" />
-            </button>
-            <button className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-              <icons.Bell className="w-4 h-4" />
             </button>
 
             {userProfile && (

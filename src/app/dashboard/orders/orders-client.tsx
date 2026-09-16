@@ -164,13 +164,13 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
   };
 
   return (
-    <div className="gap-6 flex flex-col md:flex-row md:h-[calc(100vh-100px)] md:overflow-hidden min-h-[calc(100dvh-80px)]">
+    <div className="gap-6 flex flex-col md:flex-row min-h-full pb-6">
       {/* Left: Main List */}
       <div className="flex-1 flex flex-col gap-4 w-full px-3 md:px-0">
 
 
-        {/* Filters & Search */}
-        <div className="flex flex-col gap-2 md:gap-3 md:bg-white pt-2 md:pt-0 md:p-3 md:rounded-xl md:border md:border-slate-200 md:shadow-sm shrink-0">
+        {/* Filters & Search - Sticky bar with clean background and shadow */}
+        <div className="sticky top-16 z-20 flex flex-col gap-2 md:gap-3 bg-slate-50/95 backdrop-blur md:bg-white pt-2 pb-2 md:p-3 md:rounded-xl md:border md:border-slate-200 md:shadow-sm shrink-0">
           <div className="flex gap-2 w-full">
             <div className="flex-1 relative">
               <icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -322,7 +322,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
         </Link>
 
         {/* List Container */}
-        <div className="flex-1 md:overflow-y-auto">
+        <div className="flex-1">
           <label className="flex items-center gap-3 py-3 text-sm">Phòng phụ trách
           <select aria-label="Phòng phụ trách" className="border rounded-md p-2 bg-white" value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)}>
             <option value="ALL">Tất cả</option><option value="VAY">Phòng Váy</option><option value="SUOT">Phòng Suit</option><option value="UNASSIGNED">Chưa phân phòng</option>
