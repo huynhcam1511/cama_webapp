@@ -130,16 +130,26 @@ export async function saveVideoReport(isNew: boolean, formData: any) {
 
   const supabase = createAdminClient();
 
-  z.object({title:z.string().trim().min(1).max(500),actual_publish_date:z.string().date().optional(),asset_link:z.union([z.literal(''),z.string().url().refine(v=>/^https?:\/\//i.test(v))]).optional()}).parse(formData);
+  const schema = z.object({
+    title: z.string().trim().min(1, 'Vui lòng nhập tên/tiêu đề video').max(500),
+    actual_publish_date: z.string().optional().nullable(),
+    asset_link: z.string().optional().nullable()
+  });
+
+  const parsed = schema.safeParse(formData);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message || 'Dữ liệu không hợp lệ' };
+  }
+
   const payload: any = {
-    title: formData.title,
+    title: formData.title.trim(),
     status: formData.status || 'PUBLISHED',
     category: formData.category || 'CHUNG',
     format: formData.format || 'VIDEO_REPORT',
     actual_publish_date: formData.actual_publish_date || new Date().toISOString().split('T')[0],
-    asset_link: formData.asset_link || null,
-    script: formData.script || null,
-    revision_notes: formData.revision_notes || null,
+    asset_link: formData.asset_link?.trim() || null,
+    script: formData.script?.trim() || null,
+    revision_notes: formData.revision_notes?.trim() || null,
     published_links: formData.published_links || {},
     updated_at: new Date().toISOString()
   };
@@ -242,8 +252,7 @@ export async function savePerformanceVersion(videoId: string, isNew: boolean, lo
       platform_contents: updatedPlatformContents,
       updated_at: new Date().toISOString()
     })
-    .eq('id', videoId)
-    .eq('updated_at', post.updated_at).select('id').single();
+    .eq('id', videoId);
 
   if (updateErr) return { success: false, error: updateErr.message };
 
@@ -282,8 +291,7 @@ export async function deletePerformanceVersion(videoId: string, logId: string) {
       },
       updated_at: new Date().toISOString()
     })
-    .eq('id', videoId)
-    .eq('updated_at', post.updated_at).select('id').single();
+    .eq('id', videoId);
 
   if (updateErr) return { success: false, error: updateErr.message };
 

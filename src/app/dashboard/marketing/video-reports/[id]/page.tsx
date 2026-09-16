@@ -1,14 +1,20 @@
-import { getVideoReports } from './actions';
-import { getVideoRewardRule } from './reward-actions';
+import { getVideoReportById } from '../actions';
+import { getVideoRewardRule, getVideoRewardAward } from '../reward-actions';
+import VideoDetailView from './video-detail-view';
 import { getUserPermissions, requireActiveUser, requirePermission } from '@/lib/rbac';
 import { createAdminClient } from '@/lib/supabase/admin';
-import VideoReportsView from './view';
 
 export const dynamic = 'force-dynamic';
 
-export default async function VideoReportsPage() {
+export default async function VideoDetailPage({ params }: { params: { id: string } }) {
   const user = await requireActiveUser();
-  await requirePermission('VIDEO_PERFORMANCE_REPORT', 'view');
+  const isNew = params.id === 'new';
+
+  if (isNew) {
+    await requirePermission('VIDEO_PERFORMANCE_REPORT', 'create');
+  } else {
+    await requirePermission('VIDEO_PERFORMANCE_REPORT', 'view');
+  }
 
   const permissionsMap = await getUserPermissions(user.id);
   const permissions = permissionsMap.get('VIDEO_PERFORMANCE_REPORT') || {
@@ -17,8 +23,9 @@ export default async function VideoReportsPage() {
     can_delete: false
   };
 
-  const rows = await getVideoReports();
+  const video = isNew ? null : await getVideoReportById(params.id);
   const rewardRule = await getVideoRewardRule();
+  const rewardAward = isNew ? null : await getVideoRewardAward(params.id);
 
   const db = createAdminClient();
   const { data: users } = await db
@@ -28,12 +35,14 @@ export default async function VideoReportsPage() {
     .order('full_name');
 
   return (
-    <VideoReportsView
-      initialVideos={rows}
+    <VideoDetailView
+      isNew={isNew}
+      initialData={video}
       permissions={permissions}
       rewardRule={rewardRule}
+      rewardAward={rewardAward}
       users={users || []}
+      currentUserId={user.id}
     />
   );
 }
-

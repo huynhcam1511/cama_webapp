@@ -158,6 +158,18 @@ export default function ContractsView({ initialContracts, initialStats, customer
     } else if (sortConfig.key === 'payment_due_date') {
       valA = a.payment_due_date || '9999-12-31';
       valB = b.payment_due_date || '9999-12-31';
+    } else if (sortConfig.key === 'contract_date') {
+      valA = a.contract_date || a.created_at || '';
+      valB = b.contract_date || b.created_at || '';
+    } else if (sortConfig.key === 'paper_contract_number') {
+      valA = a.paper_contract_number || '';
+      valB = b.paper_contract_number || '';
+    } else if (sortConfig.key === 'phone') {
+      valA = a.customers?.phone || '';
+      valB = b.customers?.phone || '';
+    } else if (sortConfig.key === 'customer_name') {
+      valA = a.customers?.bride_name || a.customers?.groom_name || '';
+      valB = a.customers?.bride_name || a.customers?.groom_name || '';
     }
 
     if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -177,11 +189,10 @@ export default function ContractsView({ initialContracts, initialStats, customer
     setDebtOnlyFilter(false);
     setOverdueOnlyFilter(false);
     setQuickFilter("");
-    setSortConfig({ key: "created_at", direction: "desc" });
   };
 
   return (
-    <div className="space-y-3 sm:space-y-6 pt-2">
+    <div className="space-y-2.5 -mt-2 sm:-mt-4 lg:-mt-5">
       {/* Mobile Add Contract FAB */}
       {canCreate && (
         <button
@@ -238,7 +249,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Tìm theo Mã CAMA-xxxx, SĐT..."
+                  placeholder="Tìm theo Mã HĐ giấy, SĐT, Tên khách..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400 shadow-sm"
@@ -399,28 +410,36 @@ export default function ContractsView({ initialContracts, initialStats, customer
           <table className="w-full text-xs text-left whitespace-nowrap hidden md:table">
             <thead className="uppercase bg-slate-50 text-slate-500 border-b border-slate-200 font-bold tracking-wider">
               <tr>
-                <th className="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-[130px]" onClick={() => handleSort('created_at')}>
-                  <div className="flex items-center gap-1">Mã HĐ / Ngày {sortConfig.key === 'created_at' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>)}</div>
+                <th className="px-3.5 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-[100px]" onClick={() => handleSort('contract_date')}>
+                  <div className="flex items-center gap-1">Ngày HĐ {sortConfig.key === 'contract_date' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>)}</div>
                 </th>
-                <th className="px-4 py-3 w-[180px]">Khách Hàng & SĐT</th>
-                <th className="px-4 py-3 w-[160px]">Dịch Vụ Chính</th>
-                <th className="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors text-right w-[110px]" onClick={() => handleSort('total_amount')}>
+                <th className="px-3.5 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-[115px]" onClick={() => handleSort('paper_contract_number')}>
+                  <div className="flex items-center gap-1">Mã HĐ Giấy {sortConfig.key === 'paper_contract_number' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>)}</div>
+                </th>
+                <th className="px-3.5 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-[115px]" onClick={() => handleSort('phone')}>
+                  <div className="flex items-center gap-1">Số Điện Thoại {sortConfig.key === 'phone' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>)}</div>
+                </th>
+                <th className="px-3.5 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-[160px]" onClick={() => handleSort('customer_name')}>
+                  <div className="flex items-center gap-1">Khách Hàng {sortConfig.key === 'customer_name' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>)}</div>
+                </th>
+                <th className="px-3.5 py-3 w-[160px]">Dịch Vụ Chính</th>
+                <th className="px-3.5 py-3 cursor-pointer hover:bg-slate-100 transition-colors text-right w-[110px]" onClick={() => handleSort('total_amount')}>
                   <div className="flex items-center justify-end gap-1">Tổng Tiền {sortConfig.key === 'total_amount' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>)}</div>
                 </th>
-                <th className="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors text-right w-[110px]" onClick={() => handleSort('paid_amount')}>
+                <th className="px-3.5 py-3 cursor-pointer hover:bg-slate-100 transition-colors text-right w-[110px]" onClick={() => handleSort('paid_amount')}>
                   <div className="flex items-center justify-end gap-1">Đã Thu {sortConfig.key === 'paid_amount' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>)}</div>
                 </th>
-                <th className="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors text-right w-[110px]" onClick={() => handleSort('remaining_amount')}>
+                <th className="px-3.5 py-3 cursor-pointer hover:bg-slate-100 transition-colors text-right w-[105px]" onClick={() => handleSort('remaining_amount')}>
                   <div className="flex items-center justify-end gap-1">Còn Lại {sortConfig.key === 'remaining_amount' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>)}</div>
                 </th>
-                <th className="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-[110px]" onClick={() => handleSort('payment_due_date')}>
+                <th className="px-3.5 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-[105px]" onClick={() => handleSort('payment_due_date')}>
                   <div className="flex items-center gap-1">Hạn T.Toán {sortConfig.key === 'payment_due_date' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>)}</div>
                 </th>
-                <th className="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-[120px]" onClick={() => handleSort('contract_status')}>
+                <th className="px-3.5 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-[110px]" onClick={() => handleSort('contract_status')}>
                   <div className="flex items-center gap-1">Tiến Độ {sortConfig.key === 'contract_status' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>)}</div>
                 </th>
-                <th className="px-4 py-3 w-[120px]">Phụ Trách</th>
-                <th className="px-4 py-3 w-[110px] text-right">Thao Tác</th>
+                <th className="px-3.5 py-3 w-[115px]">Phụ Trách</th>
+                <th className="px-3.5 py-3 w-[95px] text-right">Thao Tác</th>
               </tr>
             </thead>
 
@@ -455,84 +474,124 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 return (
                   
 <tr key={contract.id} className="hover:bg-slate-50/80 transition-colors group border-b border-slate-100">
-  {/* Mã HĐ & Ngày */}
-  <td className="px-4 py-3">
-    <div className="font-mono font-bold text-slate-900 flex items-center gap-1.5 text-xs">
-      <span>{contract.contract_code}</span>
+  {/* 1. Ngày HĐ */}
+  <td className="px-3.5 py-3 font-mono text-xs text-slate-700">
+    {contract.contract_date 
+      ? new Date(contract.contract_date).toLocaleDateString('vi-VN') 
+      : new Date(contract.created_at).toLocaleDateString('vi-VN')}
+  </td>
+
+  {/* 2. Mã HĐ Giấy (ẩn mã điện tử) */}
+  <td className="px-3.5 py-3">
+    <div className="flex items-center gap-1.5 font-mono text-xs">
+      <span className="font-bold text-slate-900">
+        {contract.paper_contract_number || "---"}
+      </span>
       {contract.contract_type === "SALES" ? (
-        <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-bold tracking-wider uppercase">Bán</span>
+        <span className="text-[10px] font-semibold text-blue-600">
+          (Bán)
+        </span>
       ) : (
-        <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] font-bold tracking-wider uppercase">Thuê</span>
+        <span className="text-[10px] font-semibold text-amber-700">
+          (Thuê)
+        </span>
       )}
-    </div>
-    <div className="text-[10px] text-slate-500 mt-0.5">
-      {contract.contract_date 
-        ? new Date(contract.contract_date).toLocaleDateString('vi-VN') 
-        : new Date(contract.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(', ', ' · ')}
     </div>
   </td>
 
-  {/* Khách hàng & SĐT */}
-  <td className="px-4 py-3 whitespace-normal">
+  {/* 3. Số điện thoại (tách riêng bên trái Khách hàng) */}
+  <td className="px-3.5 py-3 font-mono text-xs">
+    {contract.customers?.phone ? (
+      <a 
+        href={`tel:${contract.customers.phone}`}
+        className="text-slate-800 hover:text-blue-600 font-semibold transition-colors"
+      >
+        {contract.customers.phone}
+      </a>
+    ) : (
+      <span className="text-slate-400">---</span>
+    )}
+  </td>
+
+  {/* 4. Khách hàng */}
+  <td className="px-3.5 py-3 whitespace-normal">
     <div className="font-bold text-slate-900 line-clamp-1 text-xs">
       {contract.customers?.bride_name || "---"} {contract.customers?.groom_name ? `& ${contract.customers.groom_name}` : ""}
     </div>
-    <div className="flex items-center gap-2 mt-1">
-      <span className="text-[11px] font-mono text-slate-600">{contract.customers?.phone}</span>
-    </div>
   </td>
 
-  {/* Dịch vụ */}
-  <td className="px-4 py-3 whitespace-normal">
+  {/* 5. Dịch vụ chính */}
+  <td className="px-3.5 py-3 whitespace-normal">
     <div className="font-medium text-slate-800 line-clamp-2 text-[11px] leading-snug">
       {contract.items?.[0]?.item_name || "Gói Dịch Vụ Cưới Studio"}
     </div>
     {contract.items?.length > 1 && (
-      <span className="text-[10px] text-blue-600 font-bold mt-0.5 inline-block">+{contract.items.length - 1} hạng mục khác</span>
+      <span className="text-[10px] text-blue-600 font-semibold mt-0.5 inline-block">+{contract.items.length - 1} mục khác</span>
     )}
   </td>
 
-  {/* Tài Chính */}
-  <td className="px-4 py-3 text-right font-mono font-bold text-slate-900 text-xs">{new Intl.NumberFormat("vi-VN").format(total)} ₫</td>
-  <td className="px-4 py-3 text-right font-mono font-bold text-emerald-600 text-xs">{new Intl.NumberFormat("vi-VN").format(paid)} ₫</td>
-  <td className="px-4 py-3 text-right font-mono">
+  {/* 6. Tổng tiền */}
+  <td className="px-3.5 py-3 text-right font-mono font-bold text-slate-900 text-xs">
+    {new Intl.NumberFormat("vi-VN").format(total)} ₫
+  </td>
+
+  {/* 7. Đã thu */}
+  <td className="px-3.5 py-3 text-right font-mono font-bold text-emerald-600 text-xs">
+    {new Intl.NumberFormat("vi-VN").format(paid)} ₫
+  </td>
+
+  {/* 8. Còn lại (không dùng pill) */}
+  <td className="px-3.5 py-3 text-right font-mono text-xs">
     {remaining > 0 ? (
-      <span className="font-bold text-amber-600 text-xs">{new Intl.NumberFormat("vi-VN").format(remaining)} ₫</span>
+      <span className="font-bold text-amber-600">{new Intl.NumberFormat("vi-VN").format(remaining)} ₫</span>
     ) : (
-      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">ĐÃ ĐỦ</span>
+      <span className="font-medium text-emerald-600">Đã đủ</span>
     )}
   </td>
 
-  {/* Hạn Thanh Toán */}
-  <td className="px-4 py-3 font-mono text-[11px]">
+  {/* 9. Hạn thanh toán (không dùng pill) */}
+  <td className="px-3.5 py-3 font-mono text-[11px]">
     {displayDueDate ? (
-       <span className={`${contract.debt_status === 'OVERDUE' ? 'text-red-600 font-bold bg-red-50 px-1 py-0.5 rounded' : 'text-slate-600'}`}>
+       <span className={contract.debt_status === 'OVERDUE' ? 'text-rose-600 font-bold' : 'text-slate-600'}>
          {new Date(displayDueDate).toLocaleDateString('vi-VN')}
        </span>
     ) : <span className="text-slate-400">---</span>}
   </td>
 
-  {/* Tiến Độ */}
-  <td className="px-4 py-3">
-    <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
-      contract.contract_status === "COMPLETED" ? "bg-emerald-50 text-emerald-600" :
-      contract.contract_status === "CANCELLED" ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
-    }`}>
-      {contract.contract_status === "COMPLETED" ? "Hoàn Tất" : contract.contract_status === "CANCELLED" ? "Đã Hủy" : "Đang Có Hiệu Lực"}
-    </span>
+  {/* 10. Tiến độ - Không lạm pill: dùng dot indicator thanh thoát */}
+  <td className="px-3.5 py-3">
+    <div className="flex items-center gap-1.5 text-xs">
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+        contract.contract_status === "COMPLETED" ? "bg-emerald-500" :
+        contract.contract_status === "CANCELLED" ? "bg-rose-500" :
+        contract.contract_status === "DRAFT" ? "bg-slate-400" :
+        "bg-blue-600"
+      }`} />
+      <span className={`font-semibold ${
+        contract.contract_status === "COMPLETED" ? "text-emerald-700" :
+        contract.contract_status === "CANCELLED" ? "text-rose-600" :
+        contract.contract_status === "DRAFT" ? "text-slate-500" :
+        "text-slate-800"
+      }`}>
+        {contract.contract_status === "COMPLETED" ? "Hoàn tất" :
+         contract.contract_status === "CANCELLED" ? "Đã hủy" :
+         contract.contract_status === "DRAFT" ? "Bản nháp" :
+         "Hiệu lực"}
+      </span>
+    </div>
   </td>
 
-  {/* Phụ Trách */}
-  <td className="px-4 py-3 whitespace-normal">
-    <div className="text-[11px] font-semibold text-slate-700 line-clamp-2">
+  {/* 11. Phụ trách */}
+  <td className="px-3.5 py-3 whitespace-normal">
+    <div className="text-[11px] font-medium text-slate-700 line-clamp-2">
       {contract.assigned_staff_names && contract.assigned_staff_names.length > 0 
         ? contract.assigned_staff_names.join(', ') 
         : (contract.assigned_staff_name || "---")}
     </div>
   </td>
 
-  {/* Thao Tác */}
-  <td className="px-4 py-3 text-right">
+  {/* 12. Thao tác */}
+  <td className="px-3.5 py-3 text-right">
     <div className="flex items-center justify-end gap-1">
       <Link 
         href={`/dashboard/contracts/${contract.id}`} 
@@ -563,7 +622,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
       {canDelete && (
         <button 
           onClick={() => setSelectedForCancel(contract)} 
-          className="p-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-md transition-colors"
+          className="p-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 rounded-md transition-colors"
           title="Xóa / Hủy"
         >
           <Trash2 className="w-3.5 h-3.5"/>
@@ -577,7 +636,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
               {filteredContracts.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={12} className="px-6 py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Sparkles className="w-8 h-8 text-blue-500/30" />
                       <p className="text-sm font-medium text-slate-600">Không tìm thấy hợp đồng nào khớp với tìm kiếm.</p>
@@ -641,16 +700,21 @@ export default function ContractsView({ initialContracts, initialStats, customer
                   ? contract.assigned_staff_names.join(', ') 
                   : (contract.assigned_staff_name || "Chưa có PIC");
                   
-                let statusBg = "bg-blue-50 text-blue-600";
-                let statusText = "Đang H.Lực";
+                let statusDotColor = "bg-blue-600";
+                let statusTextColor = "text-slate-800";
+                let statusText = "Hiệu lực";
                 if (contract.contract_status === "COMPLETED") {
-                  statusBg = "bg-emerald-50 text-emerald-600";
+                  statusDotColor = "bg-emerald-500";
+                  statusTextColor = "text-emerald-700";
                   statusText = "Hoàn tất";
                 } else if (contract.contract_status === "CANCELLED") {
-                  statusBg = "bg-red-50 text-red-600";
-                  statusText = "Đã Hủy";
-                } else if (contract.payment_status === "DEPOSITED" || contract.payment_status === "PARTIALLY_PAID") {
-                  statusBg = "bg-orange-50 text-orange-600";
+                  statusDotColor = "bg-rose-500";
+                  statusTextColor = "text-rose-600";
+                  statusText = "Đã hủy";
+                } else if (contract.contract_status === "DRAFT") {
+                  statusDotColor = "bg-slate-400";
+                  statusTextColor = "text-slate-500";
+                  statusText = "Bản nháp";
                 }
 
                 return (
@@ -677,9 +741,12 @@ export default function ContractsView({ initialContracts, initialStats, customer
                           <span>Tổng HĐ:</span>
                           <span className="font-mono font-bold text-slate-700 tabular-nums">{new Intl.NumberFormat("vi-VN").format(total)}</span>
                         </div>
-                        <span className={`px-2 py-1 rounded-md text-[10.5px] font-semibold uppercase ${statusBg}`}>
-                          {statusText}
-                        </span>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDotColor}`} />
+                          <span className={`font-semibold text-xs ${statusTextColor}`}>
+                            {statusText}
+                          </span>
+                        </div>
                       </div>
                       
                       <div className="flex justify-between items-center gap-3">
@@ -697,7 +764,9 @@ export default function ContractsView({ initialContracts, initialStats, customer
                     <div className="px-3.5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-b-xl">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1.5 text-[12px]">
-                          <span className="font-mono font-bold text-slate-600">{contract.contract_code}</span>
+                          <span className="font-mono font-bold text-slate-900">
+                            {contract.paper_contract_number ? `HĐ: ${contract.paper_contract_number}` : (contract.contract_code || "---")}
+                          </span>
                           <span className="text-slate-300">•</span>
                           {contract.customers?.phone ? (
                             <a href={`tel:${contract.customers.phone}`} className="font-mono text-blue-600 font-semibold hover:underline">
@@ -708,7 +777,8 @@ export default function ContractsView({ initialContracts, initialStats, customer
                           )}
                         </div>
                         <span className="text-[11px] font-medium text-slate-400">
-                          Hợp đồng {contract.contract_type === "SALES" ? "Bán hàng" : "Dịch vụ"}
+                          {contract.contract_date ? new Date(contract.contract_date).toLocaleDateString('vi-VN') : new Date(contract.created_at).toLocaleDateString('vi-VN')}
+                          {' • '}Hợp đồng {contract.contract_type === "SALES" ? "Bán hàng" : "Dịch vụ"}
                         </span>
                       </div>
                       

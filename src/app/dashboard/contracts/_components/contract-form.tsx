@@ -132,6 +132,8 @@ export default function ContractForm({
     {id: "event-3", name: "", event_date: "", pickup_date: "", return_date: "", location: ""}
   ]);
 
+const DEFAULT_GIFTS = "Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và slide nhạc";
+
   // 2. Chi Tiết Thực Hiện
   const [shootDate, setShootDate] = useState("");
   const [shootLocation, setShootLocation] = useState("");
@@ -139,7 +141,7 @@ export default function ContractForm({
   const [albumSize, setAlbumSize] = useState("");
   const [albumPages, setAlbumPages] = useState("");
   const [albumMaterial, setAlbumMaterial] = useState("");
-  const [gifts, setGifts] = useState("");
+  const [gifts, setGifts] = useState(isEditMode ? "" : DEFAULT_GIFTS);
   const [dressDeliverDate, setDressDeliverDate] = useState("");
   const [dressReturnDate, setDressReturnDate] = useState("");
   
@@ -876,8 +878,45 @@ export default function ContractForm({
                         </div>
                       </div>
                       <div className="flex flex-col justify-end mt-1.5">
-                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">Tặng kèm / Phụ kiện</label>
-                        <input type="text" placeholder="Ảnh lớn, ảnh bàn..." value={gifts} onChange={(e) => setGifts(e.target.value)} className="w-full bg-white border border-slate-200 rounded focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-1.5 py-1 text-[11px] font-medium outline-none text-slate-700" />
+                        <div className="flex items-center justify-between mb-0.5">
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase">
+                            Tặng kèm / Phụ kiện
+                          </label>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setGifts(DEFAULT_GIFTS)}
+                              className="text-[10px] text-amber-600 hover:text-amber-700 font-medium hover:underline flex items-center gap-0.5 cursor-pointer"
+                              title="Điền gói quà tặng mặc định"
+                            >
+                              ⚡ Mặc định
+                            </button>
+                            {gifts && (
+                              <button
+                                type="button"
+                                onClick={() => setGifts("")}
+                                className="text-[10px] text-slate-400 hover:text-red-500 font-medium cursor-pointer"
+                                title="Xóa để tự nhập mới"
+                              >
+                                Xóa
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <input
+                          type="text"
+                          list="contract-gifts-suggestions"
+                          placeholder="Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và slide nhạc hoặc tự nhập..."
+                          value={gifts}
+                          onChange={(e) => setGifts(e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 px-1.5 py-1 text-[11px] font-medium outline-none text-slate-700"
+                        />
+                        <datalist id="contract-gifts-suggestions">
+                          <option value={DEFAULT_GIFTS} />
+                          <option value="Tặng kèm 1 ảnh lớn 60x90 và 10 ảnh để bàn" />
+                          <option value="Tặng kèm 1 ảnh lớn 60x90" />
+                          <option value="Không có quà tặng kèm" />
+                        </datalist>
                       </div>
                   </div>
                 </div>

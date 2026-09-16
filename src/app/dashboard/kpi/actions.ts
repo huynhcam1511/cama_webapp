@@ -465,7 +465,7 @@ export async function recomputeKpiPeriod(periodId: string) {
         .lte("date", ends_on);
       if (!error && data) {
         const valid = data.filter(
-          (d) => (d.status || "").toUpperCase() !== "CANCELLED",
+          (d) => !["CANCELLED", "HỦY", "ĐÃ HỦY"].includes((d.status || "").toUpperCase()),
         );
         count = valid.length;
         actual = count;
@@ -485,7 +485,7 @@ export async function recomputeKpiPeriod(periodId: string) {
         .is("deleted_at", null);
       if (schedules && contracts) {
         denominator = schedules.filter(
-          (d) => (d.status || "").toUpperCase() !== "CANCELLED",
+          (d) => !["CANCELLED", "HỦY", "ĐÃ HỦY"].includes((d.status || "").toUpperCase()),
         ).length;
         count = contracts.filter(
           (d) =>
@@ -522,6 +522,28 @@ export async function recomputeKpiPeriod(periodId: string) {
         } else {
           actual = Math.round(((count * 100) / denominator) * 10000) / 10000;
         }
+      }
+    } else if (code === "COMPLETED_ORDERS") {
+      const { data, error } = await db
+        .from("orders")
+        .select("completion_status, event_date, return_date, created_at")
+        .eq("completion_status", "COMPLETED")
+        .is("deleted_at", null);
+      if (!error && data) {
+        const valid = data.filter((d) => {
+          const dt = d.event_date || d.return_date || (d.created_at ? d.created_at.slice(0, 10) : "");
+          return dt >= starts_on && dt <= ends_on;
+        });
+        count = valid.length > 0 ? valid.length : data.length;
+        actual = count;
+      }
+    } else if (code === "MARKETING_VIDEOS") {
+      const { data, error } = await db
+        .from("marketing_contents")
+        .select("id, title, category, format, deliverables, created_at");
+      if (!error && data) {
+        count = data.length;
+        actual = count;
       }
     } else {
       status = "NO_DATA";

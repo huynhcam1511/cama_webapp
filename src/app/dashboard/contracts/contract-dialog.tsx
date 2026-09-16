@@ -63,6 +63,8 @@ export default function ContractDialog({
   const [paperContractCode, setPaperContractCode] = useState("");
   const [contractCode, setContractCode] = useState("");
 
+  const DEFAULT_GIFTS = "Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và slide nhạc";
+
   // 2. Chi Tiết Thực Hiện
   const [shootDate, setShootDate] = useState("");
   const [shootLocation, setShootLocation] = useState("");
@@ -70,7 +72,7 @@ export default function ContractDialog({
   const [albumSize, setAlbumSize] = useState("");
   const [albumPages, setAlbumPages] = useState("");
   const [albumMaterial, setAlbumMaterial] = useState("");
-  const [gifts, setGifts] = useState("");
+  const [gifts, setGifts] = useState(DEFAULT_GIFTS);
   const [dressDeliverDate, setDressDeliverDate] = useState("");
   const [dressReturnDate, setDressReturnDate] = useState("");
   
@@ -397,8 +399,43 @@ export default function ContractDialog({
                     <CustomDatePicker value={deliverDate} onChange={setDeliverDate} />
                   </div>
                   <div className="sm:col-span-1">
-                    <label className="block text-[10px] font-semibold text-slate-500 mb-1">Tặng kèm / Phụ kiện</label>
-                    <input type="text" placeholder="Ảnh lớn, ảnh bàn..." value={gifts} onChange={(e) => setGifts(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-xs outline-none" />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[10px] font-semibold text-slate-500">Tặng kèm / Phụ kiện</label>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setGifts(DEFAULT_GIFTS)}
+                          className="text-[9px] text-amber-600 hover:text-amber-700 font-medium hover:underline cursor-pointer"
+                          title="Điền gói quà tặng mặc định"
+                        >
+                          ⚡ Mặc định
+                        </button>
+                        {gifts && (
+                          <button
+                            type="button"
+                            onClick={() => setGifts("")}
+                            className="text-[9px] text-slate-400 hover:text-red-500 font-medium cursor-pointer"
+                            title="Xóa để tự nhập mới"
+                          >
+                            Xóa
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      list="contract-dialog-gifts-suggestions"
+                      placeholder="Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và slide nhạc hoặc tự nhập..."
+                      value={gifts}
+                      onChange={(e) => setGifts(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-xs outline-none"
+                    />
+                    <datalist id="contract-dialog-gifts-suggestions">
+                      <option value={DEFAULT_GIFTS} />
+                      <option value="Tặng kèm 1 ảnh lớn 60x90 và 10 ảnh để bàn" />
+                      <option value="Tặng kèm 1 ảnh lớn 60x90" />
+                      <option value="Không có quà tặng kèm" />
+                    </datalist>
                   </div>
 
                   <div>

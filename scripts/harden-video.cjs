@@ -1,0 +1,18 @@
+const fs=require('fs');const p='src/app/dashboard/marketing/video-reports/actions.ts';let s=fs.readFileSync(p,'utf8').replace(/\r\n/g,'\n');
+s=s.replace("import { revalidatePath }", "import { z } from 'zod';\nimport { revalidatePath }");
+s=s.replace("    return [];", "    throw new Error('Không tải được báo cáo video: ' + error.message);");
+s=s.replace("  return (data || []).map", "  return (data || []).filter((item: any) => /video|reel/i.test(item.format || '') || item.platform_contents?.performance_logs?.length).map");
+s=s.replace('  const payload: any = {', `  z.object({title:z.string().trim().min(1).max(500),actual_publish_date:z.string().date().optional(),asset_link:z.union([z.literal(''),z.string().url().refine(v=>/^https?:\\/\\//i.test(v))]).optional()}).parse(formData);
+  const payload: any = {`);
+s=s.replace(/    const \{ data: existing \} = await supabase[\s\S]*?    const \{ data, error \} = await supabase/, '    const { data, error } = await supabase');
+s=s.replaceAll(".select('platform_contents')", ".select('platform_contents, updated_at')");
+s=s.replace("  let verifierName = logData.verified_by_name;", `  z.string().uuid().parse(videoId);
+  z.string().trim().min(1).max(200).parse(logData.version_name);
+  for (const key of ['views','reach','likes','comments','shares','leads_generated','cost_spent'] as const) z.coerce.number().finite().nonnegative().parse(logData[key] || 0);
+  if (!isNew && !post.platform_contents?.performance_logs?.some((l: PerformanceLog) => l.id === logData.id)) return {success:false,error:'Phiên bản không tồn tại'};
+  let verifierName: string | undefined;
+`);
+s=s.replace("id: isNew ? 'log-' + Date.now() : logData.id", "id: isNew ? crypto.randomUUID() : logData.id");
+s=s.replace("verified_at: logData.verified_at || new Date().toISOString()", "verified_at: new Date().toISOString()");
+s=s.replaceAll("    .eq('id', videoId);", "    .eq('id', videoId)\n    .eq('updated_at', post.updated_at).select('id').single();");
+fs.writeFileSync(p,s);
