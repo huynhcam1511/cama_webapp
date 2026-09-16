@@ -31,7 +31,7 @@ import {
 
 import RecordPaymentDialog from "./record-payment-dialog";
 import CancelContractDialog from "./cancel-contract-dialog";
-import { PrintableContract } from "./printable-contract";
+import { ContractPrintModal } from "./contract-print-modal";
 import { Contract } from "./types";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -181,7 +181,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
   };
 
   return (
-    <div className={`space-y-3 sm:space-y-6 pt-2 ${selectedForPrint ? 'print:hidden' : ''}`}>
+    <div className="space-y-3 sm:space-y-6 pt-2">
       {/* Mobile Add Contract FAB */}
       {canCreate && (
         <button
@@ -751,31 +751,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
       {/* Print Contract Modal */}
       {selectedForPrint && (
-        <div className="fixed inset-0 z-[9999] flex flex-col bg-slate-900/50 backdrop-blur-sm print:bg-white print:backdrop-blur-none">
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-0 md:p-4 pb-24 print:p-0 print:overflow-visible">
-            <div className="bg-white mx-auto shadow-xl w-full max-w-[100vw] md:max-w-[210mm] min-h-screen md:min-h-[297mm] print:shadow-none print:w-auto print:max-w-none">
-              <PrintableContract
-                contract={selectedForPrint}
-                forceShow={true}
-              />
-            </div>
-          </div>
-          <div className="bg-white border-t border-slate-200 p-4 flex justify-end gap-3 print:hidden fixed bottom-0 left-0 right-0 z-[9999]">
-            <button
-              onClick={() => setSelectedForPrint(null)}
-              className="px-6 py-2.5 rounded-lg border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition-colors"
-            >
-              Đóng
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="px-6 py-2.5 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
-            >
-              <Printer className="w-4 h-4" />
-              In Hợp Đồng
-            </button>
-          </div>
-        </div>
+        <ContractPrintModal contract={selectedForPrint} onClose={() => setSelectedForPrint(null)} />
       )}
 
       {/* Contract Type Selection Modal */}

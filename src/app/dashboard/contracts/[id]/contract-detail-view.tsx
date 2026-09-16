@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import RecordPaymentDialog from "../record-payment-dialog";
 import CancelContractDialog from "../cancel-contract-dialog";
-import { PrintableContract } from "../printable-contract";
+import { ContractPrintModal } from "../contract-print-modal";
 import EditContractDialog from "../edit-contract-dialog";
 import {
   addContractDocument, addContractSchedule, toggleScheduleCompleted, addGarmentToContractByQR,
@@ -95,7 +95,7 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
   ];
 
   return (
-    <div className={`space-y-6 text-slate-900 pb-12 animate-in fade-in duration-200 ${isPrintOpen ? 'print:hidden' : ''}`}>
+    <div className="space-y-6 text-slate-900 pb-12 animate-in fade-in duration-200">
       {/* 1. Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center gap-3">
@@ -489,31 +489,7 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
       <RecordPaymentDialog isOpen={isPaymentOpen} onClose={() => setIsPaymentOpen(false)} contract={contract} onSaved={handleSaved} />
       <CancelContractDialog isOpen={isCancelOpen} onClose={() => setIsCancelOpen(false)} contract={contract} onSaved={handleSaved} />
       {isPrintOpen && (
-        <div className="fixed inset-0 z-[9999] flex flex-col bg-slate-900/50 backdrop-blur-sm print:bg-white print:backdrop-blur-none">
-          <div className="flex-1 overflow-auto p-0 md:p-4 pb-24 print:p-0 print:overflow-visible">
-            <div className="bg-white mx-auto shadow-xl w-full max-w-[210mm] min-h-[297mm] print:shadow-none print:w-auto print:max-w-none">
-              <PrintableContract
-                contract={contract}
-                forceShow={true}
-              />
-            </div>
-          </div>
-          <div className="bg-white border-t border-slate-200 p-4 flex justify-end gap-3 print:hidden fixed bottom-0 left-0 right-0 z-[9999]">
-            <button
-              onClick={() => setIsPrintOpen(false)}
-              className="px-6 py-2.5 rounded-lg border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition-colors"
-            >
-              Đóng
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="px-6 py-2.5 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
-            >
-              <Printer className="w-4 h-4" />
-              In Hợp Đồng
-            </button>
-          </div>
-        </div>
+        <ContractPrintModal contract={contract} onClose={() => setIsPrintOpen(false)} />
       )}
       {isScannerOpen && (
         <InventoryPickerModal 

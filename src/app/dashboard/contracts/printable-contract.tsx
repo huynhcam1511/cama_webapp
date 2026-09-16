@@ -435,19 +435,8 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               background: white !important;
               background-color: white !important;
             }
-            .contract-print-root::before {
-              content: "" !important;
-              display: block !important;
-              position: fixed !important;
-              inset: 0 !important;
-              width: 210mm !important;
-              height: 297mm !important;
-              background: white !important;
-              background-color: white !important;
-              z-index: 0 !important;
-              pointer-events: none !important;
-            }
             .contract-print-document {
+              display: block !important;
               position: relative !important;
               z-index: 1 !important;
               width: 210mm !important;

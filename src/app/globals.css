@@ -36,8 +36,28 @@
   }
 }
 @media print {
-  body > *:not(#cama-app-root) {
+  body > *:not(#cama-app-root):not(#contract-print-modal) {
     display: none !important;
+  }
+  body.contract-print-active > *:not(#contract-print-modal) {
+    display: none !important;
+  }
+  #contract-print-modal,
+  #contract-print-modal .contract-print-scroll,
+  #contract-print-modal .contract-print-paper {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    background: white !important;
   }
 }
 
