@@ -26,6 +26,7 @@ export default function CreateOrderClient({ users, contracts = [] }: Props) {
   const [contractId, setContractId] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [eventDate, setEventDate] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("");
   const [picId, setPicId] = useState("");
   const [notes, setNotes] = useState("");
   const [contractSearch, setContractSearch] = useState("");
@@ -66,6 +67,7 @@ export default function CreateOrderClient({ users, contracts = [] }: Props) {
         contract_id: source === "contract" ? contractId : null,
         service_type: serviceType.trim(),
         event_date: eventDate || null,
+        delivery_time: deliveryTime || null,
         pic_id: picId || null,
         notes: notes.trim(),
       });
@@ -137,10 +139,19 @@ export default function CreateOrderClient({ users, contracts = [] }: Props) {
             <input value={serviceType} onChange={(e) => setServiceType(e.target.value)} className={controlClass} placeholder="Ví dụ: Mượn váy chụp ngoại cảnh" maxLength={160} autoFocus />
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-3">
             <div>
               <FieldLabel>Ngày giao đồ</FieldLabel>
               <CustomDatePicker value={eventDate} onChange={setEventDate} className="[&_input]:h-10 [&_input]:rounded-lg [&_input]:border-slate-300 [&_input]:bg-white [&_input]:px-3 [&_input]:text-sm [&_button]:right-2 [&_button_svg]:h-4 [&_button_svg]:w-4" />
+            </div>
+            <div>
+              <FieldLabel>Giờ giao đồ</FieldLabel>
+              <input
+                type="time"
+                value={deliveryTime}
+                onChange={(e) => setDeliveryTime(e.target.value)}
+                className={controlClass}
+              />
             </div>
             <div>
               <FieldLabel>Người phụ trách</FieldLabel>

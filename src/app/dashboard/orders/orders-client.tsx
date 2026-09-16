@@ -480,9 +480,16 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                     {/* Khu vực 2: Body (Timeline & Details) */}
                     <div className="px-3.5 py-2.5 border-t border-slate-100 flex flex-col gap-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-[12.5px] font-bold text-slate-700 uppercase truncate">
-                          {order.service_type || 'Đơn lẻ'}
-                        </span>
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="text-[12.5px] font-bold text-slate-700 uppercase truncate">
+                            {order.service_type || 'Đơn lẻ'}
+                          </span>
+                          {order.delivery_time && (
+                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded shrink-0">
+                              🕒 {order.delivery_time}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11.5px] text-slate-500 flex items-center gap-1 shrink-0 ml-2">
                            <icons.User className="w-3.5 h-3.5 text-slate-400" />
                            <span className="font-medium truncate max-w-[100px]">{order.pic?.full_name || 'Chưa PIC'}</span>
@@ -583,6 +590,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                                   {isLateGiao && <icons.AlertTriangle className="w-3 h-3 inline -mt-0.5 mr-0.5" />}
                                   {isGiaoCompleted && <icons.Check className="w-3 h-3 inline -mt-0.5 mr-0.5" />}
                                   {format(giaoDate, "dd/MM")}
+                                  {order.delivery_time && <span className="ml-1 text-[10px] text-blue-600 font-bold">{order.delivery_time}</span>}
                                 </span>
                                 <span className="text-[9px] uppercase text-slate-400">Giao</span>
                               </div>

@@ -225,6 +225,11 @@ export default function OrderDetailMobile({
                   <span className="text-[15px] font-black text-indigo-900 leading-none">
                     {eventDetails?.pickup_date || currentOrder.event_date ? format(new Date(eventDetails?.pickup_date || currentOrder.event_date), "dd/MM") : '--/--'}
                   </span>
+                  {currentOrder.delivery_time && (
+                    <span className="text-[10px] font-bold text-blue-600 mt-0.5">
+                      🕒 {currentOrder.delivery_time}
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1 px-4 flex items-center justify-center">
                    <div className="h-[2px] bg-indigo-200/50 w-full relative rounded-full">

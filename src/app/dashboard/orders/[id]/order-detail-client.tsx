@@ -408,10 +408,34 @@ export default function OrderDetailClient({ order, users }: { order: Order, user
               {statusInfo.label}
             </span>
           </div>
-          <p className="text-slate-500 text-sm">
-            Khách hàng: <span className="font-semibold text-slate-700">{contract?.customer?.bride_name || 'Khách lẻ'}</span>
-            {currentOrder.operational_department && <span className="ml-2 rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">{currentOrder.operational_department === "VAY" ? "Phòng Váy" : currentOrder.operational_department === "SUOT" ? "Phòng Suốt" : "Phòng Vận hành"}</span>}
-          </p>
+          <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-slate-500 text-sm mt-1">
+            <span>
+              Khách hàng: <span className="font-semibold text-slate-700">{contract?.customer?.bride_name || 'Khách lẻ'}</span>
+            </span>
+            {currentOrder.service_type && (
+              <>
+                <span className="text-slate-300">•</span>
+                <span>Dịch vụ: <span className="font-semibold text-slate-700">{currentOrder.service_type}</span></span>
+              </>
+            )}
+            {currentOrder.event_date && (
+              <>
+                <span className="text-slate-300">•</span>
+                <span className="inline-flex items-center gap-1 font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md text-xs">
+                  <icons.Calendar className="w-3.5 h-3.5 text-slate-500" />
+                  Ngày giao: <b className="text-slate-900">{currentOrder.event_date}</b>
+                  {currentOrder.delivery_time && (
+                    <>
+                      <span className="text-slate-300 mx-0.5">|</span>
+                      <icons.Clock className="w-3.5 h-3.5 text-blue-600" />
+                      Giờ giao: <b className="text-blue-600">{currentOrder.delivery_time}</b>
+                    </>
+                  )}
+                </span>
+              </>
+            )}
+            {currentOrder.operational_department && <span className="ml-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">{currentOrder.operational_department === "VAY" ? "Phòng Váy" : currentOrder.operational_department === "SUOT" ? "Phòng Suốt" : "Phòng Vận hành"}</span>}
+          </div>
         </div>
       </div>
 

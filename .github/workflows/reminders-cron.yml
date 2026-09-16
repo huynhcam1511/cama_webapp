@@ -1,0 +1,17 @@
+name: CAMA CRM Automated Reminders Cron
+
+on:
+  schedule:
+    # Chạy tự động mỗi 15 phút 24/7 trên Cloud của GitHub
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Cho phép bấm nút "Run workflow" thủ công trên GitHub nếu muốn
+
+jobs:
+  run-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Reminders Endpoint
+        run: |
+          echo "Running CAMA Reminders Cron at $(date)..."
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" "https://cama-web--cama-webapp.asia-southeast1.hosted.app/api/cron/reminders")
+          echo "$RESPONSE"

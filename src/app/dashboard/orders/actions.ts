@@ -21,6 +21,7 @@ export interface Order {
   event_id: string | null;
   operational_department?: string | null;
   event_date: string;
+  delivery_time?: string | null;
   return_date: string;
   delivery_status: string;
   completion_status: OrderStatus;
@@ -200,6 +201,7 @@ export type CreateOrderInput = {
   contract_id?: string | null;
   service_type: string;
   event_date?: string | null;
+  delivery_time?: string | null;
   pic_id?: string | null;
   notes?: string;
 };
@@ -226,6 +228,7 @@ export async function createOrder(payload: CreateOrderInput) {
       contract_id: payload.contract_id ?? null,
       service_type: serviceType,
       event_date: payload.event_date || null,
+      delivery_time: payload.delivery_time || null,
       pic_id: payload.pic_id || null,
       notes: payload.notes?.trim().slice(0, 1000) || "",
       completion_status: 'PENDING'
@@ -236,6 +239,23 @@ export async function createOrder(payload: CreateOrderInput) {
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/orders");
   return data;
+}
+
+export async function updateOrderDeliverySchedule(orderId: string, eventDate: string | null, deliveryTime: string | null) {
+  await requirePermission("ORDERS", "update");
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      event_date: eventDate,
+      delivery_time: deliveryTime,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", orderId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/orders");
+  revalidatePath(`/dashboard/orders/${orderId}`);
+  return { success: true };
 }
 
 export async function getOrderById(orderId: string): Promise<Order | null> {
