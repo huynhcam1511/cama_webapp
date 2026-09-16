@@ -1,27 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { 
-  DollarSign, 
-  Wallet, 
-  AlertCircle, 
-  FileText, 
-  CalendarDays, 
-  ShoppingBag, 
-  Video, 
-  Loader2,
-  ChevronRight,
-  TrendingUp
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const formatMoney = (amount: number) => {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return new Intl.NumberFormat("vi-VN").format(amount) + " đ";
 };
 
 export default function SalesKpiCard() {
@@ -153,20 +137,10 @@ export default function SalesKpiCard() {
   return (
     <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
       {/* Header & Bộ lọc tháng */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-slate-900 sm:text-lg">
-              Tổng hợp số liệu kinh doanh & vận hành
-            </h2>
-            <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-              Toàn cửa hàng
-            </span>
-          </div>
-          <p className="mt-0.5 text-xs text-slate-500">
-            Số liệu thực tế theo tháng, không áp công thức KPI hay bóc tách combo.
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+        <h2 className="text-base font-bold text-slate-900 sm:text-lg">
+          Tổng hợp số liệu kinh doanh & vận hành
+        </h2>
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-slate-500">Xem tháng:</span>
@@ -189,142 +163,106 @@ export default function SalesKpiCard() {
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {/* 1. Tổng doanh thu hợp đồng */}
-          <Link
-            href="/dashboard/contracts"
-            className="group rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50/60 p-4 transition-all hover:border-emerald-300 hover:shadow-sm"
-          >
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Doanh thu hợp đồng</span>
-              <DollarSign className="h-4 w-4 text-emerald-600" />
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="text-xs font-medium text-slate-500">
+              Doanh thu hợp đồng
             </div>
-            <div className="mt-2 font-mono text-xl font-black text-slate-900">
+            <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
               {formatMoney(data.totalContractRevenue)}
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-              <span>Giá trị ký trong tháng</span>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-0.5 group-hover:text-emerald-600" />
+            <div className="mt-2 text-[11px] text-slate-500">
+              Giá trị ký trong tháng
             </div>
-          </Link>
+          </div>
 
           {/* 2. Tiền thực thu */}
-          <Link
-            href="/dashboard/contracts"
-            className="group rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50/60 p-4 transition-all hover:border-blue-300 hover:shadow-sm"
-          >
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Tiền thực thu</span>
-              <Wallet className="h-4 w-4 text-blue-600" />
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="text-xs font-medium text-slate-500">
+              Tiền thực thu
             </div>
-            <div className="mt-2 font-mono text-xl font-black text-blue-700">
+            <div className="mt-2 text-2xl font-bold tracking-tight text-blue-700">
               {formatMoney(data.totalCashCollected)}
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-              <span>Đã thanh toán thực tế</span>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-0.5 group-hover:text-blue-600" />
+            <div className="mt-2 text-[11px] text-slate-500">
+              Đã thanh toán thực tế
             </div>
-          </Link>
+          </div>
 
           {/* 3. Công nợ còn lại */}
-          <Link
-            href="/dashboard/contracts"
-            className="group rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50/60 p-4 transition-all hover:border-amber-300 hover:shadow-sm"
-          >
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Công nợ còn thiếu</span>
-              <AlertCircle className="h-4 w-4 text-amber-600" />
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="text-xs font-medium text-slate-500">
+              Công nợ còn thiếu
             </div>
-            <div className="mt-2 font-mono text-xl font-black text-amber-700">
+            <div className="mt-2 text-2xl font-bold tracking-tight text-amber-700">
               {formatMoney(data.totalRemainingDebt)}
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-              <span>Hợp đồng chưa thu đủ</span>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-0.5 group-hover:text-amber-600" />
+            <div className="mt-2 text-[11px] text-slate-500">
+              Hợp đồng chưa thu đủ
             </div>
-          </Link>
+          </div>
 
           {/* 4. Số hợp đồng mới */}
-          <Link
-            href="/dashboard/contracts"
-            className="group rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50/60 p-4 transition-all hover:border-slate-400 hover:shadow-sm"
-          >
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Hợp đồng mới</span>
-              <FileText className="h-4 w-4 text-slate-600" />
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="text-xs font-medium text-slate-500">
+              Hợp đồng mới
             </div>
-            <div className="mt-2 font-mono text-xl font-black text-slate-900">
+            <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
               {data.newContractsCount}{" "}
-              <span className="text-xs font-normal text-slate-500">hợp đồng</span>
+              <span className="text-sm font-normal text-slate-500">hợp đồng</span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-              <span>Ký mới trong tháng</span>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-0.5 group-hover:text-slate-900" />
+            <div className="mt-2 text-[11px] text-slate-500">
+              Ký mới trong tháng
             </div>
-          </Link>
+          </div>
 
           {/* 5. Cuộc hẹn khách */}
-          <Link
-            href="/dashboard/appointments"
-            className="group rounded-xl border border-slate-200 bg-white p-4 transition-all hover:border-purple-300 hover:shadow-sm"
-          >
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Lịch hẹn khách</span>
-              <CalendarDays className="h-4 w-4 text-purple-600" />
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="text-xs font-medium text-slate-500">
+              Lịch hẹn khách
             </div>
-            <div className="mt-2 font-mono text-xl font-bold text-slate-900">
+            <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
               {data.appointmentsCount}{" "}
-              <span className="text-xs font-normal text-slate-500">lịch</span>
+              <span className="text-sm font-normal text-slate-500">lịch</span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-              <span>Cuộc hẹn tư vấn / thử đồ</span>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-0.5 group-hover:text-purple-600" />
+            <div className="mt-2 text-[11px] text-slate-500">
+              Cuộc hẹn tư vấn / thử đồ
             </div>
-          </Link>
+          </div>
 
           {/* 6. Đơn hàng vận hành */}
-          <Link
-            href="/dashboard/orders"
-            className="group rounded-xl border border-slate-200 bg-white p-4 transition-all hover:border-indigo-300 hover:shadow-sm"
-          >
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Đơn hàng vận hành</span>
-              <ShoppingBag className="h-4 w-4 text-indigo-600" />
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="text-xs font-medium text-slate-500">
+              Đơn hàng vận hành
             </div>
-            <div className="mt-2 font-mono text-xl font-bold text-slate-900">
+            <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
               {data.ordersCount}{" "}
-              <span className="text-xs font-normal text-slate-500">đơn</span>
+              <span className="text-sm font-normal text-slate-500">đơn</span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-              <span>Đã hoàn tất: {data.completedOrdersCount} đơn</span>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-0.5 group-hover:text-indigo-600" />
+            <div className="mt-2 text-[11px] text-slate-500">
+              Đã hoàn tất: {data.completedOrdersCount} đơn
             </div>
-          </Link>
+          </div>
 
           {/* 7. Báo cáo Video Marketing */}
-          <Link
-            href="/dashboard/marketing/video-reports"
-            className="group rounded-xl border border-slate-200 bg-white p-4 transition-all hover:border-rose-300 hover:shadow-sm"
-          >
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Video Marketing</span>
-              <Video className="h-4 w-4 text-rose-600" />
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="text-xs font-medium text-slate-500">
+              Video Marketing
             </div>
-            <div className="mt-2 font-mono text-xl font-bold text-slate-900">
+            <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
               {data.videosCount}{" "}
-              <span className="text-xs font-normal text-slate-500">video</span>
+              <span className="text-sm font-normal text-slate-500">video</span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-              <span>Video sản xuất trong tháng</span>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-0.5 group-hover:text-rose-600" />
+            <div className="mt-2 text-[11px] text-slate-500">
+              Video sản xuất trong tháng
             </div>
-          </Link>
+          </div>
 
           {/* 8. Tỷ lệ hoàn thành thanh toán */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Thu tiền / Hợp đồng</span>
-              <TrendingUp className="h-4 w-4 text-emerald-600" />
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="text-xs font-medium text-slate-500">
+              Thu tiền / Hợp đồng
             </div>
-            <div className="mt-2 font-mono text-xl font-bold text-slate-900">
+            <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
               {data.totalContractRevenue > 0
                 ? Math.round((data.totalCashCollected / data.totalContractRevenue) * 100)
                 : 0}
