@@ -205,6 +205,18 @@ export default function CustomerJourneyDetailClient({ initialContract, staffs = 
   });
 
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const dirtyRef = useRef(false);
+  useEffect(() => {
+    const unload = (event: BeforeUnloadEvent) => { if (dirtyRef.current) { event.preventDefault(); event.returnValue = ''; } };
+    const navigate = (event: MouseEvent) => {
+      const anchor = (event.target as HTMLElement).closest('a[href]');
+      if (anchor && dirtyRef.current && !window.confirm('Thay đổi chưa được lưu. Bạn vẫn muốn rời trang?')) { event.preventDefault(); event.stopPropagation(); }
+    };
+    window.addEventListener('beforeunload', unload);
+    document.addEventListener('click', navigate, true);
+    return () => { window.removeEventListener('beforeunload', unload); document.removeEventListener('click', navigate, true); };
+  }, []);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const saveVersionRef = useRef(0);
   const [addingToStage, setAddingToStage] = useState<string | null>(null);
@@ -214,6 +226,8 @@ export default function CustomerJourneyDetailClient({ initialContract, staffs = 
 
   const saveToDB = (newData: any, newNotes: string = notes) => {
     const version = ++saveVersionRef.current;
+    dirtyRef.current = true;
+    setSaveError("");
     setSaving(true);
     const notesToSave = JSON.stringify({ userNotes: newNotes });
     // Serialize writes so a slower, older response can never overwrite a newer edit.
@@ -224,9 +238,11 @@ export default function CustomerJourneyDetailClient({ initialContract, staffs = 
         if (!result?.success) {
           throw new Error(result?.error || "Không thể tự động lưu hành trình");
         }
+        if (saveVersionRef.current === version) { dirtyRef.current = false; setSaveError(""); }
       })
       .catch((error) => {
         console.error("Journey auto-save failed:", error);
+        if (saveVersionRef.current === version) setSaveError("Chưa lưu được thay đổi. Vui lòng thử lại.");
       })
       .finally(() => {
         if (saveVersionRef.current === version) setSaving(false);
@@ -375,7 +391,7 @@ export default function CustomerJourneyDetailClient({ initialContract, staffs = 
       {/* HEADER: Desktop (hidden md:flex) & Mobile Summary */}
       <div className="bg-white border-b border-slate-200 px-4 md:px-8 py-3 md:py-6 md:sticky md:top-0 z-40 md:shadow-sm flex flex-col md:flex-row gap-2 md:gap-6 justify-between items-start">
         {/* Desktop Back Button (hidden on mobile) */}
-        <button onClick={() => router.push("/dashboard/customer-journey")} className="hidden md:flex p-2 h-fit hover:bg-slate-100 rounded-lg text-slate-500 mt-1 transition-colors">
+        <button onClick={() => { if (!dirtyRef.current || window.confirm("Thay đổi chưa được lưu. Bạn vẫn muốn rời trang?")) router.push("/dashboard/customer-journey"); }} className="hidden md:flex p-2 h-fit hover:bg-slate-100 rounded-lg text-slate-500 mt-1 transition-colors">
           <icons.ArrowLeft className="w-5 h-5" />
         </button>
         
@@ -418,6 +434,7 @@ export default function CustomerJourneyDetailClient({ initialContract, staffs = 
            <div className="w-full bg-slate-100 rounded-full h-1 md:h-2.5 overflow-hidden border border-slate-200">
              <div className="bg-emerald-500 h-1 md:h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
            </div>
+           {!saving && <span role="status" className="text-xs mt-1 text-slate-600">{saveError || "Đã lưu tất cả thay đổi"}{saveError && <button className="ml-2 underline" onClick={() => saveToDB(journeyData, notes)}>Thử lại</button>}</span>}
            {saving && <span className="text-[10px] md:text-xs text-slate-400 font-medium flex items-center gap-1 mt-1 animate-pulse"><icons.RefreshCw className="w-3 h-3 animate-spin" /> Đang lưu...</span>}
         </div>
       </div>
@@ -443,8 +460,7 @@ export default function CustomerJourneyDetailClient({ initialContract, staffs = 
               className={`w-full bg-transparent border-none p-0 text-[12px] md:text-sm text-red-700 placeholder-red-300 focus:ring-0 outline-none resize-none md:resize-y min-h-[40px] md:min-h-[36px] ${!isNoteExpanded ? 'hidden md:block' : 'block'}`}
               placeholder="Nhập ghi chú quan trọng cần chú ý..."
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              onBlur={() => saveToDB(journeyData, notes)}
+              onChange={(e) => { setNotes(e.target.value); saveToDB(journeyData, e.target.value); }}
               onClick={(e) => e.stopPropagation()}
             />
           </div>

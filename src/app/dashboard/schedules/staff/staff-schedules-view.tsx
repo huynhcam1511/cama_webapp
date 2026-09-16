@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useOptimistic, useTransition, useMemo } from "react";
-import { StaffSchedule, createWeeklySchedules, ScheduleType, updateApprovalStatus } from "./actions";
+import { useState, useOptimistic, useTransition, useMemo, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import WeeklyRegistration from "./weekly-registration";
+import OffLimits from "./off-limits";
+import { StaffSchedule, getStaffSchedules, createWeeklySchedules, ScheduleType, updateApprovalStatus } from "./actions";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isToday } from "date-fns";
 import { CustomDatePicker } from "@/components/ui/date-picker";
 import { vi } from "date-fns/locale";
@@ -17,11 +21,14 @@ interface Props {
 }
 
 export default function StaffSchedulesView({ initialSchedules, permissions, departments, roles, users, activeUser }: Props) {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [loadedSchedules, setLoadedSchedules] = useState(initialSchedules);
   const [currentDate, setCurrentDate] = useState(new Date());
   
   // Optimistic UI for instant feedback
   const [optimisticSchedules, updateOptimisticSchedules] = useOptimistic(
-    initialSchedules,
+    loadedSchedules,
     (state: StaffSchedule[], update: { action: string, payload: any }) => {
       switch (update.action) {
         case "UPDATE_STATUS":
@@ -70,6 +77,14 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
   const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
+  useEffect(() => {
+    let active = true;
+    const start = startOfWeek(currentDate, {weekStartsOn:1}); const end = endOfWeek(currentDate, {weekStartsOn:1});
+    Promise.all([getStaffSchedules(start.getMonth()+1,start.getFullYear()),getStaffSchedules(end.getMonth()+1,end.getFullYear())]).then(results=>{
+      if(active) {setLoadedSchedules(Array.from(new Map(results.flat().map(row=>[row.id,row])).values()));setError('');}
+    }).catch(e=>{if(active){setLoadedSchedules([]);setError(e.message);}});
+    return ()=>{active=false;};
+  }, [currentDate, initialSchedules]);
   // Filtering users based on Department and Role
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
@@ -90,85 +105,24 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
     };
 
     try {
-      startTransition(() => {
-        updateOptimisticSchedules({
-          action: "CREATE",
-          payload: {
-            id: Math.random().toString(), // Temp ID
-            user_id: activeUser?.id, // Correct user_id mapping for UI
-            date: payload.date,
-            schedule_type: payload.schedule_type,
-            leave_reason: payload.leave_reason,
-            approval_status: "APPROVED",
-            is_urgent: false,
-          }
-        });
-      });
-
       await createWeeklySchedules([payload]);
+      router.refresh();
       setShowLeaveModal(false);
       setLeaveForm({ ...leaveForm, reason: "" });
     } catch (error: any) {
-      alert("Lỗi: " + error.message);
+      setError("Lỗi: " + error.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-
-  const submitOvertime = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    const payload = {
-      date: overtimeForm.date,
-      schedule_type: "WORKING" as ScheduleType,
-      leave_reason: overtimeForm.reason,
-      start_time: overtimeForm.start,
-      end_time: overtimeForm.end
-    };
-
-    try {
-      startTransition(() => {
-        updateOptimisticSchedules({
-          action: "CREATE",
-          payload: {
-            id: Math.random().toString(),
-            user_id: activeUser?.id,
-            date: payload.date,
-            schedule_type: payload.schedule_type,
-            leave_reason: payload.leave_reason,
-            start_time: payload.start_time,
-            end_time: payload.end_time,
-            approval_status: "PENDING",
-            is_urgent: false,
-            created_at: new Date().toISOString()
-          }
-        });
-      });
-
-      await createWeeklySchedules([payload]);
-      setShowOvertimeModal(false);
-      setOvertimeForm({ date: format(new Date(), "yyyy-MM-dd"), start: "08:30", end: "17:30", reason: "" });
-    } catch (error: any) {
-      alert("Lỗi: " + error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleApprove = async (id: string, status: "APPROVED" | "REJECTED") => {
-    startTransition(() => {
-      updateOptimisticSchedules({
-        action: "UPDATE_STATUS",
-        payload: { id, status }
-      });
-    });
-
     try {
       await updateApprovalStatus(id, status);
+      router.refresh();
     } catch (error: any) {
-      alert("Lỗi: " + error.message);
+      setError("Lỗi: " + error.message);
     }
   };
 
@@ -190,7 +144,7 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
 
   const translateType = (type: ScheduleType) => {
     const map: Record<string, string> = {
-      WORKING: "Đi làm", ANNUAL_LEAVE: "Phép năm", UNPAID_LEAVE: "Nghỉ ko lương",
+      WEEKLY_OFF: "OFF tuần", WORKING: "Đi làm", ANNUAL_LEAVE: "Phép năm", UNPAID_LEAVE: "Nghỉ ko lương",
       SICK_LEAVE: "Nghỉ ốm", UNEXCUSED_ABSENCE: "Nghỉ không phép", LATE: "Đi trễ", EARLY_LEAVE: "Về sớm", OTHER: "Khác"
     };
     return map[type] || type;
@@ -198,6 +152,10 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
 
   return (
     <div className="space-y-6">
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      <Link href="/dashboard/schedules/overtime" className="inline-block text-sm text-emerald-700 underline">Khai báo & duyệt OT</Link>
+      {permissions.can_create && <WeeklyRegistration />}
+      {permissions.can_update && <OffLimits departments={departments} />}
       {/* Filters & Actions */}
       <div className="flex items-center justify-between gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
         <button type="button" onClick={() => setFilterOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-100 transition-colors">
@@ -233,7 +191,7 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
                   <icons.Coffee className="w-4 h-4 text-rose-500" /> Khai báo nghỉ
                 </button>
                 <button 
-                  onClick={() => { setShowOvertimeModal(true); setActionMenuOpen(false); }}
+                  onClick={() => { router.push("/dashboard/schedules/overtime"); setActionMenuOpen(false); }}
                   className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2"
                 >
                   <icons.Briefcase className="w-4 h-4 text-blue-500" /> Khai báo làm thêm
@@ -408,6 +366,7 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Loại nghỉ</label>
                 <select value={leaveForm.type} onChange={e => setLeaveForm({...leaveForm, type: e.target.value as ScheduleType})} className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500" required>
+                  <option value="WEEKLY_OFF">OFF tuần</option>
                   <option value="ANNUAL_LEAVE">Nghỉ phép năm</option>
                   <option value="UNPAID_LEAVE">Nghỉ không lương</option>
                   <option value="SICK_LEAVE">Nghỉ ốm / Đột xuất</option>
@@ -431,48 +390,6 @@ export default function StaffSchedulesView({ initialSchedules, permissions, depa
         </div>
       )}
 
-      {/* Overtime Modal */}
-      {showOvertimeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-blue-50/50">
-              <h3 className="text-lg font-bold text-blue-800 flex items-center gap-2">
-                <icons.Briefcase className="w-5 h-5" /> Khai Báo Làm Thêm
-              </h3>
-              <button onClick={() => setShowOvertimeModal(false)} className="text-slate-400 hover:text-slate-600 bg-white p-1 rounded-md shadow-sm border border-slate-200">
-                <icons.X className="w-4 h-4" />
-              </button>
-            </div>
-            <form onSubmit={submitOvertime} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Ngày làm thêm</label>
-                <input type="date" value={overtimeForm.date} onChange={e => setOvertimeForm({...overtimeForm, date: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Giờ bắt đầu</label>
-                  <input type="time" value={overtimeForm.start} onChange={e => setOvertimeForm({...overtimeForm, start: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Giờ kết thúc</label>
-                  <input type="time" value={overtimeForm.end} onChange={e => setOvertimeForm({...overtimeForm, end: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nội dung / Ghi chú</label>
-                <textarea value={overtimeForm.reason} onChange={e => setOvertimeForm({...overtimeForm, reason: e.target.value})} className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" rows={3} placeholder="Ví dụ: Làm thêm dự án X, Trực showroom..." required />
-              </div>
-              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
-                <button type="button" onClick={() => setShowOvertimeModal(false)} className="px-5 py-2 font-semibold text-slate-600 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors">Hủy</button>
-                <button type="submit" disabled={isSubmitting} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all shadow-md shadow-blue-600/20 disabled:opacity-50 flex items-center gap-2">
-                  {isSubmitting && <icons.Loader2 className="w-4 h-4 animate-spin" />}
-                  {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
       {/* Filter Modal */}
       {filterOpen && (
         <div className="fixed inset-0 z-[110] bg-slate-950/50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setFilterOpen(false)}>

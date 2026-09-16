@@ -4,8 +4,17 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserPermissions, requireActiveUser, requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
-export type ScheduleType = "WORKING" | "ANNUAL_LEAVE" | "UNPAID_LEAVE" | "SICK_LEAVE" | "UNEXCUSED_ABSENCE" | "LATE" | "EARLY_LEAVE" | "OTHER";
+const scheduleInput = z.object({
+  date: z.string().date(),
+  schedule_type: z.enum(['WORKING', 'WEEKLY_OFF', 'ANNUAL_LEAVE', 'UNPAID_LEAVE', 'SICK_LEAVE', 'UNEXCUSED_ABSENCE', 'OTHER']),
+  start_time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+  end_time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+  leave_reason: z.string().trim().min(1).max(3000),
+}).refine(p => p.schedule_type !== 'WORKING' || (!!p.start_time && !!p.end_time && p.end_time > p.start_time), 'Ca làm phải có giờ kết thúc sau giờ bắt đầu');
+
+export type ScheduleType = "WORKING" | "WEEKLY_OFF" | "ANNUAL_LEAVE" | "UNPAID_LEAVE" | "SICK_LEAVE" | "UNEXCUSED_ABSENCE" | "LATE" | "EARLY_LEAVE" | "OTHER";
 export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED";
 export type ScheduleStatus = "SCHEDULED" | "ATTENDED" | "ABSENT" | "LATE" | "EARLY_LEAVE";
 
@@ -44,7 +53,7 @@ export async function getStaffSchedules(month: number, year: number) {
   // Ideally, the weekly view should just load all data for the requested week interval from the client.
   // For MVP, we'll keep the month bound and rely on the client to ask for it.
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-  const endDate = new Date(year, month, 0).toISOString().split("T")[0]; 
+  const endDate = `${year}-${String(month).padStart(2, "0")}-${new Date(year, month, 0).getDate()}`;
 
   const adminClient = createAdminClient();
   const query = adminClient
@@ -103,6 +112,8 @@ export async function createLeaveRequest(payload: {
 }
 
 export async function updateApprovalStatus(scheduleId: string, status: ApprovalStatus) {
+  z.string().uuid().parse(scheduleId);
+  z.enum(['APPROVED', 'REJECTED']).parse(status);
   const user = await requireActiveUser();
   await requirePermission("STAFF_SCHEDULE", "update"); // Or approve if we had it, but update is enough
 
@@ -110,7 +121,7 @@ export async function updateApprovalStatus(scheduleId: string, status: ApprovalS
   const { error } = await adminClient.from("staff_schedules").update({
     approval_status: status,
     approved_by: user.id
-  }).eq("id", scheduleId);
+  }).eq("id", scheduleId).eq("approval_status", "PENDING").select('id').single();
 
   if (error) throw new Error(error.message);
 
@@ -125,6 +136,8 @@ export async function createWeeklySchedules(payloads: Array<{
   end_time?: string;
   leave_reason: string;
 }>) {
+  const validated = z.array(scheduleInput).min(1).max(7).parse(payloads);
+  if (new Set(validated.map(p => p.date)).size !== validated.length) throw new Error('Mỗi ngày chỉ đăng ký một ca');
   const user = await requireActiveUser();
   await requirePermission("STAFF_SCHEDULE", "create");
 
@@ -132,7 +145,7 @@ export async function createWeeklySchedules(payloads: Array<{
   
   const { data: dbUser } = await adminClient.from("users").select("department_id").eq("id", user.id).single();
 
-  const insertData = payloads.map(p => ({
+  const insertData = validated.map(p => ({
     user_id: user.id,
     department_id: dbUser?.department_id,
     date: p.date,
@@ -140,7 +153,7 @@ export async function createWeeklySchedules(payloads: Array<{
     start_time: p.start_time || null,
     end_time: p.end_time || null,
     leave_reason: p.leave_reason,
-    approval_status: "APPROVED",
+    approval_status: "PENDING",
     status: "SCHEDULED"
   }));
 

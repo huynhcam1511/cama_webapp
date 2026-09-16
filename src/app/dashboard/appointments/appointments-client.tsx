@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import * as icons from "lucide-react";
-import { deleteBooking, saveBooking } from "../customers/actions";
+import { deleteBooking, saveBooking, updateBookingStatus, ensureCustomerForBooking } from "../customers/actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -17,6 +17,16 @@ export default function AppointmentsClient({ initialData, users }: { initialData
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [createError, setCreateError] = useState("");
+
+  // Edit Booking Modal State
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [editFormData, setEditFormData] = useState<any>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [quickArrivedLoadingId, setQuickArrivedLoadingId] = useState<string | null>(null);
+  const [navigatingCustomerId, setNavigatingCustomerId] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     customer_name: "",
     customer_phone: "",
@@ -70,6 +80,84 @@ export default function AppointmentsClient({ initialData, users }: { initialData
     }
   };
 
+  const handleQuickMarkArrived = async (b: Booking) => {
+    try {
+      setQuickArrivedLoadingId(b.id);
+      const res = await updateBookingStatus(b.id, "ĐÃ ĐẾN");
+      if (res.error) {
+        alert("Lỗi khi cập nhật trạng thái: " + res.error);
+      } else {
+        setBookings(prev => prev.map(item => item.id === b.id ? { ...item, status: "ĐÃ ĐẾN" } : item));
+        router.refresh();
+      }
+    } catch (err: any) {
+      alert("Lỗi: " + err.message);
+    } finally {
+      setQuickArrivedLoadingId(null);
+    }
+  };
+
+  const handleOpenEdit = (b: Booking) => {
+    setEditingBooking(b);
+    setEditFormData({
+      id: b.id,
+      customer_id: b.customer_id || "",
+      customer_name: b.customer_name || "",
+      customer_phone: b.customer_phone || "",
+      date: b.date ? (typeof b.date === 'string' && b.date.includes('T') ? b.date.split('T')[0] : b.date) : new Date().toISOString().split("T")[0],
+      start_time: b.start_time ? b.start_time.substring(0, 5) : "10:00",
+      source: b.source || "Facebook - Cama Haute Couture",
+      primary_assignee_id: b.primary_assignee_id || "",
+      service_group: b.service_group || "BRIDAL",
+      service_content: b.service_content || "",
+      status: b.status || "CHỜ XÁC NHẬN",
+      result: b.result || "CHƯA CẬP NHẬT",
+      wedding_date: b.wedding_date ? (typeof b.wedding_date === 'string' && b.wedding_date.includes('T') ? b.wedding_date.split('T')[0] : b.wedding_date) : "",
+      next_follow_up: b.next_follow_up || "",
+      notes_before: b.notes_before || "",
+      notes_after: b.notes_after || ""
+    });
+    setEditError("");
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFormData) return;
+    setEditSubmitting(true);
+    setEditError("");
+
+    const res = await saveBooking(editFormData);
+    setEditSubmitting(false);
+
+    if (res.error) {
+      setEditError(res.error);
+    } else {
+      if (res.data) {
+        setBookings(prev => prev.map(item => item.id === editFormData.id ? { ...item, ...res.data } : item));
+      }
+      setIsEditOpen(false);
+      setEditingBooking(null);
+      router.refresh();
+    }
+  };
+
+  const handleViewCustomer = async (b: Booking) => {
+    if (b.customer_id) {
+      router.push(`/dashboard/customers/${b.customer_id}/edit`);
+      return;
+    }
+    setNavigatingCustomerId(b.id);
+    const res = await ensureCustomerForBooking(b.id);
+    setNavigatingCustomerId(null);
+    if (res.success && res.customerId) {
+      setBookings(prev => prev.map(item => item.id === b.id ? { ...item, customer_id: res.customerId } : item));
+      router.push(`/dashboard/customers/${res.customerId}/edit`);
+    } else {
+      alert("Không tìm thấy hồ sơ khách hàng: " + (res.error || ""));
+    }
+  };
+
   const uniqueSources = Array.from(new Set(bookings.map(b => b.source).filter(Boolean)));
 
   const filteredBookings = bookings.filter((b) => {
@@ -95,12 +183,75 @@ export default function AppointmentsClient({ initialData, users }: { initialData
     setDeletingId(null);
   };
 
-  const getStatusColor = (status: string) => {
-    return 'text-slate-600 font-bold';
+  const getStatusBadge = (status: string) => {
+    const s = (status || "").toUpperCase();
+    if (s.includes("ĐÃ ĐẾN") || s === "ĐẾN SHOWROOM") {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <icons.CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+          ĐÃ ĐẾN
+        </span>
+      );
+    }
+    if (s.includes("ĐÃ XÁC NHẬN")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+          <icons.CalendarCheck className="w-3 h-3 text-blue-600 shrink-0" />
+          ĐÃ XÁC NHẬN
+        </span>
+      );
+    }
+    if (s.includes("CHỜ XÁC NHẬN")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+          <icons.Clock className="w-3 h-3 text-amber-600 shrink-0" />
+          CHỜ XÁC NHẬN
+        </span>
+      );
+    }
+    if (s.includes("KHÔNG ĐẾN") || s.includes("HỦY")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+          <icons.XCircle className="w-3 h-3 text-rose-600 shrink-0" />
+          {status}
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+        {status || "Chưa cập nhật"}
+      </span>
+    );
   };
 
-  const getResultColor = (result: string) => {
-    return 'text-slate-600 font-bold';
+  const getResultBadge = (result: string) => {
+    const r = (result || "").toUpperCase();
+    if (r.includes("CHỐT") || r.includes("WON")) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          CHỐT ĐƠN
+        </span>
+      );
+    }
+    if (r.includes("FAIL") || r.includes("LOST") || r.includes("HỦY")) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+          RỚT / FAIL
+        </span>
+      );
+    }
+    if (r.includes("SUY NGHĨ") || r.includes("CÂN NHẮC")) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+          SUY NGHĨ
+        </span>
+      );
+    }
+    return (
+      <span className="text-[11px] text-slate-600 font-medium">
+        {result || "—"}
+      </span>
+    );
   };
 
 
@@ -231,32 +382,61 @@ export default function AppointmentsClient({ initialData, users }: { initialData
                   </td>
                   <td className="px-3 py-4 text-[11px] max-w-[150px] truncate text-slate-600" title={b.service_content}>{b.service_content}</td>
                   <td className="px-3 py-4 whitespace-nowrap">
-                    <span className={`text-[11px] uppercase tracking-wider ${getStatusColor(b.status)}`}>
-                      {b.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(b.status)}
+                      {!b.status?.toUpperCase().includes("ĐÃ ĐẾN") && (
+                        <button
+                          type="button"
+                          onClick={() => handleQuickMarkArrived(b)}
+                          disabled={quickArrivedLoadingId === b.id}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs disabled:opacity-50 cursor-pointer shrink-0"
+                          title="Bấm để xác nhận khách đã đến showroom"
+                        >
+                          {quickArrivedLoadingId === b.id ? (
+                            <icons.Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <icons.Check className="w-3 h-3" />
+                          )}
+                          <span>Đã đến</span>
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-3 py-4 text-[11px] whitespace-nowrap uppercase tracking-wider">
-                    <span className={getResultColor(b.result)}>
-                      {b.result}
-                    </span>
+                    {getResultBadge(b.result)}
                   </td>
                   <td className="px-3 py-4 text-[11px] max-w-[120px] truncate font-medium text-slate-500" title={b.next_follow_up}>{b.next_follow_up || '—'}</td>
                   <td className="px-3 py-4 text-[11px] whitespace-nowrap text-slate-500">
                     {b.wedding_date ? new Date(b.wedding_date).toLocaleDateString('vi-VN') : '—'}
                   </td>
-                  <td className="px-3 py-4 text-right">
-                    <div className="flex items-center gap-1">
-                      <Link 
-                        href={`/dashboard/customers/${b.customer_id}/edit`}
-                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Xem/Sửa khách hàng"
+                  <td className="px-3 py-4 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-1">
+                      <button 
+                        type="button"
+                        onClick={() => handleOpenEdit(b)}
+                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                        title="Chỉnh sửa lịch hẹn"
                       >
                         <icons.Edit className="w-4 h-4" />
-                      </Link>
+                      </button>
                       <button 
+                        type="button"
+                        onClick={() => handleViewCustomer(b)}
+                        disabled={navigatingCustomerId === b.id}
+                        className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors disabled:opacity-50 cursor-pointer"
+                        title="Xem hồ sơ khách hàng (CRM)"
+                      >
+                        {navigatingCustomerId === b.id ? (
+                          <icons.Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                        ) : (
+                          <icons.User className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button 
+                        type="button"
                         onClick={() => handleDelete(b.id)} 
                         disabled={deletingId === b.id}
-                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 cursor-pointer"
                         title="Xóa lịch hẹn"
                       >
                         <icons.Trash2 className="w-4 h-4" />
@@ -290,21 +470,38 @@ export default function AppointmentsClient({ initialData, users }: { initialData
                    
                     {/* Khu vực 2: Info */}
                     <div className="px-3.5 py-2.5 border-t border-slate-100 flex flex-col gap-2">
-                       <div className="flex justify-between items-center">
+                       <div className="flex justify-between items-center gap-2">
                          <div className="text-[12.5px] font-medium text-slate-700 truncate">
                            {b.service_content || 'Chưa chọn dịch vụ'}
                          </div>
-                         <span className={`px-2 py-1 rounded-md text-[10.5px] font-bold uppercase leading-none ${
-                             b.result?.toLowerCase() === 'chốt' || b.result?.toLowerCase() === 'won' ? 'bg-emerald-50 text-emerald-600' :
-                             b.result?.toLowerCase() === 'fail' || b.result?.toLowerCase() === 'lost' ? 'bg-red-50 text-red-600' :
-                             b.result ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'
-                         }`}>
-                           {b.status}
-                         </span>
+                         <div className="flex items-center gap-1.5 shrink-0">
+                           {getStatusBadge(b.status)}
+                           {!b.status?.toUpperCase().includes("ĐÃ ĐẾN") && (
+                             <button
+                               type="button"
+                               onClick={() => handleQuickMarkArrived(b)}
+                               disabled={quickArrivedLoadingId === b.id}
+                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                               title="Xác nhận khách đã đến"
+                             >
+                               {quickArrivedLoadingId === b.id ? (
+                                 <icons.Loader2 className="w-3 h-3 animate-spin" />
+                               ) : (
+                                 <icons.Check className="w-3 h-3" />
+                               )}
+                               <span>Đã đến</span>
+                             </button>
+                           )}
+                         </div>
                        </div>
-                       <div className="text-[11.5px] text-slate-500 flex items-center gap-1 shrink-0">
-                         <icons.User className="w-3.5 h-3.5 text-slate-400" />
-                         <span className="font-medium truncate max-w-[150px]">{b.users?.full_name || 'Chưa có PIC'}</span>
+                       <div className="flex justify-between items-center text-[11.5px] text-slate-500">
+                         <div className="flex items-center gap-1 shrink-0">
+                           <icons.User className="w-3.5 h-3.5 text-slate-400" />
+                           <span className="font-medium truncate max-w-[150px]">{b.users?.full_name || 'Chưa có PIC'}</span>
+                         </div>
+                         <div>
+                           {getResultBadge(b.result)}
+                         </div>
                        </div>
                     </div>
 
@@ -319,12 +516,36 @@ export default function AppointmentsClient({ initialData, users }: { initialData
                            <span className="font-mono text-slate-400 font-semibold">Không SĐT</span>
                          )}
                        </div>
-                       <div className="flex gap-2 shrink-0">
-                         <Link href={`/dashboard/customers/${b.customer_id}/edit`} className="w-9 h-9 flex items-center justify-center bg-white text-slate-600 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors">
-                           <icons.Edit className="w-4 h-4" />
-                         </Link>
-                         <button onClick={() => handleDelete(b.id)} disabled={deletingId === b.id} className="w-9 h-9 flex items-center justify-center bg-white text-red-600 rounded-lg shadow-sm border border-red-100 hover:bg-red-50 transition-colors">
-                           <icons.Trash2 className="w-4 h-4" />
+                       <div className="flex gap-1.5 shrink-0">
+                         <button 
+                           type="button"
+                           onClick={() => handleOpenEdit(b)} 
+                           className="w-8 h-8 flex items-center justify-center bg-white text-slate-600 rounded-lg shadow-xs border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                           title="Sửa lịch hẹn"
+                         >
+                           <icons.Edit className="w-3.5 h-3.5" />
+                         </button>
+                         <button 
+                           type="button"
+                           onClick={() => handleViewCustomer(b)} 
+                           disabled={navigatingCustomerId === b.id}
+                           className="w-8 h-8 flex items-center justify-center bg-white text-emerald-600 rounded-lg shadow-xs border border-emerald-200 hover:bg-emerald-50 transition-colors disabled:opacity-50 cursor-pointer"
+                           title="Hồ sơ khách CRM"
+                         >
+                           {navigatingCustomerId === b.id ? (
+                             <icons.Loader2 className="w-3.5 h-3.5 animate-spin" />
+                           ) : (
+                             <icons.User className="w-3.5 h-3.5" />
+                           )}
+                         </button>
+                         <button 
+                           type="button"
+                           onClick={() => handleDelete(b.id)} 
+                           disabled={deletingId === b.id} 
+                           className="w-8 h-8 flex items-center justify-center bg-white text-red-600 rounded-lg shadow-xs border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
+                           title="Xóa lịch hẹn"
+                         >
+                           <icons.Trash2 className="w-3.5 h-3.5" />
                          </button>
                        </div>
                     </div>
@@ -550,6 +771,287 @@ export default function AppointmentsClient({ initialData, users }: { initialData
                     </>
                   )}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Chỉnh Sửa Lịch Hẹn */}
+      {isEditOpen && editFormData && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-8">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                  <icons.CalendarClock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base">Chỉnh Sửa Lịch Hẹn</h3>
+                  <p className="text-xs text-slate-500">Khách hàng: <span className="font-semibold text-slate-700">{editFormData.customer_name}</span></p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setIsEditOpen(false); setEditingBooking(null); }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <icons.X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateBooking} className="p-6 space-y-4">
+              {/* Quick Arrival Banner inside modal */}
+              {!editFormData.status?.toUpperCase().includes("ĐÃ ĐẾN") ? (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <icons.Store className="w-4 h-4 text-emerald-600" />
+                    <span className="text-xs font-semibold text-emerald-900">Khách đã có mặt tại showroom?</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditFormData({ ...editFormData, status: "ĐÃ ĐẾN" })}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                  >
+                    <icons.Check className="w-3.5 h-3.5" />
+                    Xác nhận Đã Đến
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-emerald-800 text-xs font-medium">
+                    <icons.CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Trạng thái: <b>ĐÃ ĐẾN SHOWROOM</b></span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditFormData({ ...editFormData, status: "ĐÃ XÁC NHẬN" })}
+                    className="text-[11px] text-slate-500 hover:text-slate-700 underline cursor-pointer"
+                  >
+                    Đổi trạng thái khác
+                  </button>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Tên khách hàng / Cặp đôi <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.customer_name}
+                    onChange={(e) => setEditFormData({ ...editFormData, customer_name: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Số điện thoại <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={editFormData.customer_phone}
+                    onChange={(e) => setEditFormData({ ...editFormData, customer_phone: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Ngày hẹn <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={editFormData.date}
+                    onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Giờ hẹn <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={editFormData.start_time}
+                    onChange={(e) => setEditFormData({ ...editFormData, start_time: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Trạng thái lịch hẹn
+                  </label>
+                  <select
+                    value={editFormData.status}
+                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium"
+                  >
+                    <option value="CHỜ XÁC NHẬN">CHỜ XÁC NHẬN</option>
+                    <option value="ĐÃ XÁC NHẬN">ĐÃ XÁC NHẬN</option>
+                    <option value="ĐÃ ĐẾN">ĐÃ ĐẾN</option>
+                    <option value="KHÔNG ĐẾN">KHÔNG ĐẾN</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Kết quả sau hẹn
+                  </label>
+                  <select
+                    value={editFormData.result}
+                    onChange={(e) => setEditFormData({ ...editFormData, result: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium"
+                  >
+                    <option value="CHƯA CẬP NHẬT">CHƯA CẬP NHẬT</option>
+                    <option value="CHỐT">CHỐT (WON)</option>
+                    <option value="SUY NGHĨ">SUY NGHĨ / ĐANG THEO DÕI</option>
+                    <option value="FAIL">FAIL / KHÔNG PHÙ HỢP</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nhóm dịch vụ
+                  </label>
+                  <select
+                    value={editFormData.service_group}
+                    onChange={(e) => setEditFormData({ ...editFormData, service_group: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  >
+                    <option value="BRIDAL">BRIDAL</option>
+                    <option value="SUIT">SUIT</option>
+                    <option value="COMBO BRIDAL + SUIT">COMBO BRIDAL + SUIT</option>
+                    <option value="WEDDING STUDIO">WEDDING STUDIO</option>
+                    <option value="TSTT">TSTT</option>
+                    <option value="KHÁC">KHÁC</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Dịch vụ chi tiết / Nội dung
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.service_content}
+                    onChange={(e) => setEditFormData({ ...editFormData, service_content: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nguồn tiếp cận
+                  </label>
+                  <select
+                    value={editFormData.source}
+                    onChange={(e) => setEditFormData({ ...editFormData, source: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  >
+                    <option value="Facebook - Cama Haute Couture">Facebook - Cama Haute Couture</option>
+                    <option value="Facebook - Cama Suit">Facebook - Cama Suit</option>
+                    <option value="Zalo">Zalo</option>
+                    <option value="KHÁCH CŨ">KHÁCH CŨ</option>
+                    <option value="Hotline">Hotline</option>
+                    <option value="Khác">Khác</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nhân viên phụ trách (PIC)
+                  </label>
+                  <select
+                    value={editFormData.primary_assignee_id}
+                    onChange={(e) => setEditFormData({ ...editFormData, primary_assignee_id: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  >
+                    <option value="">-- Chọn nhân viên --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>{u.full_name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Follow-up tiếp theo
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: Gọi lại sau 2 ngày..."
+                    value={editFormData.next_follow_up}
+                    onChange={(e) => setEditFormData({ ...editFormData, next_follow_up: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Ngày cưới (nếu có)
+                  </label>
+                  <input
+                    type="date"
+                    value={editFormData.wedding_date}
+                    onChange={(e) => setEditFormData({ ...editFormData, wedding_date: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {editError && (
+                <div className="p-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg font-medium">
+                  {editError}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => handleViewCustomer(editFormData)}
+                  className="px-3 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <icons.ExternalLink className="w-3.5 h-3.5" />
+                  Mở hồ sơ khách hàng
+                </button>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setIsEditOpen(false); setEditingBooking(null); }}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editSubmitting}
+                    className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                  >
+                    {editSubmitting ? (
+                      <>
+                        <icons.Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang lưu...
+                      </>
+                    ) : (
+                      <>
+                        <icons.Save className="w-3.5 h-3.5" /> Lưu thay đổi
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

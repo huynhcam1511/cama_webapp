@@ -430,24 +430,31 @@ export async function recomputeKpiPeriod(periodId: string) {
             : valid.reduce((sum, d) => sum + Number(d.total_amount || 0), 0);
       }
     } else if (code === "CASH_COLLECTED") {
-      const { data, error } = await db
-        .from("contract_payments")
-        .select("amount, status")
+      const { data: installments, error: instError } = await db
+        .from("payment_installments")
+        .select("amount, status, payment_date")
         .gte("payment_date", `${starts_on}T00:00:00`)
         .lt("payment_date", `${ends_on}T23:59:59`);
-      if (!error && data) {
-        const valid = data.filter(
-          (d) => (d.status || "COMPLETED").toUpperCase() !== "CANCELLED",
+      if (!instError && installments && installments.length > 0) {
+        const valid = installments.filter(
+          (d) => ["PAID", "COMPLETED"].includes((d.status || "").toUpperCase()),
         );
         count = valid.length;
-        actual = valid.reduce(
-          (sum, d) =>
-            sum +
-            ((d.status || "COMPLETED").toUpperCase() === "REFUNDED"
-              ? -Number(d.amount || 0)
-              : Number(d.amount || 0)),
-          0,
-        );
+        actual = valid.reduce((sum, d) => sum + Number(d.amount || 0), 0);
+      } else {
+        const { data: contractsData } = await db
+          .from("contracts")
+          .select("paid_amount, status")
+          .gte("created_at", `${starts_on}T00:00:00`)
+          .lt("created_at", `${ends_on}T23:59:59`)
+          .is("deleted_at", null);
+        if (contractsData) {
+          const valid = contractsData.filter(
+            (d) => !["CANCELLED", "REFUNDED"].includes((d.status || "").toUpperCase()),
+          );
+          count = valid.length;
+          actual = valid.reduce((sum, d) => sum + Number(d.paid_amount || 0), 0);
+        }
       }
     } else if (code === "APPOINTMENTS") {
       const { data, error } = await db

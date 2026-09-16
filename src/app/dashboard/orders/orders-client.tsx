@@ -9,6 +9,7 @@ import { updateOrderStatus, updateOrderChecklist, createOrder, updateOrderPic } 
 import { format, differenceInDays } from "date-fns";
 import { vi } from "date-fns/locale";
 import { CustomDatePicker } from "@/components/ui/date-picker";
+import { orderDepartmentLabel } from "@/lib/order-departments";
 import QRScanner from "@/components/qr-scanner";
 
 interface Props {
@@ -43,6 +44,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [filterStatus, setFilterStatus] = useState<string>(initialStatus || "ACTIVE");
   const [filterTeam, setFilterTeam] = useState<string>("ALL");
+  const [filterDepartment, setFilterDepartment] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const router = useRouter();
@@ -68,6 +70,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
   };
 
   const filteredOrders = orders.filter(o => {
+    if (filterDepartment !== "ALL" && (o.operational_department === "VAN_HANH" ? "UNASSIGNED" : o.operational_department || "UNASSIGNED") !== filterDepartment) return false;
     // Nếu có tìm kiếm bằng Text, hệ thống bỏ qua bộ lọc để tìm kiếm toàn bộ kho dữ liệu
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -320,6 +323,18 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
 
         {/* List Container */}
         <div className="flex-1 md:overflow-y-auto">
+          <label className="flex items-center gap-3 py-3 text-sm">Phòng phụ trách
+          <select aria-label="Phòng phụ trách" className="border rounded-md p-2 bg-white" value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)}>
+            <option value="ALL">Tất cả</option><option value="VAY">Phòng Váy</option><option value="SUOT">Phòng Suit</option><option value="UNASSIGNED">Chưa phân phòng</option>
+          </select></label>
+          {filteredOrders.length === 0 && <p className="p-4 text-sm text-slate-500">Không tìm thấy đơn hàng nào.</p>}
+          {Array.from(new Set(filteredOrders.map(order => order.contract_id || order.id))).map(groupId => {
+            const contractOrders = filteredOrders.filter(order => (order.contract_id || order.id) === groupId);
+            return <details key={groupId} open className="mb-3 border rounded-lg bg-white">
+              <summary className="p-3 cursor-pointer font-semibold text-sm">{contractOrders[0].contract?.contract_code || 'Đơn lẻ'} · {contractOrders[0].contract?.customer?.bride_name || ''} · {contractOrders.length} đơn</summary>
+              {Array.from(new Set(contractOrders.map(order => order.event_id || order.service_type || order.id))).map(eventId => {
+                const filteredOrders = contractOrders.filter(order => (order.event_id || order.service_type || order.id) === eventId);
+                return <section key={eventId} className="p-2"><h3 className="px-2 py-2 text-sm text-slate-600">{filteredOrders[0].service_type || 'Chưa có sự kiện'}</h3>
           {/* Desktop Table View */}
           <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm min-w-full">
             <table className="w-full text-left text-sm border-collapse">
@@ -350,7 +365,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                       >
                         <td className="px-4 py-3 align-top pt-4">
                           <div className="font-mono font-bold text-slate-900 text-[13px]">{order.order_code}</div>
-                          {order.operational_department && <div className="mt-1 text-[10px] font-semibold text-emerald-700">{order.operational_department === "VAY" ? "Phòng Váy" : order.operational_department === "SUOT" ? "Phòng Suốt" : "Phòng Vận hành"}</div>}
+                          {order.operational_department && <div className="mt-1 text-[10px] font-semibold text-emerald-700">{orderDepartmentLabel(order.operational_department)}</div>}
                           {getLateWarning(order)}
                         </td>
                         <td className="px-4 py-3 align-top pt-4">
@@ -430,7 +445,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
           </div>
 
           {/* Mobile Card View */}
-          <div className="md:hidden flex flex-col gap-3 pb-24">
+          <div className="md:hidden flex flex-col gap-3">
             {filteredOrders.length === 0 ? (
               <div className="p-8 text-center text-slate-500 bg-white rounded-xl shadow-sm border border-slate-200">Không tìm thấy đơn hàng nào.</div>
             ) : (
@@ -473,7 +488,7 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
                            <span className="font-medium truncate max-w-[100px]">{order.pic?.full_name || 'Chưa PIC'}</span>
                         </div>
                       </div>
-                      {order.operational_department && <div className="w-fit rounded-md bg-emerald-50 px-2 py-1 text-[10.5px] font-bold text-emerald-700">{order.operational_department === "VAY" ? "Phòng Váy" : order.operational_department === "SUOT" ? "Phòng Suốt" : "Phòng Vận hành"}</div>}
+                      {order.operational_department && <div className="w-fit rounded-md bg-emerald-50 px-2 py-1 text-[10.5px] font-bold text-emerald-700">{orderDepartmentLabel(order.operational_department)}</div>}
                       
                       {/* Tầng 4: Realtime Timeline */}
                       <div className="pt-2 mt-1 border-t border-slate-100/50">
@@ -630,11 +645,14 @@ export default function OrdersClient({ initialOrders, users, contracts = [], tea
               })
             )}
           </div>
+                </section>;
+              })}
+            </details>;
+          })}
         </div>
       </div>
 
-
-        {/* Pick Scanner Modal */}
+      {/* Pick Scanner Modal */}
       {pickOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
            <div className="w-full max-w-sm overflow-hidden bg-white rounded-3xl shadow-2xl relative">

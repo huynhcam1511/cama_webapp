@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireActiveUser, requirePermission } from '@/lib/rbac';
+import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
 export interface PerformanceLog {
@@ -68,10 +69,10 @@ export async function getVideoReports() {
 
   if (error) {
     console.error('Error fetching video reports:', error);
-    return [];
+    throw new Error('Không tải được báo cáo video: ' + error.message);
   }
 
-  return (data || []).map((item: any) => {
+  return (data || []).filter((item: any) => /video|reel/i.test(item.format || '') || item.platform_contents?.performance_logs?.length).map((item: any) => {
     const logs: PerformanceLog[] = item.platform_contents?.performance_logs || [];
     const sortedLogs = [...logs].sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime());
     const latestLog = sortedLogs[0] || null;
@@ -129,6 +130,7 @@ export async function saveVideoReport(isNew: boolean, formData: any) {
 
   const supabase = createAdminClient();
 
+  z.object({title:z.string().trim().min(1).max(500),actual_publish_date:z.string().date().optional(),asset_link:z.union([z.literal(''),z.string().url().refine(v=>/^https?:\/\//i.test(v))]).optional()}).parse(formData);
   const payload: any = {
     title: formData.title,
     status: formData.status || 'PUBLISHED',
@@ -156,17 +158,6 @@ export async function saveVideoReport(isNew: boolean, formData: any) {
     revalidatePath('/dashboard/marketing/video-reports');
     return { success: true, data };
   } else {
-    const { data: existing } = await supabase
-      .from('marketing_contents')
-      .select('platform_contents')
-      .eq('id', formData.id)
-      .single();
-
-    payload.platform_contents = {
-      ...(existing?.platform_contents || {}),
-      ...(formData.platform_contents || {})
-    };
-
     const { data, error } = await supabase
       .from('marketing_contents')
       .update(payload)
@@ -192,7 +183,7 @@ export async function savePerformanceVersion(videoId: string, isNew: boolean, lo
 
   const { data: post, error: fetchErr } = await supabase
     .from('marketing_contents')
-    .select('platform_contents')
+    .select('platform_contents, updated_at')
     .eq('id', videoId)
     .single();
 
@@ -200,7 +191,12 @@ export async function savePerformanceVersion(videoId: string, isNew: boolean, lo
     return { success: false, error: 'Không tìm thấy video' };
   }
 
-  let verifierName = logData.verified_by_name;
+  z.string().uuid().parse(videoId);
+  z.string().trim().min(1).max(200).parse(logData.version_name);
+  for (const key of ['views','reach','likes','comments','shares','leads_generated','cost_spent'] as const) z.coerce.number().finite().nonnegative().parse(logData[key] || 0);
+  if (!isNew && !post.platform_contents?.performance_logs?.some((l: PerformanceLog) => l.id === logData.id)) return {success:false,error:'Phiên bản không tồn tại'};
+  let verifierName: string | undefined;
+
   if (!verifierName) {
     const { data: profile } = await supabase
       .from('users')
@@ -214,7 +210,7 @@ export async function savePerformanceVersion(videoId: string, isNew: boolean, lo
   let logs: PerformanceLog[] = platformContents.performance_logs || [];
 
   const logPayload: PerformanceLog = {
-    id: isNew ? 'log-' + Date.now() : logData.id,
+    id: isNew ? crypto.randomUUID() : logData.id,
     version_name: logData.version_name,
     logged_at: logData.logged_at || new Date().toISOString(),
     views: Number(logData.views) || 0,
@@ -226,7 +222,7 @@ export async function savePerformanceVersion(videoId: string, isNew: boolean, lo
     cost_spent: Number(logData.cost_spent) || 0,
     notes: logData.notes || '',
     verified_by_name: verifierName,
-    verified_at: logData.verified_at || new Date().toISOString()
+    verified_at: new Date().toISOString()
   };
 
   if (isNew) {
@@ -246,7 +242,8 @@ export async function savePerformanceVersion(videoId: string, isNew: boolean, lo
       platform_contents: updatedPlatformContents,
       updated_at: new Date().toISOString()
     })
-    .eq('id', videoId);
+    .eq('id', videoId)
+    .eq('updated_at', post.updated_at).select('id').single();
 
   if (updateErr) return { success: false, error: updateErr.message };
 
@@ -266,7 +263,7 @@ export async function deletePerformanceVersion(videoId: string, logId: string) {
 
   const { data: post, error: fetchErr } = await supabase
     .from('marketing_contents')
-    .select('platform_contents')
+    .select('platform_contents, updated_at')
     .eq('id', videoId)
     .single();
 
@@ -285,7 +282,8 @@ export async function deletePerformanceVersion(videoId: string, logId: string) {
       },
       updated_at: new Date().toISOString()
     })
-    .eq('id', videoId);
+    .eq('id', videoId)
+    .eq('updated_at', post.updated_at).select('id').single();
 
   if (updateErr) return { success: false, error: updateErr.message };
 

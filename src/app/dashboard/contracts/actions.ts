@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
+import { orderDepartment } from "@/lib/order-departments";
 import { generateSequentialCode } from "@/utils/code-generator";
 import {
   Contract,
@@ -2037,17 +2038,7 @@ export async function syncContractEventOrders(contractId: string) {
   const events = Array.isArray(meta.events) ? meta.events.filter((event: any) => event?.name) : [];
   const items = Array.isArray(meta.items) ? meta.items.filter((item: any) => item?.category || item?.detail || item?.item_name) : [];
 
-  const departmentFor = (category: string) => {
-    const value = String(category || "").toLocaleLowerCase("vi");
-    if (/vest|suit|suốt/.test(value)) return "SUOT";
-    if (/váy/.test(value)) return "VAY";
-    return "VAN_HANH";
-  };
-  const departmentName: Record<string, string> = {
-    VAY: "Phòng Váy",
-    SUOT: "Phòng Suốt",
-    VAN_HANH: "Phòng Vận hành",
-  };
+  const departmentFor = orderDepartment;
 
   const { data: existingData, error: existingError } = await supabase
     .from("orders")
@@ -2063,7 +2054,7 @@ export async function syncContractEventOrders(contractId: string) {
       const usageEvents = Array.isArray(item.usage_events) ? item.usage_events : [];
       return usageEvents.length === 0 || usageEvents.includes(event.name);
     });
-    const departments = Array.from(new Set((eventItems.length ? eventItems : [{ category: "" }]).map((item: any) => departmentFor(item.category))));
+    const departments = Array.from(new Set(eventItems.map((item: any) => departmentFor(item.category)).filter(Boolean)));
 
     for (const department of departments) {
       const scopedItems = eventItems.filter((item: any) => departmentFor(item.category) === department);

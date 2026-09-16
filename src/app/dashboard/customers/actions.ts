@@ -16,6 +16,71 @@ export async function saveBooking(booking: any) {
     payload.date = payload.date.split('T')[0];
   }
 
+  // Tự động liên kết hoặc tạo mới customer nếu chưa có customer_id
+  if (!payload.customer_id) {
+    let matchedCustomerId: string | null = null;
+    const cleanPhone = payload.customer_phone ? String(payload.customer_phone).replace(/\D/g, "") : "";
+
+    // 1. Tìm theo SĐT (nếu hợp lệ)
+    if (cleanPhone && cleanPhone.length >= 7) {
+      const { data: foundCust } = await supabase
+        .from("customers")
+        .select("id")
+        .or(`phone.eq.${payload.customer_phone},phone.eq.${cleanPhone}`)
+        .limit(1)
+        .maybeSingle();
+      if (foundCust) matchedCustomerId = foundCust.id;
+    }
+
+    // 2. Tìm theo tên nếu chưa thấy theo SĐT
+    if (!matchedCustomerId && payload.customer_name) {
+      const trimmedName = String(payload.customer_name).trim();
+      if (trimmedName) {
+        const { data: foundCust } = await supabase
+          .from("customers")
+          .select("id")
+          .ilike("bride_name", trimmedName)
+          .limit(1)
+          .maybeSingle();
+        if (foundCust) matchedCustomerId = foundCust.id;
+      }
+    }
+
+    // 3. Nếu vẫn chưa có và có tên/SĐT -> tự động tạo mới hồ sơ khách trong CRM
+    if (!matchedCustomerId && (payload.customer_name || payload.customer_phone)) {
+      try {
+        const customerCode = await generateSequentialCode(supabase, "customers", "customer_code", "CUST");
+        let initialLeadStatus = "APPOINTMENT";
+        if (payload.status?.toLowerCase().includes("đến")) initialLeadStatus = "VISITED";
+        else if (payload.status?.toLowerCase().includes("không")) initialLeadStatus = "LOST";
+        else if (payload.result?.toLowerCase().includes("chốt")) initialLeadStatus = "WON";
+
+        const { data: newCust } = await supabase
+          .from("customers")
+          .insert({
+            customer_code: customerCode,
+            bride_name: payload.customer_name || "Khách Hàng",
+            phone: payload.customer_phone || "0000000000",
+            source: payload.source || "Lịch hẹn",
+            wedding_date: payload.wedding_date || null,
+            lead_status: initialLeadStatus,
+          })
+          .select("id")
+          .single();
+
+        if (newCust) matchedCustomerId = newCust.id;
+      } catch (err) {
+        console.warn("Could not auto-create customer for booking:", err);
+      }
+    }
+
+    if (matchedCustomerId) {
+      payload.customer_id = matchedCustomerId;
+    }
+  }
+
+  let savedBooking: any = null;
+  let saveError: any = null;
 
   if (booking.id) {
     const { data, error } = await supabase
@@ -24,14 +89,161 @@ export async function saveBooking(booking: any) {
       .eq("id", booking.id)
       .select("*, users:primary_assignee_id(full_name)")
       .single();
-    return { data, error: error?.message };
+    savedBooking = data;
+    saveError = error?.message;
   } else {
     const { data, error } = await supabase
       .from("operation_schedules")
       .insert({ ...payload, schedule_category: "SALE_BOOKING", title: booking.customer_name || "Lịch hẹn khách hàng", event_type: booking.appointment_type || "CUSTOMER_APPOINTMENT", end_time: booking.start_time || "00:00:00" })
       .select("*, users:primary_assignee_id(full_name)")
       .single();
-    return { data, error: error?.message };
+    savedBooking = data;
+    saveError = error?.message;
+  }
+
+  // Đồng bộ trạng thái sang CRM cho khách hàng tương ứng
+  const targetCustId = savedBooking?.customer_id || payload.customer_id;
+  if (targetCustId && savedBooking) {
+    let newLeadStatus: string | null = null;
+    const statusLower = (savedBooking.status || "").toLowerCase();
+    const resultLower = (savedBooking.result || "").toLowerCase();
+
+    if (statusLower.includes("đến") && !statusLower.includes("không")) {
+      newLeadStatus = "VISITED";
+    } else if (statusLower.includes("không đến") || statusLower.includes("hủy")) {
+      newLeadStatus = "LOST";
+    }
+    if (resultLower.includes("chốt") || resultLower.includes("won")) {
+      newLeadStatus = "WON";
+    }
+
+    if (newLeadStatus) {
+      await supabase
+        .from("customers")
+        .update({ lead_status: newLeadStatus })
+        .eq("id", targetCustId);
+    }
+  }
+
+  return { data: savedBooking, error: saveError };
+}
+
+export async function updateBookingStatus(id: string, status: string, result?: string) {
+  await requirePermission("APPOINTMENTS", "update");
+  const supabase = createAdminClient();
+  const updatePayload: any = { status };
+  if (result !== undefined) {
+    updatePayload.result = result;
+  }
+
+  const { data: booking, error } = await supabase
+    .from("operation_schedules")
+    .update(updatePayload)
+    .eq("id", id)
+    .select("*, users:primary_assignee_id(full_name)")
+    .single();
+
+  if (booking) {
+    let customerId = booking.customer_id;
+    // Nếu booking chưa có customer_id, tự động bổ sung
+    if (!customerId) {
+      const ensured = await ensureCustomerForBooking(id);
+      customerId = ensured?.customerId || null;
+    }
+
+    if (customerId) {
+      let newLeadStatus: string | null = null;
+      const statusLower = status.toLowerCase();
+      const resultLower = (result || booking.result || "").toLowerCase();
+
+      if (statusLower.includes("đến") && !statusLower.includes("không")) {
+        newLeadStatus = "VISITED";
+      } else if (statusLower.includes("không đến") || statusLower.includes("hủy")) {
+        newLeadStatus = "LOST";
+      }
+      if (resultLower.includes("chốt") || resultLower.includes("won")) {
+        newLeadStatus = "WON";
+      }
+
+      if (newLeadStatus) {
+        await supabase
+          .from("customers")
+          .update({ lead_status: newLeadStatus })
+          .eq("id", customerId);
+      }
+    }
+  }
+
+  return { data: booking, error: error?.message };
+}
+
+export async function ensureCustomerForBooking(bookingId: string): Promise<{ success: boolean; customerId?: string; error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { data: booking, error: bErr } = await supabase
+      .from("operation_schedules")
+      .select("*")
+      .eq("id", bookingId)
+      .single();
+
+    if (bErr || !booking) {
+      return { success: false, error: "Không tìm thấy lịch hẹn" };
+    }
+
+    if (booking.customer_id) {
+      // Xác nhận customer_id thực sự tồn tại
+      const { data: exists } = await supabase.from("customers").select("id").eq("id", booking.customer_id).maybeSingle();
+      if (exists) return { success: true, customerId: booking.customer_id };
+    }
+
+    // Tìm kiếm khách theo SĐT hoặc tên
+    let matchedId: string | null = null;
+    const cleanPhone = booking.customer_phone ? String(booking.customer_phone).replace(/\D/g, "") : "";
+    if (cleanPhone && cleanPhone.length >= 7) {
+      const { data: found } = await supabase
+        .from("customers")
+        .select("id")
+        .or(`phone.eq.${booking.customer_phone},phone.eq.${cleanPhone}`)
+        .limit(1)
+        .maybeSingle();
+      if (found) matchedId = found.id;
+    }
+
+    if (!matchedId && booking.customer_name) {
+      const { data: found } = await supabase
+        .from("customers")
+        .select("id")
+        .ilike("bride_name", booking.customer_name.trim())
+        .limit(1)
+        .maybeSingle();
+      if (found) matchedId = found.id;
+    }
+
+    if (!matchedId) {
+      const code = await generateSequentialCode(supabase, "customers", "customer_code", "CUST");
+      const { data: created, error: cErr } = await supabase
+        .from("customers")
+        .insert({
+          customer_code: code,
+          bride_name: booking.customer_name || "Khách Hàng",
+          phone: booking.customer_phone || "0000000000",
+          source: booking.source || "Lịch hẹn",
+          wedding_date: booking.wedding_date || null,
+          lead_status: "APPOINTMENT",
+        })
+        .select("id")
+        .single();
+      if (created) matchedId = created.id;
+    }
+
+    if (matchedId) {
+      await supabase.from("operation_schedules").update({ customer_id: matchedId }).eq("id", bookingId);
+      return { success: true, customerId: matchedId };
+    }
+
+    return { success: false, error: "Không thể liên kết hồ sơ khách hàng" };
+  } catch (err: any) {
+    return { success: false, error: err.message };
   }
 }
 
