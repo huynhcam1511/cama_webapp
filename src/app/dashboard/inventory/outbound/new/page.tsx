@@ -185,17 +185,6 @@ export default function OutboundScannerPage() {
             </h2>
             <p className="text-slate-500 mt-1 text-sm">Quét mã vị trí kệ {'->'} Chọn sản phẩm {'->'} Xuất</p>
           </div>
-          
-          <div className="flex items-center gap-2">
-            {scannedLocation && (
-              <button onClick={resetScanner} className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl flex items-center gap-1.5 transition-colors text-xs md:text-sm">
-                <ArrowLeft size={16} /> <span>Đổi kệ</span>
-              </button>
-            )}
-            <button onClick={() => router.push('/dashboard/inventory/outbound')} className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full transition-colors">
-              <X className="w-6 h-6" />
-            </button>
-          </div>
         </div>
 
         <div className="p-4 md:p-8">
@@ -220,20 +209,30 @@ export default function OutboundScannerPage() {
             <div className="grid md:grid-cols-[1fr_350px] gap-6">
               <div className="space-y-4">
                 <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center justify-between">
-                  <div>
-                    <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">Vị trí đang thao tác</div>
-                    <div className="font-black text-indigo-900 flex items-center gap-2">
-                      <MapPin size={18} /> {[scannedLocation.floor, scannedLocation.shelf, scannedLocation.tier].filter(Boolean).join(" › ")}
+                  <div className="flex-1 min-w-0 pr-3">
+                    <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+                      <span>Vị trí đang thao tác</span>
+                    </div>
+                    <div className="font-black text-indigo-900 flex items-center gap-2 truncate">
+                      <MapPin size={18} className="shrink-0" /> <span className="truncate">{[scannedLocation.floor, scannedLocation.shelf, scannedLocation.tier].filter(Boolean).join(" › ")}</span>
                     </div>
                   </div>
-                  {(!scannedLocation.floor.toLowerCase().includes("kho ảo") && !scannedLocation.floor.toLowerCase().includes("kho-ao")) && (
+                  <div className="flex flex-col gap-2 shrink-0">
                     <button 
-                      onClick={() => { setScanMode("PRODUCT"); setScannerOpen(true); }}
-                      className="px-4 py-2 bg-white text-indigo-700 font-bold border border-indigo-200 rounded-lg shadow-sm flex items-center gap-2 shrink-0"
+                      onClick={resetScanner}
+                      className="px-3 py-1.5 bg-white text-indigo-600 font-bold border border-indigo-200 rounded-lg shadow-sm text-xs"
                     >
-                      <QrCode size={16} /> Quét đồ
+                      Đổi vị trí
                     </button>
-                  )}
+                    {(!scannedLocation.floor.toLowerCase().includes("kho ảo") && !scannedLocation.floor.toLowerCase().includes("kho-ao")) && (
+                      <button 
+                        onClick={() => { setScanMode("PRODUCT"); setScannerOpen(true); }}
+                        className="px-3 py-1.5 bg-indigo-600 text-white font-bold rounded-lg shadow-sm flex items-center gap-1.5 text-xs"
+                      >
+                        <QrCode size={14} /> Quét đồ
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {loadingProducts ? (
