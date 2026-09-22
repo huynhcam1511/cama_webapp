@@ -78,6 +78,11 @@ export default function UniversalScanner({
         }
       }
       
+      // Prevent QR loop when scanning "Kho Ảo" which might have no shelf
+      if (floor && floor.toLowerCase().includes("kho ảo") && !shelf) {
+        shelf = "NONE";
+      }
+      
       const location = { floor, shelf, tier };
       setScannerOpen(false);
       setScannedLocation(location);
