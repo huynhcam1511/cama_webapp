@@ -98,7 +98,6 @@ export async function uploadGarmentImage(formData: FormData) {
     }
   }
 
-  const extension = (file.name.split(".").pop() || "jpg").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
   const path = `${auth.user.id}/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.webp`;
   const originalBuffer = Buffer.from(await file.arrayBuffer());
   
