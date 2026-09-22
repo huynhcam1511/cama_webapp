@@ -158,7 +158,7 @@ export default function InventoryDeclarationPage() {
   const previewSku = `${normalizedFactoryCode || "MÃ-NSX"}-{SIZE}`;
 
   const compressImageForUpload = async (file: File) => {
-    if (!file.type.startsWith("image/") || file.size < 400 * 1024) return file;
+    if ((file.type !== "" && !file.type.startsWith("image/")) || file.size < 400 * 1024) return file;
     try {
       const bitmap = typeof createImageBitmap === "function" ? await createImageBitmap(file) : null;
       const image = bitmap || await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -179,10 +179,10 @@ export default function InventoryDeclarationPage() {
       context.imageSmoothingQuality = "high";
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       if (bitmap) bitmap.close();
-      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/webp", 0.82));
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/jpeg", 0.82));
       if (!blob || blob.size >= file.size) return file;
       const baseName = file.name.replace(/\.[^.]+$/, "") || "cama-image";
-      return new File([blob], `${baseName}.webp`, { type: "image/webp", lastModified: Date.now() });
+      return new File([blob], `${baseName}.jpg`, { type: "image/jpeg", lastModified: Date.now() });
     } catch {
       // HEIC and a few older mobile formats may not decode in-browser; keep the original.
       return file;

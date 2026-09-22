@@ -77,7 +77,11 @@ export async function uploadGarmentImage(formData: FormData) {
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { success: false, error: "Không nhận được file ảnh." };
-  if (!file.type.startsWith("image/")) return { success: false, error: "File được chọn không phải hình ảnh." };
+  
+  const extension = (file.name.split(".").pop() || "jpg").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  const isImageExtension = ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif"].includes(extension);
+  if (!file.type.startsWith("image/") && !isImageExtension && file.type !== "") return { success: false, error: "File được chọn không phải hình ảnh." };
+  
   if (file.size > 10 * 1024 * 1024) return { success: false, error: "Ảnh vượt quá giới hạn 10 MB." };
 
   const admin = createAdminClient();
