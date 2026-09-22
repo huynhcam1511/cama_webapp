@@ -48,13 +48,22 @@ export default function InboundHistoryPage() {
               Tra cứu mã suit và vị trí kho đã ghi nhận gần nhất.
             </p>
           </div>
-          <Link
-            href="/dashboard/inventory/catalog/new"
-            className="hidden sm:flex bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors items-center gap-2 shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            Nhập Sản Phẩm Mới
-          </Link>
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <Link
+              href="/dashboard/inventory/catalog/new?floor=Kho%20%E1%BA%A2o&shelf=NONE&step=product"
+              className="bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-600 transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Nhập Kho Ảo
+            </Link>
+            <Link
+              href="/dashboard/inventory/catalog/new"
+              className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Nhập Lên Kệ
+            </Link>
+          </div>
         </div>
 
         {/* Search */}
@@ -131,12 +140,22 @@ export default function InboundHistoryPage() {
       </div>
 
       {/* Mobile FAB for Add */}
-      <Link
-        href="/dashboard/inventory/catalog/new"
-        className="sm:hidden fixed bottom-[80px] right-4 w-12 h-12 bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-600/30 active:scale-95 transition-transform z-40"
-      >
-        <Plus className="w-6 h-6" />
-      </Link>
+      <div className="sm:hidden fixed bottom-[80px] right-4 flex flex-col gap-3 z-40">
+        <Link
+          href="/dashboard/inventory/catalog/new?floor=Kho%20%E1%BA%A2o&shelf=NONE&step=product"
+          className="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/30 active:scale-95 transition-transform"
+          title="Nhập Kho Ảo"
+        >
+          <Plus className="w-6 h-6" />
+        </Link>
+        <Link
+          href="/dashboard/inventory/catalog/new"
+          className="w-12 h-12 bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-600/30 active:scale-95 transition-transform"
+          title="Nhập Lên Kệ"
+        >
+          <Plus className="w-6 h-6" />
+        </Link>
+      </div>
     </div>
   );
 }

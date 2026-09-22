@@ -320,12 +320,12 @@ export default function InventoryDeclarationPage() {
             
             <button type="button" onClick={lockLocation} className="py-3 rounded-xl bg-indigo-600 text-white font-black mt-2">Xác nhận & bắt đầu nhập</button>
             <button type="button" onClick={() => { 
-              setForm(prev => ({...prev, location_floor: 'Kho Ảo', location_shelf: '', location_tier: ''})); 
+              setForm(prev => ({...prev, location_floor: 'Kho Ảo', location_shelf: 'NONE', location_tier: ''})); 
               // Wait for state update then lock
               setTimeout(() => {
-                window.localStorage.setItem("cama-inventory-work-location", JSON.stringify({ location_floor: 'Kho Ảo', location_shelf: '', location_tier: '' }));
+                window.localStorage.setItem("cama-inventory-work-location", JSON.stringify({ location_floor: 'Kho Ảo', location_shelf: 'NONE', location_tier: '' }));
                 setLocationLocked(true); 
-                router.push("/dashboard/inventory/catalog/new-v2?step=product");
+                router.push("/dashboard/inventory/catalog/new?step=product");
               }, 100);
             }} className="py-2.5 rounded-xl bg-slate-200 text-slate-600 font-bold mt-1 text-sm">Bỏ qua (Cho vào Kho Ảo)</button>
           </div>
