@@ -188,8 +188,8 @@ export default function OutboundScannerPage() {
           
           <div className="flex items-center gap-2">
             {scannedLocation && (
-              <button onClick={resetScanner} className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl flex items-center gap-2 transition-colors text-sm">
-                <ArrowLeft size={16} /> <span className="hidden sm:inline">Đổi Vị Trí</span>
+              <button onClick={resetScanner} className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl flex items-center gap-1.5 transition-colors text-xs md:text-sm">
+                <ArrowLeft size={16} /> <span>Đổi kệ</span>
               </button>
             )}
             <button onClick={() => router.push('/dashboard/inventory/outbound')} className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full transition-colors">
@@ -226,12 +226,14 @@ export default function OutboundScannerPage() {
                       <MapPin size={18} /> {[scannedLocation.floor, scannedLocation.shelf, scannedLocation.tier].filter(Boolean).join(" › ")}
                     </div>
                   </div>
-                  <button 
-                    onClick={() => { setScanMode("PRODUCT"); setScannerOpen(true); }}
-                    className="px-4 py-2 bg-white text-indigo-700 font-bold border border-indigo-200 rounded-lg shadow-sm flex items-center gap-2"
-                  >
-                    <QrCode size={16} /> Quét đồ
-                  </button>
+                  {(!scannedLocation.floor.toLowerCase().includes("kho ảo") && !scannedLocation.floor.toLowerCase().includes("kho-ao")) && (
+                    <button 
+                      onClick={() => { setScanMode("PRODUCT"); setScannerOpen(true); }}
+                      className="px-4 py-2 bg-white text-indigo-700 font-bold border border-indigo-200 rounded-lg shadow-sm flex items-center gap-2 shrink-0"
+                    >
+                      <QrCode size={16} /> Quét đồ
+                    </button>
+                  )}
                 </div>
 
                 {loadingProducts ? (
