@@ -230,6 +230,16 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
                   )}
                 </div>
               </div>
+
+              {/* Additional Gift Box (Khung Quà Tặng Bổ Sung) */}
+              <div className="mt-3 border border-slate-300 rounded p-2.5 text-[12px] font-sans bg-white min-h-[3.2rem]">
+                <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider mb-1">
+                  🎁 KHUNG QUÀ TẶNG BỔ SUNG:
+                </div>
+                <div className="text-slate-800 whitespace-pre-wrap leading-relaxed min-h-[1.5rem]">
+                  {field("qua_tang_bo_sung", "additional_gifts") || <span className="text-slate-400 italic font-normal"></span>}
+                </div>
+              </div>
             </div>
             
             {startPaymentsOnNewPage && (

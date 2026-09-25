@@ -16,6 +16,12 @@ export async function saveBooking(booking: any) {
     payload.date = payload.date.split('T')[0];
   }
 
+  // Chặn đổi trạng thái "ĐÃ ĐẾN" nếu ngày hẹn trong tương lai
+  const todayStr = new Date().toISOString().split("T")[0];
+  if (payload.status === "ĐÃ ĐẾN" && payload.date && payload.date > todayStr) {
+    return { data: null, error: "Chưa tới ngày hẹn. Không thể đánh dấu 'ĐÃ ĐẾN' cho ngày trong tương lai. Nếu khách đến sớm, vui lòng cập nhật ngày hẹn sang hôm nay." };
+  }
+
   // Tự động liên kết hoặc tạo mới customer nếu chưa có customer_id
   if (!payload.customer_id) {
     let matchedCustomerId: string | null = null;
@@ -131,6 +137,23 @@ export async function saveBooking(booking: any) {
 export async function updateBookingStatus(id: string, status: string, result?: string) {
   await requirePermission("APPOINTMENTS", "update");
   const supabase = createAdminClient();
+
+  if (status === "ĐÃ ĐẾN") {
+    const { data: existing } = await supabase
+      .from("operation_schedules")
+      .select("date")
+      .eq("id", id)
+      .single();
+
+    if (existing?.date) {
+      const bDate = existing.date.includes("T") ? existing.date.split("T")[0] : existing.date;
+      const todayStr = new Date().toISOString().split("T")[0];
+      if (bDate > todayStr) {
+        return { data: null, error: "Chưa tới ngày hẹn (" + bDate + "). Không thể đánh dấu 'ĐÃ ĐẾN'. Nếu khách đến sớm, vui lòng vào Chỉnh sửa để đổi ngày về hôm nay." };
+      }
+    }
+  }
+
   const updatePayload: any = { status };
   if (result !== undefined) {
     updatePayload.result = result;

@@ -142,6 +142,7 @@ const DEFAULT_GIFTS = "Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và 
   const [albumPages, setAlbumPages] = useState("");
   const [albumMaterial, setAlbumMaterial] = useState("");
   const [gifts, setGifts] = useState(isEditMode ? "" : DEFAULT_GIFTS);
+  const [additionalGifts, setAdditionalGifts] = useState("");
   const [dressDeliverDate, setDressDeliverDate] = useState("");
   const [dressReturnDate, setDressReturnDate] = useState("");
   
@@ -149,9 +150,9 @@ const DEFAULT_GIFTS = "Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và 
   const [paymentDueDate, setPaymentDueDate] = useState("");
   const [assignedStaffInput, setAssignedStaffInput] = useState("");
 
-  // 3. Bảng Dịch Vụ (Hợp nhất) - 8 dòng cố định
+  // 3. Bảng Dịch Vụ (Hợp nhất) - 15 dòng cố định
   const [services, setServices] = useState<ServiceRow[]>(
-    Array(10).fill(null).map((_, i) => i === 0 
+    Array(15).fill(null).map((_, i) => i === 0 
       ? { category: "Váy cưới", detail: "", quantity: 1, price: 0, notes: "", usage_events: [] }
       : { category: "", detail: "", quantity: 1, price: 0, notes: "", usage_events: [] }
     )
@@ -278,6 +279,7 @@ const DEFAULT_GIFTS = "Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và 
       setAlbumPages(parsedNotes.so_trang?.toString() || "");
       setAlbumMaterial(parsedNotes.chat_lieu || "");
       setGifts(parsedNotes.tang_kem || parsedNotes.qua_tang || "");
+      setAdditionalGifts(parsedNotes.qua_tang_bo_sung || parsedNotes.additional_gifts || "");
       setDressDeliverDate(parsedNotes.ngay_giao_vay || "");
       setDressReturnDate(parsedNotes.ngay_tra_vay || "");
       setPaymentDueDate(parsedNotes.han_thanh_toan || "");
@@ -356,7 +358,7 @@ const DEFAULT_GIFTS = "Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và 
           notes: item.notes || "",
           usage_events: item.usage_events || [],
                   }));
-        while (loadedServices.length < 10) {
+        while (loadedServices.length < 15) {
           loadedServices.push({ category: "", detail: "", quantity: 1, price: 0, notes: "", usage_events: [] });
         }
         setServices(loadedServices);
@@ -667,6 +669,7 @@ const DEFAULT_GIFTS = "Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và 
         so_trang: albumPages,
         chat_lieu: albumMaterial,
         tang_kem: gifts,
+        qua_tang_bo_sung: additionalGifts,
         ngay_giao_vay: dressDeliverDate,
         ngay_tra_vay: dressReturnDate,
         legacy_installments: finalInstallments,
@@ -918,6 +921,18 @@ const DEFAULT_GIFTS = "Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và 
                           <option value="Không có quà tặng kèm" />
                         </datalist>
                       </div>
+                      <div className="flex flex-col justify-end mt-1.5">
+                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                          🎁 Khung Quà Tặng Bổ Sung (Dịch Vụ Cưới Tổng)
+                        </label>
+                        <textarea
+                          rows={2}
+                          placeholder="Note quà tặng bổ sung đi kèm như Take care, áo dài,... (nếu có)"
+                          value={additionalGifts}
+                          onChange={(e) => setAdditionalGifts(e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 p-1.5 text-[11px] font-medium outline-none text-slate-700 resize-none"
+                        />
+                      </div>
                   </div>
                 </div>
 
@@ -943,7 +958,7 @@ const DEFAULT_GIFTS = "Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và 
                 <div className="pb-2 border-b border-slate-200 flex items-center justify-between mb-1">
                   <div>
                     <h3 className="text-[11px] font-bold tracking-widest text-slate-900 uppercase flex items-center gap-1.5">
-                      <Briefcase className="w-3.5 h-3.5 text-slate-700" /> 3. Dịch Vụ & Sản Phẩm (Tối đa 10)
+                      <Briefcase className="w-3.5 h-3.5 text-slate-700" /> 3. Dịch Vụ & Sản Phẩm (Tối đa 15)
                     </h3>
                   </div>
                 </div>

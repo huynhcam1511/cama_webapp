@@ -50,8 +50,21 @@ export default function AppointmentsClient({ initialData, users }: { initialData
     }
   }, []);
 
+  // Hàm hỗ trợ kiểm tra xem ngày hẹn có phải trong tương lai hay không (YYYY-MM-DD)
+  const isFutureDate = (dateStr: string) => {
+    if (!dateStr) return false;
+    const cleanDate = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+    const today = new Date().toISOString().split("T")[0];
+    return cleanDate > today;
+  };
+
   const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.status === "ĐÃ ĐẾN" && isFutureDate(formData.date)) {
+      setCreateError("Lịch hẹn chưa tới ngày. Không thể để trạng thái 'ĐÃ ĐẾN' cho ngày trong tương lai.");
+      return;
+    }
+
     setSubmitting(true);
     setCreateError("");
 
@@ -83,6 +96,11 @@ export default function AppointmentsClient({ initialData, users }: { initialData
   };
 
   const handleQuickMarkArrived = async (b: Booking) => {
+    if (isFutureDate(b.date)) {
+      alert("Chưa đến ngày hẹn (ngày hẹn: " + (b.date ? new Date(b.date).toLocaleDateString('vi-VN') : "") + ").\nNếu khách đến sớm, vui lòng vào Chỉnh sửa lịch hẹn để đổi ngày về hôm nay.");
+      return;
+    }
+
     try {
       setQuickArrivedLoadingId(b.id);
       const res = await updateBookingStatus(b.id, "ĐÃ ĐẾN");
@@ -126,6 +144,12 @@ export default function AppointmentsClient({ initialData, users }: { initialData
   const handleUpdateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editFormData) return;
+
+    if (editFormData.status === "ĐÃ ĐẾN" && isFutureDate(editFormData.date)) {
+      setEditError("Lịch hẹn chưa tới ngày (" + new Date(editFormData.date).toLocaleDateString('vi-VN') + "). Nếu khách đến sớm, vui lòng đổi 'Ngày hẹn' thành ngày hôm nay.");
+      return;
+    }
+
     setEditSubmitting(true);
     setEditError("");
 
@@ -543,9 +567,17 @@ export default function AppointmentsClient({ initialData, users }: { initialData
                         <button
                           type="button"
                           onClick={() => handleQuickMarkArrived(b)}
-                          disabled={quickArrivedLoadingId === b.id}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs disabled:opacity-50 cursor-pointer shrink-0"
-                          title="Bấm để xác nhận khách đã đến showroom"
+                          disabled={quickArrivedLoadingId === b.id || isFutureDate(b.date)}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-semibold transition-colors shadow-xs shrink-0 ${
+                            isFutureDate(b.date)
+                              ? "bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300"
+                              : "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                          }`}
+                          title={
+                            isFutureDate(b.date)
+                              ? "Chưa đến ngày hẹn. Nếu khách đến sớm, hãy bấm Chỉnh sửa để đổi ngày về hôm nay."
+                              : "Bấm để xác nhận khách đã đến showroom"
+                          }
                         >
                           {quickArrivedLoadingId === b.id ? (
                             <icons.Loader2 className="w-3 h-3 animate-spin" />
@@ -635,9 +667,17 @@ export default function AppointmentsClient({ initialData, users }: { initialData
                              <button
                                type="button"
                                onClick={() => handleQuickMarkArrived(b)}
-                               disabled={quickArrivedLoadingId === b.id}
-                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
-                               title="Xác nhận khách đã đến"
+                               disabled={quickArrivedLoadingId === b.id || isFutureDate(b.date)}
+                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-bold transition-colors shadow-xs ${
+                                 isFutureDate(b.date)
+                                   ? "bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300"
+                                   : "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                               }`}
+                               title={
+                                 isFutureDate(b.date)
+                                   ? "Chưa đến ngày hẹn. Nếu khách đến sớm, hãy bấm Chỉnh sửa để đổi ngày về hôm nay."
+                                   : "Xác nhận khách đã đến"
+                               }
                              >
                                {quickArrivedLoadingId === b.id ? (
                                  <icons.Loader2 className="w-3 h-3 animate-spin" />
@@ -958,15 +998,29 @@ export default function AppointmentsClient({ initialData, users }: { initialData
             <form onSubmit={handleUpdateBooking} className="p-6 space-y-4">
               {/* Quick Arrival Banner inside modal */}
               {!editFormData.status?.toUpperCase().includes("ĐÃ ĐẾN") ? (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <icons.Store className="w-4 h-4 text-emerald-600" />
-                    <span className="text-xs font-semibold text-emerald-900">Khách đã có mặt tại showroom?</span>
+                    <icons.Store className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div>
+                      <span className="text-xs font-semibold text-emerald-900 block">Khách đã có mặt tại showroom?</span>
+                      {isFutureDate(editFormData.date) && (
+                        <span className="text-[11px] text-amber-700 block">
+                          (Lịch hẹn chưa tới ngày. Bấm xác nhận sẽ tự động chuyển ngày hẹn về <b>Hôm nay</b>)
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setEditFormData({ ...editFormData, status: "ĐÃ ĐẾN" })}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                    onClick={() => {
+                      const today = new Date().toISOString().split("T")[0];
+                      setEditFormData({ 
+                        ...editFormData, 
+                        status: "ĐÃ ĐẾN",
+                        date: isFutureDate(editFormData.date) ? today : editFormData.date
+                      });
+                    }}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-xs cursor-pointer shrink-0"
                   >
                     <icons.Check className="w-3.5 h-3.5" />
                     Xác nhận Đã Đến
