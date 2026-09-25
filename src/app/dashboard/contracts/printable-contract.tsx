@@ -161,7 +161,7 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
 
               <div className="grid grid-cols-2 gap-x-12 gap-y-3 text-[13px] font-sans">
                 <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Quy cách Album:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.kho_album ? `${activeData.notesObj.kho_album} - ${activeData.notesObj.so_trang || "..."} trang (${activeData.notesObj.chat_lieu || "..."})` : (activeData?.kho_album ? `${activeData.kho_album} - ${activeData.so_trang || "..."} trang (${activeData.chat_lieu || "..."})` : "...")}</span></div>
-                <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Tặng kèm / Phụ kiện:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.tang_kem || activeData?.tang_kem || activeData?.notesObj?.qua_tang || "..."}</span></div>
+                <div className="flex justify-between items-baseline border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500 shrink-0 mr-2 whitespace-nowrap">Tặng kèm / Phụ kiện:</span> <span className="font-medium text-slate-900 text-right break-words">{activeData?.notesObj?.tang_kem || activeData?.tang_kem || activeData?.notesObj?.qua_tang || "..."}</span></div>
                 {(activeData?.notesObj?.ngay_chup || activeData?.ngay_chup || activeData?.notesObj?.ngay_giao || activeData?.ngay_giao || activeData?.notesObj?.dia_diem || activeData?.dia_diem) && (
                   <>
                     <div className="flex justify-between border-b border-slate-200 border-dotted pb-1"><span className="text-slate-500">Ngày chụp:</span> <span className="font-medium text-slate-900">{activeData?.notesObj?.ngay_chup || activeData?.ngay_chup ? new Date(activeData?.notesObj?.ngay_chup || activeData?.ngay_chup).toLocaleDateString("vi-VN") : "..."}</span></div>
@@ -200,9 +200,9 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
                   {printableServices.map((item: any, idx: number) => (
                     <tr key={idx} className="contract-product-row border-b border-slate-200 h-[2.8rem]">
                       <td className="py-1.5 px-1 text-slate-800 text-[11px] align-top border-r border-slate-200 overflow-hidden"><div className="line-clamp-2 break-words leading-[1.35]">{Array.isArray(item.usage_events) && item.usage_events.length > 0 ? item.usage_events.join(", ") : "-"}</div></td>
-                      <td className="py-1.5 px-1 text-slate-900 font-semibold align-top border-r border-slate-200 overflow-hidden"><div className="line-clamp-2 break-all leading-[1.35]">{item.category || item.item_name}</div></td>
-                      <td className="py-1.5 px-1 text-slate-800 text-[12px] align-top border-r border-slate-200 overflow-hidden"><div className="line-clamp-2 break-all leading-[1.35]">{item.detail || item.item_name?.replace(`${item.category || ""} - `, "") || item.item_name || "-"}</div></td>
-                      <td className="py-1.5 px-1 text-slate-700 text-[12px] italic align-top border-r border-slate-200 overflow-hidden"><div className="line-clamp-2 break-all leading-[1.35]">{item.notes || "-"}</div></td>
+                      <td className="py-1.5 px-1 text-slate-900 font-semibold align-top border-r border-slate-200 overflow-hidden"><div className="line-clamp-2 break-words leading-[1.35]">{item.category || item.item_name}</div></td>
+                      <td className="py-1.5 px-1 text-slate-800 text-[12px] align-top border-r border-slate-200 overflow-hidden"><div className="line-clamp-2 break-words leading-[1.35]">{item.detail || item.item_name?.replace(`${item.category || ""} - `, "") || item.item_name || "-"}</div></td>
+                      <td className="py-1.5 px-1 text-slate-700 text-[12px] italic align-top border-r border-slate-200 overflow-hidden"><div className="line-clamp-2 break-words leading-[1.35]">{item.notes || "-"}</div></td>
                       <td className="py-1.5 px-1 text-center text-slate-900 align-top font-medium border-r border-slate-200">{item.quantity}</td>
                       <td className="py-1.5 px-2 text-right text-slate-700 font-mono text-[13px] align-top border-r border-slate-200 whitespace-nowrap overflow-hidden">{(item.price || item.unit_price) > 0 ? formatCurrency(item.price || item.unit_price) : "-"}</td>
                       <td className="py-1.5 px-2 text-right font-semibold text-[13px] text-slate-900 font-mono align-top whitespace-nowrap overflow-hidden border-r border-slate-200">{formatCurrency((item.price || item.unit_price) * item.quantity)}</td>
@@ -460,7 +460,8 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
               background-color: white !important;
               -webkit-box-decoration-break: clone;
               box-decoration-break: clone;
-              overflow-wrap: anywhere !important;
+              overflow-wrap: break-word !important;
+              word-break: normal !important;
             }
             .contract-print-content {
               margin: 0 !important;
@@ -489,7 +490,7 @@ export const PrintableContract = forwardRef<HTMLDivElement, PrintableContractPro
             .contract-section table { break-inside: auto; page-break-inside: auto; }
             .contract-section table { table-layout: fixed; width: 100% !important; }
             .contract-section td,
-            .contract-section th { overflow-wrap: anywhere; word-break: break-word; }
+            .contract-section th { overflow-wrap: break-word; word-break: normal; }
             .contract-section thead { display: table-header-group; }
             .contract-section tr {
               break-inside: avoid;
