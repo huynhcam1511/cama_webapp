@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X, FileText, Plus, Trash2, Save, Loader2, DollarSign, User, Calendar, Briefcase, Settings2, Phone, Printer, Image as ImageIcon, UploadCloud, Clock, PackageSearch } from "lucide-react";
 import { createContract, updateContract, reserveContractInventory, ContractFormData, ServiceItem, InstallmentItem } from "../actions";
-import { createCustomer } from "../../customers/actions";
+import { createCustomer, updateCustomer } from "../../customers/actions";
 import { createClient } from "@/lib/supabase/client";
 import { PrintableContract } from "../printable-contract";
 import { ContractAuditDrawer } from "./contract-audit-drawer";
@@ -532,6 +532,23 @@ const DEFAULT_GIFTS = "Tặng kèm 1 ảnh lớn 60x90, 10 ảnh để bàn và 
         submitLockRef.current = false;
         setLoading(false);
         return;
+      }
+    } else {
+      const existingCustomer = customers.find((c: any) => c.id === finalCustomerId) || initialData?.customers;
+      const currentCleanPhone = (existingCustomer?.phone || "").replace(/\D/g, "");
+      const newCleanPhone = phoneInput.trim().replace(/\D/g, "");
+      const currentName = (existingCustomer?.bride_name || existingCustomer?.full_name || "").trim();
+      const newName = nameInput.trim();
+      if (newCleanPhone !== currentCleanPhone || newName !== currentName) {
+        try {
+          await updateCustomer(finalCustomerId, {
+            bride_name: newName,
+            phone: phoneInput.trim().slice(0, 20),
+            wedding_date: weddingDate || existingCustomer?.wedding_date || undefined,
+          });
+        } catch (updateCustErr: any) {
+          console.warn("Khong the tu dong cap nhat thong tin khach hang:", updateCustErr);
+        }
       }
     }
 
