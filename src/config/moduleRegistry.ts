@@ -38,6 +38,7 @@ export type ModuleCode =
   | "HR_DASHBOARD"
   | "MARKETING_DASHBOARD"
   | "VIDEO_PERFORMANCE_REPORT"
+  | "MARKETING_LOOKBOOK"
   | "ORG_CHART";
 
 export type ModuleGroup = "DASHBOARD" | "BUSINESS" | "OPERATIONS" | "INVENTORY_GROUP" | "HR" | "ADMIN" | "FINANCE" | "MARKETING";
@@ -528,6 +529,21 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "MARKETING",
     parentCode: null,
     sortOrder: 3,
+    showInSidebar: true,
+    showOnDashboard: true,
+    requiredAction: "view",
+    isActive: true
+  },
+
+  {
+    moduleCode: "MARKETING_LOOKBOOK",
+    label: "Lookbook & BST Váy Cưới",
+    shortLabel: "Lookbook & BST",
+    route: "/dashboard/marketing/lookbooks",
+    icon: "BookOpen",
+    group: "MARKETING",
+    parentCode: null,
+    sortOrder: 4,
     showInSidebar: true,
     showOnDashboard: true,
     requiredAction: "view",

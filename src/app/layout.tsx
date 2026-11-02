@@ -1,13 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Cinzel, Playfair_Display, Montserrat } from "next/font/google";
 import { AgentationToolbar } from "@/components/agentation-toolbar";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin", "vietnamese"] });
+const inter = Inter({ subsets: ["latin", "vietnamese"], variable: "--font-inter" });
+const cinzel = Cinzel({ subsets: ["latin"], variable: "--font-cinzel" });
+const playfair = Playfair_Display({ subsets: ["latin", "vietnamese"], variable: "--font-playfair" });
+const montserrat = Montserrat({ subsets: ["latin", "vietnamese"], variable: "--font-montserrat" });
 
 export const metadata: Metadata = {
-  title: "CAMA HAUTE COUTURE",
-  description: "CAMA Haute Couture Internal Management Portal",
+  title: "CAMA HAUTE COUTURE | Ultra Luxury Wedding",
+  description: "CAMA Haute Couture Wedding Atelier & Management Portal",
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -42,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className="dark">
+    <html lang="vi" className={`dark ${inter.variable} ${cinzel.variable} ${playfair.variable} ${montserrat.variable}`}>
       <body className={inter.className}>
         <div id="cama-app-root" className="flex min-h-screen w-full flex-col bg-background">
           {children}
