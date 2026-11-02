@@ -9,19 +9,37 @@ export default function DashboardHome() {
   const { hasPermission } = usePermissions();
 
   return (
-    <div className="relative space-y-6 px-4 py-4 sm:px-2 sm:py-2 md:p-0">
-      <nav aria-label="Thao tác nhanh" className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200">
+    <div className="relative space-y-6">
+      {/* KHỐI ACTION TRÊN CÙNG: FLAT CANVAS (KHÔNG CARD, KHÔNG BORDER THÔ) */}
+      <nav aria-label="Thao tác nhanh" className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-3 sm:divide-y-0 sm:divide-x border-b border-slate-200/80 pb-4 bg-transparent">
         {[
           { href: "/dashboard/contracts/create", label: "Tạo hợp đồng", hint: "Mở hồ sơ mới", icon: icons.FilePlus2 },
           { href: "/dashboard/orders/create", label: "Tạo đơn", hint: "Giao việc vận hành", icon: icons.ShoppingCart },
           { href: "/dashboard/attendance", label: "Chấm công", hint: "Ghi nhận ca làm", icon: icons.Fingerprint },
-        ].map((action) => {
+        ].map((action, idx) => {
           const Icon = action.icon;
           return (
-            <Link key={action.href} href={action.href} className="group flex min-h-[76px] min-w-0 flex-col items-center justify-center gap-2 bg-white px-2 py-3 text-center transition-colors hover:bg-emerald-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 sm:min-h-20 sm:flex-row sm:justify-start sm:gap-3 sm:px-5 sm:py-4 sm:text-left">
-              <Icon className="h-5 w-5 shrink-0 text-emerald-600" />
-              <span className="min-w-0"><span className="block text-xs font-semibold leading-tight text-slate-900 sm:text-sm">{action.label}</span><span className="mt-0.5 hidden text-xs text-slate-500 sm:block">{action.hint}</span></span>
-              <icons.ArrowRight className="ml-auto hidden h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-600 sm:block" />
+            <Link
+              key={action.href}
+              href={action.href}
+              className={`group flex items-center justify-between py-2 sm:py-0 transition-colors hover:text-slate-900 ${
+                idx === 0 ? "sm:pr-6" : idx === 1 ? "sm:px-6" : "sm:pl-6"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-colors group-hover:bg-slate-900 group-hover:text-white">
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-900 group-hover:text-black">
+                    {action.label}
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-normal">
+                    {action.hint}
+                  </div>
+                </div>
+              </div>
+              <icons.ArrowRight className="h-3.5 w-3.5 text-slate-300 transition-transform group-hover:translate-x-1 group-hover:text-slate-800" />
             </Link>
           );
         })}
