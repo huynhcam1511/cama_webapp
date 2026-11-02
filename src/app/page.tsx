@@ -104,7 +104,7 @@ export default function HomePage() {
 
   // Lấy danh mục động từ ERP Dashboard (nếu có cập nhật mới)
   useEffect(() => {
-    fetch('/api/marketing/lookbooks/public')
+    fetch('/api/marketing/lookbooks/public', { cache: 'no-store' })
       .then(res => res.json())
       .then(res => {
         if (res.success && Array.isArray(res.data) && res.data.length > 0) {
@@ -281,9 +281,18 @@ export default function HomePage() {
                   <source src={col.mediaUrl} type="video/mp4" />
                 </video>
               ) : (
-                <div
-                  className="absolute inset-0 w-full h-full bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
-                  style={{ backgroundImage: bgImage ? `url('${bgImage}')` : undefined }}
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={bgImage || "/hero.jpg"}
+                  alt={col.title}
+                  loading={idx < 2 ? "eager" : "lazy"}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (target.src !== `${window.location.origin}/hero.jpg`) {
+                      target.src = "/hero.jpg";
+                    }
+                  }}
                 />
               )}
 
