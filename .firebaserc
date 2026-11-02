@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "cama-webapp"
-  }
+  },
+  "targets": {
+    "cama-webapp": {
+      "hosting": {
+        "cama": [
+          "cama"
+        ],
+        "cama-webapp": [
+          "cama-webapp"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

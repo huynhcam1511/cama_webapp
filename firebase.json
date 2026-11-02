@@ -9,5 +9,27 @@
       "firebase-debug.*.log",
       "functions"
     ]
-  }
+  },
+  "hosting": [
+    {
+      "target": "cama",
+      "public": "public_dummy",
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "target": "cama-webapp",
+      "public": "public_dummy",
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    }
+  ]
 }
