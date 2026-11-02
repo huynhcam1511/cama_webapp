@@ -280,120 +280,89 @@ export default function LookbooksPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50/70 p-4 md:p-8 flex flex-col gap-6 text-slate-800">
-      {/* HEADER SECTION - Full Bleed Flat Clean */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-rose-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">Quản Trị Lookbook & BST Váy Cưới</h1>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200">
-                  <Sparkles className="w-3 h-3" /> Haute Couture
-                </span>
-              </div>
-              <p className="text-sm text-slate-500 mt-0.5">
-                Quản lý các tài liệu số hóa, catalogue điện tử và highlight video phục vụ tư vấn cô dâu.
-              </p>
-            </div>
+    <div className="flex flex-col text-slate-800 -mt-2 sm:-mt-4 lg:-mt-6 -mx-0 sm:-mx-2 md:-mx-4 lg:-mx-6 bg-white min-h-[calc(100vh-65px)]">
+      {/* 1. TOP BAR - FULL BLEED FLAT CANVAS HEADER */}
+      <div className="h-14 border-b border-slate-200/90 px-6 sm:px-8 flex items-center justify-between bg-white shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shrink-0">
+            <BookOpen className="w-4 h-4" />
+          </div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-base font-bold tracking-tight text-slate-900">Quản Trị Lookbook & BST Váy</h1>
+            <span className="text-[11px] font-mono font-medium text-slate-400">/</span>
+            <span className="text-xs text-slate-500 font-medium">Haute Couture Bridal</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={loadData}
             title="Tải lại danh sách"
-            className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-sm"
+            className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-50 flex items-center justify-center transition-colors"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-slate-900' : ''}`} />
           </button>
           <button
             onClick={handleOpenCreateModal}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-semibold text-sm shadow-sm transition-all transform active:scale-95"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-black text-white font-medium text-xs transition-all active:scale-95"
           >
-            <Plus className="w-4 h-4" />
-            Thêm Bộ Sưu Tập Mới
+            <Plus className="w-3.5 h-3.5" />
+            Thêm BST Mới
           </button>
         </div>
       </div>
 
-      {/* FILTER & STATS BAR */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <Layers className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Tổng Bộ Sưu Tập</div>
-            <div className="text-xl font-bold text-slate-800">{lookbooks.length} BST</div>
-          </div>
+      {/* 2. STATS KPI BAR - FLAT BORDER SEPARATION (NO HEAVY CARDS/PILLS) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-slate-200/90 divide-x divide-slate-100 bg-slate-50/40 text-xs">
+        <div className="py-2.5 px-6 flex items-center gap-2.5">
+          <span className="text-slate-400 uppercase tracking-wider text-[10px] font-semibold">Tổng BST:</span>
+          <span className="font-bold font-mono text-slate-900 text-sm">{lookbooks.length}</span>
         </div>
-
-        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <FileCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Đang Xuất Bản</div>
-            <div className="text-xl font-bold text-emerald-700">{lookbooks.filter(x => x.is_active).length} Đang Hiện</div>
-          </div>
+        <div className="py-2.5 px-6 flex items-center gap-2.5">
+          <span className="text-slate-400 uppercase tracking-wider text-[10px] font-semibold">Đang Hiện:</span>
+          <span className="font-bold font-mono text-emerald-600 text-sm">{lookbooks.filter(x => x.is_active).length}</span>
         </div>
-
-        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-            <FileText className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Catalogue PDF</div>
-            <div className="text-xl font-bold text-slate-800">{lookbooks.filter(x => x.file_type === 'pdf').length} Tệp PDF</div>
-          </div>
+        <div className="py-2.5 px-6 flex items-center gap-2.5">
+          <span className="text-slate-400 uppercase tracking-wider text-[10px] font-semibold">Catalogue PDF:</span>
+          <span className="font-bold font-mono text-slate-800 text-sm">{lookbooks.filter(x => x.file_type === 'pdf').length}</span>
         </div>
-
-        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-            <Video className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Video Runway</div>
-            <div className="text-xl font-bold text-slate-800">{lookbooks.filter(x => x.file_type === 'video').length} Video MP4</div>
-          </div>
+        <div className="py-2.5 px-6 flex items-center gap-2.5">
+          <span className="text-slate-400 uppercase tracking-wider text-[10px] font-semibold">Video Runway:</span>
+          <span className="font-bold font-mono text-slate-800 text-sm">{lookbooks.filter(x => x.file_type === 'video').length}</span>
         </div>
       </div>
 
-      {/* SEARCH & CONTROLS */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+      {/* 3. TOOLBAR FILTER & SEARCH - FLAT BORDER-B */}
+      <div className="px-6 sm:px-8 py-2.5 border-b border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Tìm theo tên BST, phiên bản (v1, v2)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+            className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white transition-colors"
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-slate-400">Định dạng:</span>
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="text-[11px] text-slate-400 font-medium mr-1">Lọc:</span>
           <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50 text-xs">
             <button
               onClick={() => setFilterType('all')}
-              className={`px-3 py-1.5 rounded-md font-medium transition-colors ${filterType === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${filterType === 'all' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-500 hover:text-slate-900'}`}
             >
               Tất cả
             </button>
             <button
               onClick={() => setFilterType('pdf')}
-              className={`px-3 py-1.5 rounded-md font-medium transition-colors ${filterType === 'pdf' ? 'bg-white text-rose-600 font-semibold shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${filterType === 'pdf' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-500 hover:text-slate-900'}`}
             >
               PDF Lookbook
             </button>
             <button
               onClick={() => setFilterType('video')}
-              className={`px-3 py-1.5 rounded-md font-medium transition-colors ${filterType === 'video' ? 'bg-white text-indigo-600 font-semibold shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${filterType === 'video' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-500 hover:text-slate-900'}`}
             >
               Video MP4
             </button>
@@ -401,270 +370,253 @@ export default function LookbooksPage() {
         </div>
       </div>
 
-      {/* TABLE LIST - Full Bleed Flat Canvas Clean */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-sm">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                <th className="py-3.5 px-4 w-12 text-center">STT</th>
-                <th className="py-3.5 px-4 w-24">Ảnh Bìa</th>
-                <th className="py-3.5 px-4 min-w-[220px]">Tên BST & Giới Thiệu</th>
-                <th className="py-3.5 px-4 w-28 text-center">Phiên Bản</th>
-                <th className="py-3.5 px-4 min-w-[200px]">Tệp Đính Kèm Cloud</th>
-                <th className="py-3.5 px-4 w-28 text-center">Hiển Thị</th>
-                <th className="py-3.5 px-4 w-28 text-center">Thứ Tự</th>
-                <th className="py-3.5 px-4 w-28 text-right">Thao Tác</th>
+      {/* 4. MASTER TABLE - FULL BLEED FLAT CANVAS (NO ROUNDED CARD, NO SHADOWS) */}
+      <div className="flex-1 overflow-x-auto bg-white">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <th className="py-2.5 px-6 w-12 text-center">STT</th>
+              <th className="py-2.5 px-4 w-20">Ảnh Bìa</th>
+              <th className="py-2.5 px-6 min-w-[240px]">Tên BST & Giới Thiệu</th>
+              <th className="py-2.5 px-4 w-24 text-center">Phiên Bản</th>
+              <th className="py-2.5 px-6 min-w-[220px]">Tệp Đính Kèm Cloud</th>
+              <th className="py-2.5 px-4 w-28 text-center">Hiển Thị</th>
+              <th className="py-2.5 px-4 w-24 text-center">Thứ Tự</th>
+              <th className="py-2.5 px-6 w-24 text-right">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {loading ? (
+              <tr>
+                <td colSpan={8} className="py-16 text-center text-slate-400">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <RefreshCw className="w-5 h-5 animate-spin text-slate-600" />
+                    <span>Đang tải danh sách bộ sưu tập...</span>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr>
-                  <td colSpan={8} className="py-16 text-center text-slate-400">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
-                      <span>Đang tải dữ liệu bộ sưu tập...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredLookbooks.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-16 text-center text-slate-400">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <BookOpen className="w-8 h-8 text-slate-300" />
-                      <span className="text-base font-medium text-slate-600">Chưa có Bộ Sưu Tập nào phù hợp</span>
-                      <p className="text-xs text-slate-400">Nhấn &quot;Thêm Bộ Sưu Tập Mới&quot; để tải lên lookbook đầu tiên.</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredLookbooks.map((item, index) => {
-                  const isPdf = item.file_type === 'pdf';
-                  return (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-slate-50/60 transition-colors group"
-                    >
-                      {/* STT */}
-                      <td className="py-4 px-4 text-center font-mono text-xs font-semibold text-slate-400">
-                        {String(index + 1).padStart(2, '0')}
-                      </td>
+            ) : filteredLookbooks.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-16 text-center text-slate-400">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <BookOpen className="w-6 h-6 text-slate-300" />
+                    <span className="text-sm font-medium text-slate-600">Chưa có Bộ Sưu Tập nào</span>
+                    <p className="text-xs text-slate-400">Nhấn &quot;Thêm BST Mới&quot; để cấu hình catalogue đầu tiên.</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              filteredLookbooks.map((item, index) => {
+                const isPdf = item.file_type === 'pdf';
+                return (
+                  <tr
+                    key={item.id}
+                    className="hover:bg-slate-50/60 transition-colors group"
+                  >
+                    {/* STT */}
+                    <td className="py-3 px-6 text-center font-mono text-xs text-slate-400">
+                      {String(index + 1).padStart(2, '0')}
+                    </td>
 
-                      {/* Ảnh bìa */}
-                      <td className="py-4 px-4">
-                        <div
-                          onClick={() => item.cover_image_url && setPreviewModalUrl({ url: item.cover_image_url, type: 'image', title: item.title })}
-                          className="w-16 h-20 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shadow-xs relative cursor-pointer group/img"
-                        >
-                          {item.cover_image_url ? (
-                            <img
-                              src={item.cover_image_url}
-                              alt={item.title}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-105"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center text-[10px] text-slate-400">
-                              <BookOpen className="w-5 h-5 text-slate-300 mb-1" />
-                              <span>No cover</span>
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
-                            <Eye className="w-4 h-4" />
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Tên BST & Mô tả */}
-                      <td className="py-4 px-4">
-                        <div className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors text-base line-clamp-1">
-                          {item.title}
-                        </div>
-                        {item.description ? (
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2 max-w-md leading-relaxed">
-                            {item.description}
-                          </p>
+                    {/* Ảnh bìa */}
+                    <td className="py-3 px-4">
+                      <div
+                        onClick={() => item.cover_image_url && setPreviewModalUrl({ url: item.cover_image_url, type: 'image', title: item.title })}
+                        className="w-12 h-16 rounded border border-slate-200 overflow-hidden bg-slate-50 relative cursor-pointer group/img"
+                      >
+                        {item.cover_image_url ? (
+                          <img
+                            src={item.cover_image_url}
+                            alt={item.title}
+                            className="w-full h-full object-cover transition-transform duration-200 group-hover/img:scale-105"
+                          />
                         ) : (
-                          <span className="text-xs italic text-slate-400 mt-1 block">Chưa có phần giới thiệu</span>
+                          <div className="w-full h-full flex items-center justify-center text-[9px] text-slate-400">
+                            No img
+                          </div>
                         )}
-                        <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400 font-mono">
-                          <span>Cập nhật: {new Date(item.updated_at || item.created_at).toLocaleDateString('vi-VN')}</span>
-                          {item.total_views !== undefined && (
-                            <span className="inline-flex items-center gap-1 text-slate-500">
-                              <Eye className="w-3 h-3" /> {item.total_views} lượt xem
-                            </span>
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
+                          <Eye className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Tên BST & Mô tả */}
+                    <td className="py-3 px-6">
+                      <div className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors text-xs line-clamp-1">
+                        {item.title}
+                      </div>
+                      {item.description ? (
+                        <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1 max-w-lg leading-relaxed">
+                          {item.description}
+                        </p>
+                      ) : (
+                        <span className="text-[11px] italic text-slate-400 mt-0.5 block">Chưa có phần giới thiệu</span>
+                      )}
+                      <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400 font-mono">
+                        <span>Cập nhật: {new Date(item.updated_at || item.created_at).toLocaleDateString('vi-VN')}</span>
+                        {item.total_views !== undefined && (
+                          <span className="text-slate-500">
+                            • {item.total_views} lượt xem
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Phiên bản - Flat Text Monospace (Không pill) */}
+                    <td className="py-3 px-4 text-center font-mono text-xs font-semibold text-slate-700">
+                      {item.version || 'v1.0'}
+                    </td>
+
+                    {/* Tệp đính kèm Cloud */}
+                    <td className="py-3 px-6">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-600">
+                            [{item.file_type.toUpperCase()}]
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            {formatFileSize(item.file_size)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 max-w-xs">
+                          <span className="text-xs text-slate-700 font-medium truncate" title={item.file_name}>
+                            {item.file_name || 'document'}
+                          </span>
+                          {item.file_url && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewModalUrl({
+                                url: item.file_url,
+                                type: item.file_type,
+                                title: item.title
+                              })}
+                              className="text-slate-500 hover:text-slate-900 p-0.5 rounded transition-colors shrink-0"
+                              title="Xem tệp trực tuyến"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </button>
                           )}
                         </div>
-                      </td>
+                      </div>
+                    </td>
 
-                      {/* Phiên bản */}
-                      <td className="py-4 px-4 text-center">
-                        <span className="inline-block px-2.5 py-1 rounded-md text-xs font-bold font-mono bg-indigo-50 text-indigo-700 border border-indigo-200/60 shadow-xs">
-                          {item.version || 'v1.0'}
+                    {/* Hiển thị Hiện/Ẩn - Dot indicator thanh thoát (Không lạm pill) */}
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(item)}
+                        className="inline-flex items-center gap-1.5 text-xs hover:opacity-80 transition-opacity"
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                        <span className={`font-medium ${item.is_active ? 'text-emerald-700' : 'text-slate-400'}`}>
+                          {item.is_active ? 'Hiển thị' : 'Đang ẩn'}
                         </span>
-                      </td>
+                      </button>
+                    </td>
 
-                      {/* Tệp đính kèm Cloud */}
-                      <td className="py-4 px-4">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${isPdf ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-indigo-50 text-indigo-600 border border-indigo-200'}`}>
-                              {isPdf ? <FileText className="w-3 h-3" /> : <Video className="w-3 h-3" />}
-                              {item.file_type.toUpperCase()}
-                            </span>
-                            <span className="text-xs text-slate-400 font-mono">
-                              {formatFileSize(item.file_size)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 max-w-xs">
-                            <span className="text-xs text-slate-700 font-medium truncate" title={item.file_name}>
-                              {item.file_name || 'document'}
-                            </span>
-                            {item.file_url && (
-                              <button
-                                type="button"
-                                onClick={() => setPreviewModalUrl({
-                                  url: item.file_url,
-                                  type: item.file_type,
-                                  title: item.title
-                                })}
-                                className="text-indigo-600 hover:text-indigo-800 p-1 rounded hover:bg-indigo-50 transition-colors shrink-0"
-                                title="Xem tệp trực tuyến"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Hiển thị Hiện/Ẩn */}
-                      <td className="py-4 px-4 text-center">
+                    {/* Đổi thứ tự ▲ ▼ */}
+                    <td className="py-3 px-4 text-center">
+                      <div className="inline-flex items-center gap-0.5 border border-slate-200 rounded p-0.5 bg-white">
                         <button
                           type="button"
-                          onClick={() => handleToggleStatus(item)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                            item.is_active
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
-                          }`}
+                          disabled={index === 0}
+                          onClick={() => handleReorder(item, 'up')}
+                          className="p-1 rounded text-slate-400 hover:text-slate-900 disabled:opacity-20 transition-colors"
+                          title="Lên trên"
                         >
-                          {item.is_active ? (
-                            <>
-                              <Eye className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Hiển thị</span>
-                            </>
-                          ) : (
-                            <>
-                              <EyeOff className="w-3.5 h-3.5 text-slate-400" />
-                              <span>Ẩn</span>
-                            </>
-                          )}
+                          <ChevronUp className="w-3.5 h-3.5" />
                         </button>
-                      </td>
+                        <span className="text-[11px] font-mono font-semibold text-slate-700 px-1">
+                          {item.sort_order ?? index + 1}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={index === filteredLookbooks.length - 1}
+                          onClick={() => handleReorder(item, 'down')}
+                          className="p-1 rounded text-slate-400 hover:text-slate-900 disabled:opacity-20 transition-colors"
+                          title="Xuống dưới"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
 
-                      {/* Đổi thứ tự ▲ ▼ */}
-                      <td className="py-4 px-4 text-center">
-                        <div className="inline-flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
-                          <button
-                            type="button"
-                            disabled={index === 0}
-                            onClick={() => handleReorder(item, 'up')}
-                            className="p-1 rounded text-slate-500 hover:text-slate-900 hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                            title="Di chuyển lên trên"
-                          >
-                            <ChevronUp className="w-4 h-4" />
-                          </button>
-                          <span className="text-[11px] font-mono font-bold text-slate-600 px-1">
-                            {item.sort_order ?? index + 1}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={index === filteredLookbooks.length - 1}
-                            onClick={() => handleReorder(item, 'down')}
-                            className="p-1 rounded text-slate-500 hover:text-slate-900 hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                            title="Di chuyển xuống dưới"
-                          >
-                            <ChevronDown className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Sửa, Xóa */}
-                      <td className="py-4 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditModal(item)}
-                            className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                            title="Chỉnh sửa thông tin"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(item)}
-                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                            title="Xóa bộ sưu tập"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                    {/* Sửa, Xóa */}
+                    <td className="py-3 px-6 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditModal(item)}
+                          className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
+                          title="Chỉnh sửa"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                          title="Xóa"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {/* MODAL CHI TIẾT 2 VÙNG CẤU HÌNH */}
+      {/* MODAL CHI TIẾT 2 VÙNG CẤU HÌNH - FLAT CANVAS CLEAN */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white border border-slate-200 rounded-lg w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in duration-150">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center">
-                  <BookOpen className="w-5 h-5" />
+            <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded bg-slate-900 text-white flex items-center justify-center">
+                  <BookOpen className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-lg">
+                  <h3 className="font-bold text-slate-900 text-sm">
                     {editingItem ? 'Chỉnh Sửa Bộ Sưu Tập Lookbook' : 'Thêm Bộ Sưu Tập Mới'}
                   </h3>
-                  <p className="text-xs text-slate-500">Cấu hình thông tin chi tiết và tải tệp số hóa lên lưu trữ đám mây</p>
+                  <p className="text-[11px] text-slate-400">Cấu hình thông tin catalogue và tệp đám mây ERP</p>
                 </div>
               </div>
               <button
                 onClick={handleCloseModal}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-slate-900 rounded hover:bg-slate-100 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Body Form */}
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
               {errorMessage && (
-                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 shrink-0" />
+                <div className="p-3 rounded border border-rose-200 bg-rose-50 text-rose-700 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
               {/* VÙNG 1: THIẾT LẬP THÔNG TIN & ẢNH BÌA */}
-              <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-xs">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
-                  <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">1</span>
-                  <h4 className="font-bold text-slate-900 text-sm tracking-wide uppercase">Vùng 1: Thiết Lập Thông Tin & Ảnh Bìa BST</h4>
+              <div className="border border-slate-200 rounded p-4 bg-white">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5 mb-3.5">
+                  <span className="font-mono text-xs font-bold text-slate-900">[1]</span>
+                  <h4 className="font-bold text-slate-900 text-xs tracking-wider uppercase">Thông Tin Cơ Bản & Ảnh Bìa</h4>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Cột Trái: Ảnh Bìa */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-slate-700">Ảnh Bìa Bộ Sưu Tập (Cover)</label>
-                    <div className="relative w-full aspect-[3/4] max-h-56 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 overflow-hidden flex flex-col items-center justify-center group hover:border-indigo-400 transition-colors">
+                    <label className="text-xs font-medium text-slate-600">Ảnh Bìa BST (Cover)</label>
+                    <div className="relative w-full aspect-[3/4] max-h-48 rounded border border-slate-200 bg-slate-50 overflow-hidden flex flex-col items-center justify-center group hover:border-slate-400 transition-colors">
                       {formData.cover_image_url ? (
                         <>
                           <img
@@ -676,29 +628,29 @@ export default function LookbooksPage() {
                             <button
                               type="button"
                               onClick={() => coverInputRef.current?.click()}
-                              className="px-3 py-1.5 rounded-lg bg-white/90 text-slate-900 text-xs font-semibold hover:bg-white shadow-sm"
+                              className="px-2.5 py-1 rounded bg-white text-slate-900 text-xs font-medium hover:bg-slate-100"
                             >
-                              Đổi ảnh bìa
+                              Đổi ảnh
                             </button>
                           </div>
                         </>
                       ) : (
                         <div
                           onClick={() => coverInputRef.current?.click()}
-                          className="flex flex-col items-center justify-center p-4 text-center cursor-pointer"
+                          className="flex flex-col items-center justify-center p-3 text-center cursor-pointer"
                         >
-                          <UploadCloud className="w-8 h-8 text-slate-400 mb-2 group-hover:text-indigo-600 transition-colors" />
-                          <span className="text-xs font-semibold text-slate-600">Chọn ảnh bìa</span>
-                          <span className="text-[11px] text-slate-400 mt-0.5">JPG, PNG, WebP</span>
+                          <UploadCloud className="w-6 h-6 text-slate-400 mb-1.5" />
+                          <span className="text-xs font-medium text-slate-600">Chọn ảnh bìa</span>
+                          <span className="text-[10px] text-slate-400 mt-0.5">JPG, PNG, WebP</span>
                         </div>
                       )}
 
-                      {/* Thanh tiến trình ảnh bìa nếu đang tải */}
+                      {/* Thanh tiến trình ảnh bìa */}
                       {coverProgress !== null && coverProgress < 100 && (
-                        <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center p-4">
-                          <span className="text-xs font-bold text-indigo-600 mb-2">Đang tải: {coverProgress}%</span>
-                          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-indigo-600 transition-all duration-150" style={{ width: `${coverProgress}%` }} />
+                        <div className="absolute inset-0 bg-white/95 flex flex-col items-center justify-center p-3">
+                          <span className="text-xs font-mono font-bold text-slate-800 mb-1.5">{coverProgress}%</span>
+                          <div className="w-full h-1.5 bg-slate-200 rounded overflow-hidden">
+                            <div className="h-full bg-slate-900 transition-all duration-150" style={{ width: `${coverProgress}%` }} />
                           </div>
                         </div>
                       )}
@@ -710,21 +662,19 @@ export default function LookbooksPage() {
                       accept="image/*"
                       className="hidden"
                     />
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <input
-                        type="url"
-                        placeholder="Hoặc dán URL ảnh bìa trực tiếp..."
-                        value={formData.cover_image_url || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, cover_image_url: e.target.value }))}
-                        className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500"
-                      />
-                    </div>
+                    <input
+                      type="url"
+                      placeholder="Hoặc dán URL ảnh bìa..."
+                      value={formData.cover_image_url || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cover_image_url: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-800"
+                    />
                   </div>
 
                   {/* Cột Phải: Thông tin chi tiết */}
-                  <div className="md:col-span-2 flex flex-col gap-4">
+                  <div className="md:col-span-2 flex flex-col gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      <label className="text-xs font-medium text-slate-700 block mb-1">
                         Tên Bộ Sưu Tập <span className="text-rose-500">*</span>
                       </label>
                       <input
@@ -733,32 +683,32 @@ export default function LookbooksPage() {
                         placeholder="VD: BST Dạ Vũ Ánh Sao - Spring/Summer 2026"
                         value={formData.title || ''}
                         onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:bg-white font-medium"
+                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-900 focus:outline-none focus:border-slate-900 font-medium"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">
+                        <label className="text-xs font-medium text-slate-700 block mb-1">
                           Phiên Bản <span className="text-rose-500">*</span>
                         </label>
                         <input
                           type="text"
-                          placeholder="VD: v1.0, v2.1"
+                          placeholder="v1.0"
                           value={formData.version || ''}
                           onChange={(e) => setFormData(prev => ({ ...prev, version: e.target.value }))}
-                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:border-indigo-500 focus:bg-white"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-xs font-mono focus:outline-none focus:border-slate-900"
                         />
                       </div>
 
                       <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">
-                          Trạng Thái Hiển Thị
+                        <label className="text-xs font-medium text-slate-700 block mb-1">
+                          Trạng Thái
                         </label>
                         <select
                           value={formData.is_active ? 'true' : 'false'}
                           onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.value === 'true' }))}
-                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none focus:border-slate-900"
                         >
                           <option value="true">Hiển thị (Public)</option>
                           <option value="false">Ẩn (Draft / Lưu trữ)</option>
@@ -767,15 +717,15 @@ export default function LookbooksPage() {
                     </div>
 
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      <label className="text-xs font-medium text-slate-700 block mb-1">
                         Mô Tả & Cảm Hứng Thiết Kế
                       </label>
                       <textarea
                         rows={3}
-                        placeholder="Mô tả chất liệu ren, phom dáng dạ hội, đính kết Swarovski, câu chuyện truyền cảm hứng..."
+                        placeholder="Mô tả chất liệu, phom dáng, phong cách thiết kế..."
                         value={formData.description || ''}
                         onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:bg-white resize-none leading-relaxed"
+                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:border-slate-900 resize-none leading-relaxed"
                       />
                     </div>
                   </div>
@@ -783,28 +733,26 @@ export default function LookbooksPage() {
               </div>
 
               {/* VÙNG 2: TẢI TỆP LÊN CLOUD (HỖ TRỢ PDF & MP4 VIDEO) */}
-              <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-xs">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div className="border border-slate-200 rounded p-4 bg-white">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3.5">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">2</span>
-                    <h4 className="font-bold text-slate-900 text-sm tracking-wide uppercase">Vùng 2: Tải Tệp Lên Cloud (PDF & Video MP4)</h4>
+                    <span className="font-mono text-xs font-bold text-slate-900">[2]</span>
+                    <h4 className="font-bold text-slate-900 text-xs tracking-wider uppercase">Tệp Đính Kèm Cloud (PDF / Video MP4)</h4>
                   </div>
-                  <span className="text-xs text-slate-400 font-mono">Supabase / Firebase Storage Ready</span>
+                  <span className="text-[11px] text-slate-400 font-mono">Max 100MB</span>
                 </div>
 
                 {/* Dropzone Upload */}
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/30 hover:bg-indigo-50/60 p-6 flex flex-col items-center justify-center cursor-pointer transition-colors group text-center"
+                  className="rounded border border-dashed border-slate-300 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-400 p-5 flex flex-col items-center justify-center cursor-pointer transition-colors group text-center"
                 >
-                  <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <UploadCloud className="w-6 h-6" />
+                  <UploadCloud className="w-6 h-6 text-slate-400 mb-1.5 group-hover:text-slate-800 transition-colors" />
+                  <div className="text-xs font-semibold text-slate-800">
+                    Bấm để chọn tệp Catalogue PDF hoặc Video MP4
                   </div>
-                  <div className="text-sm font-bold text-slate-800">
-                    Bấm vào đây để chọn tệp tải lên đám mây
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1 max-w-md">
-                    Hỗ trợ tệp <strong>Catalogue PDF</strong> hoặc <strong>Video MP4</strong> giới thiệu Lookbook chất lượng cao.
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Tệp được lưu trữ trực tiếp vào kho Storage đám mây
                   </p>
 
                   <input
@@ -816,19 +764,19 @@ export default function LookbooksPage() {
                   />
                 </div>
 
-                {/* Thanh tiến trình % trực quan */}
+                {/* Thanh tiến trình % */}
                 {fileProgress !== null && (
-                  <div className="mt-4 p-4 rounded-xl border border-slate-200 bg-slate-50">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
-                      <span className="flex items-center gap-1.5">
-                        <RefreshCw className={`w-3.5 h-3.5 ${fileProgress < 100 ? 'animate-spin text-indigo-600' : 'text-emerald-600'}`} />
-                        {fileProgress < 100 ? 'Đang truyền dữ liệu lên Cloud...' : 'Hoàn thành tải tệp!'}
+                  <div className="mt-3 p-3 rounded border border-slate-200 bg-slate-50">
+                    <div className="flex items-center justify-between text-xs text-slate-700 mb-1">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <RefreshCw className={`w-3 h-3 ${fileProgress < 100 ? 'animate-spin text-slate-800' : 'text-emerald-600'}`} />
+                        {fileProgress < 100 ? 'Đang tải lên...' : 'Hoàn thành tải tệp'}
                       </span>
-                      <span className="font-mono text-indigo-600 text-sm">{fileProgress}%</span>
+                      <span className="font-mono font-bold text-xs">{fileProgress}%</span>
                     </div>
-                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-slate-200 rounded overflow-hidden">
                       <div
-                        className={`h-full transition-all duration-200 rounded-full ${fileProgress === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-500 to-indigo-600'}`}
+                        className="h-full bg-slate-900 transition-all duration-150"
                         style={{ width: `${fileProgress}%` }}
                       />
                     </div>
@@ -837,28 +785,24 @@ export default function LookbooksPage() {
 
                 {/* Tệp hiện tại đã đính kèm */}
                 {formData.file_url && (
-                  <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${formData.file_type === 'pdf' ? 'bg-rose-100 text-rose-600' : 'bg-indigo-100 text-indigo-600'}`}>
-                        {formData.file_type === 'pdf' ? <FileText className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+                  <div className="mt-3 p-3 rounded bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded border border-slate-200 bg-white flex items-center justify-center text-slate-700 shrink-0">
+                        {formData.file_type === 'pdf' ? <FileText className="w-3.5 h-3.5" /> : <Video className="w-3.5 h-3.5" />}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-slate-900 truncate">
-                          {formData.file_name || 'Đã đính kèm tệp'}
+                        <div className="text-xs font-semibold text-slate-900 truncate">
+                          {formData.file_name || 'Tệp đã gắn'}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 font-mono mt-0.5">
-                          <span className="uppercase font-bold">{formData.file_type}</span>
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono mt-0.5">
+                          <span className="uppercase font-bold">[{formData.file_type}]</span>
                           <span>•</span>
                           <span>{formatFileSize(formData.file_size)}</span>
-                          <span>•</span>
-                          <span className="text-emerald-600 flex items-center gap-0.5 font-sans font-medium">
-                            <CheckCircle2 className="w-3 h-3" /> Cloud Hosted
-                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         type="button"
                         onClick={() => setPreviewModalUrl({
@@ -866,61 +810,48 @@ export default function LookbooksPage() {
                           type: formData.file_type as 'pdf' | 'video',
                           title: formData.title || 'Xem thử tệp'
                         })}
-                        className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:text-slate-900 text-xs font-semibold flex items-center gap-1 shadow-xs"
+                        className="px-2.5 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:text-slate-900 text-xs font-medium transition-colors"
                       >
-                        <Eye className="w-3.5 h-3.5" /> Xem thử
+                        Xem thử
                       </button>
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold shadow-xs"
+                        className="px-2.5 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:text-slate-900 text-xs font-medium transition-colors"
                       >
-                        Thay tệp
+                        Đổi tệp
                       </button>
                     </div>
                   </div>
                 )}
 
-                {/* Hoặc nhập URL trực tiếp */}
-                <div className="mt-3">
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">
-                    Hoặc nhập URL Cloud Public có sẵn:
-                  </label>
+                <div className="mt-2.5">
                   <input
                     type="url"
-                    placeholder="https://...supabase.co/... hoặc https://firebasestorage.googleapis.com/..."
+                    placeholder="Hoặc dán trực tiếp Cloud URL..."
                     value={formData.file_url || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, file_url: e.target.value }))}
-                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono focus:outline-none focus:border-indigo-500"
+                    className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded text-xs font-mono focus:outline-none focus:border-slate-800"
                   />
                 </div>
               </div>
 
               {/* Modal Footer */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 font-semibold text-sm hover:bg-slate-50 transition-colors"
+                  className="px-4 py-1.5 rounded border border-slate-200 text-slate-600 hover:text-slate-900 text-xs font-medium transition-colors"
                 >
-                  Hủy bỏ
+                  Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-semibold text-sm shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
+                  className="px-5 py-1.5 rounded bg-slate-900 hover:bg-black text-white text-xs font-medium disabled:opacity-50 transition-all flex items-center gap-1.5"
                 >
-                  {isSaving ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Đang lưu trữ...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>{editingItem ? 'Lưu Thay Đổi' : 'Tạo Bộ Sưu Tập'}</span>
-                    </>
-                  )}
+                  {isSaving && <RefreshCw className="w-3 h-3 animate-spin" />}
+                  {isSaving ? 'Đang lưu...' : (editingItem ? 'Lưu Thay Đổi' : 'Tạo Bộ Sưu Tập')}
                 </button>
               </div>
             </form>
