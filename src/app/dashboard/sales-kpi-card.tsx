@@ -43,7 +43,6 @@ export default function SalesKpiCard() {
     ordersCount: 0,
     completedOrdersCount: 0,
     appointmentsCount: 0,
-    videosCount: 0,
   });
 
   const [debtContracts, setDebtContracts] = useState<DebtContractItem[]>([]);
@@ -195,18 +194,6 @@ export default function SalesKpiCard() {
           (a: any) => !["CANCELLED", "HỦY", "ĐÃ HỦY"].includes((a.status || "").toUpperCase())
         );
 
-        // 4. Báo cáo Video Marketing
-        const { data: marketingVideos } = await supabase
-          .from("marketing_contents")
-          .select("id, created_at, format, platform_contents")
-          .is("deleted_at", null);
-
-        const periodVideos = (marketingVideos || []).filter((v: any) => {
-          const dt = v.created_at ? v.created_at.slice(0, 10) : "";
-          const isVideo = /video|reel/i.test(v.format || "") || (v.platform_contents?.performance_logs?.length > 0);
-          return isVideo && dt >= start && dt <= end;
-        });
-
         if (mounted) {
           setData({
             totalContractRevenue: contractRev,
@@ -216,7 +203,6 @@ export default function SalesKpiCard() {
             ordersCount: periodOrders.length,
             completedOrdersCount: completedOrders.length,
             appointmentsCount: validAppts.length,
-            videosCount: periodVideos.length,
           });
 
           // Sắp xếp danh sách nợ: Quá hạn lên đầu, sau đó đến sắp tới hạn
@@ -329,80 +315,71 @@ export default function SalesKpiCard() {
             Đang tính toán số liệu {calculatedRange.label}...
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
             {/* 1. Doanh thu hợp đồng */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 sm:p-4">
               <div className="text-xs font-medium text-slate-500">Doanh thu hợp đồng</div>
-              <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+              <div className="mt-1.5 sm:mt-2 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-slate-900 truncate" title={formatMoney(data.totalContractRevenue)}>
                 {formatMoney(data.totalContractRevenue)}
               </div>
-              <div className="mt-2 text-[11px] text-slate-500">Giá trị ký trong kỳ</div>
+              <div className="mt-1.5 sm:mt-2 text-[11px] text-slate-500 truncate">Giá trị ký trong kỳ</div>
             </div>
 
             {/* 2. Tiền thực thu */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 sm:p-4">
               <div className="text-xs font-medium text-slate-500">Tiền thực thu</div>
-              <div className="mt-2 text-2xl font-bold tracking-tight text-blue-700">
+              <div className="mt-1.5 sm:mt-2 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-blue-700 truncate" title={formatMoney(data.totalCashCollected)}>
                 {formatMoney(data.totalCashCollected)}
               </div>
-              <div className="mt-2 text-[11px] text-slate-500">Đã thanh toán thực tế</div>
+              <div className="mt-1.5 sm:mt-2 text-[11px] text-slate-500 truncate">Đã thanh toán thực tế</div>
             </div>
 
             {/* 3. Công nợ còn thiếu */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 sm:p-4">
               <div className="text-xs font-medium text-slate-500">Công nợ còn thiếu</div>
-              <div className="mt-2 text-2xl font-bold tracking-tight text-amber-700">
+              <div className="mt-1.5 sm:mt-2 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-amber-700 truncate" title={formatMoney(data.totalRemainingDebt)}>
                 {formatMoney(data.totalRemainingDebt)}
               </div>
-              <div className="mt-2 text-[11px] text-slate-500">Hợp đồng chưa thu đủ</div>
+              <div className="mt-1.5 sm:mt-2 text-[11px] text-slate-500 truncate">Hợp đồng chưa thu đủ</div>
             </div>
 
             {/* 4. Số hợp đồng mới */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 sm:p-4">
               <div className="text-xs font-medium text-slate-500">Hợp đồng mới</div>
-              <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                {data.newContractsCount} <span className="text-sm font-normal text-slate-500">hợp đồng</span>
+              <div className="mt-1.5 sm:mt-2 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-slate-900">
+                {data.newContractsCount} <span className="text-xs sm:text-sm font-normal text-slate-500">hợp đồng</span>
               </div>
-              <div className="mt-2 text-[11px] text-slate-500">Ký mới trong kỳ</div>
+              <div className="mt-1.5 sm:mt-2 text-[11px] text-slate-500 truncate">Ký mới trong kỳ</div>
             </div>
 
             {/* 5. Lịch hẹn khách */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 sm:p-4">
               <div className="text-xs font-medium text-slate-500">Lịch hẹn khách</div>
-              <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                {data.appointmentsCount} <span className="text-sm font-normal text-slate-500">lịch</span>
+              <div className="mt-1.5 sm:mt-2 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-slate-900">
+                {data.appointmentsCount} <span className="text-xs sm:text-sm font-normal text-slate-500">lịch</span>
               </div>
-              <div className="mt-2 text-[11px] text-slate-500">Cuộc hẹn tư vấn / thử đồ</div>
+              <div className="mt-1.5 sm:mt-2 text-[11px] text-slate-500 truncate">Cuộc hẹn tư vấn / thử đồ</div>
             </div>
 
             {/* 6. Đơn hàng vận hành */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 sm:p-4">
               <div className="text-xs font-medium text-slate-500">Đơn hàng vận hành</div>
-              <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                {data.ordersCount} <span className="text-sm font-normal text-slate-500">đơn</span>
+              <div className="mt-1.5 sm:mt-2 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-slate-900">
+                {data.ordersCount} <span className="text-xs sm:text-sm font-normal text-slate-500">đơn</span>
               </div>
-              <div className="mt-2 text-[11px] text-slate-500">Đã hoàn tất: {data.completedOrdersCount} đơn</div>
+              <div className="mt-1.5 sm:mt-2 text-[11px] text-slate-500 truncate">Đã hoàn tất: {data.completedOrdersCount} đơn</div>
             </div>
 
-            {/* 7. Video Marketing */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-              <div className="text-xs font-medium text-slate-500">Video Marketing</div>
-              <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                {data.videosCount} <span className="text-sm font-normal text-slate-500">video</span>
-              </div>
-              <div className="mt-2 text-[11px] text-slate-500">Sản xuất trong kỳ</div>
-            </div>
-
-            {/* 8. Tỷ lệ thu tiền */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            {/* 7. Tỷ lệ thu tiền */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 sm:p-4">
               <div className="text-xs font-medium text-slate-500">Thu tiền / Hợp đồng</div>
-              <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+              <div className="mt-1.5 sm:mt-2 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-slate-900">
                 {data.totalContractRevenue > 0
                   ? Math.round((data.totalCashCollected / data.totalContractRevenue) * 100)
                   : 0}
                 %
               </div>
-              <div className="mt-2 text-[11px] text-slate-500">Tỷ lệ tiền về thực tế</div>
+              <div className="mt-1.5 sm:mt-2 text-[11px] text-slate-500 truncate">Tỷ lệ tiền về thực tế</div>
             </div>
           </div>
         )}
