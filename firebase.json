@@ -1,6 +1,6 @@
-{
+﻿{
   "apphosting": {
-    "backendId": "cama-webapp",
+    "backendId": "cama-web",
     "rootDir": "/",
     "ignore": [
       "node_modules",
@@ -12,7 +12,7 @@
   },
   "hosting": [
     {
-      "target": "cama",
+      "site": "cama",
       "public": "public_dummy",
       "rewrites": [
         {
@@ -22,7 +22,7 @@
       ]
     },
     {
-      "target": "cama-webapp",
+      "site": "cama-webapp",
       "public": "public_dummy",
       "rewrites": [
         {
