@@ -345,7 +345,16 @@ export default function PermissionsView({ roles, modules }: PermissionsViewProps
                             <input type="checkbox" className="w-4 h-4 accent-blue-600 rounded cursor-pointer" checked={perm.can_update} onChange={(e) => handleRoleCheckboxChange(mod.id, 'can_update', e.target.checked)} />
                           </td>
                           <td className="px-6 py-3 text-center">
-                            <input type="checkbox" className="w-4 h-4 accent-red-500 rounded cursor-pointer" checked={perm.can_delete} onChange={(e) => handleRoleCheckboxChange(mod.id, 'can_delete', e.target.checked)} />
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 accent-red-500 rounded cursor-pointer"
+                              checked={perm.can_delete}
+                              onChange={(e) => handleRoleCheckboxChange(mod.id, 'can_delete', e.target.checked)}
+                              title={mod.module_code === "STUDIO_CONTRACTS" ? "Quyền đổi trạng thái sang Đã hủy (không thể xóa mất)" : undefined}
+                            />
+                            {mod.module_code === "STUDIO_CONTRACTS" && (
+                              <div className="text-[10px] text-rose-600 font-semibold mt-0.5">Hủy HĐ</div>
+                            )}
                           </td>
                         </tr>
                       );
@@ -437,7 +446,16 @@ export default function PermissionsView({ roles, modules }: PermissionsViewProps
                           </td>
                           <td className="px-6 py-3 text-center">
                             <div className="flex flex-col items-center">
-                              <input type="checkbox" className="w-4 h-4 accent-red-500 rounded cursor-pointer" checked={perm.can_delete} onChange={(e) => handleUserCheckboxChange(mod.id, 'can_delete', e.target.checked)} />
+                              <input
+                                type="checkbox"
+                                className="w-4 h-4 accent-red-500 rounded cursor-pointer"
+                                checked={perm.can_delete}
+                                onChange={(e) => handleUserCheckboxChange(mod.id, 'can_delete', e.target.checked)}
+                                title={mod.module_code === "STUDIO_CONTRACTS" ? "Quyền đổi trạng thái sang Đã hủy (không thể xóa mất)" : undefined}
+                              />
+                              {mod.module_code === "STUDIO_CONTRACTS" && (
+                                <div className="text-[10px] text-rose-600 font-semibold mt-0.5">Hủy HĐ</div>
+                              )}
                               {/* {rolePerm?.can_delete && !perm.can_delete && <span className="text-[9px] text-emerald-600 font-bold mt-1">Kế thừa</span>} */}
                             </div>
                           </td>

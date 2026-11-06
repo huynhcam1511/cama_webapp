@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, requireActiveUser, getUserPermissions } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { orderDepartment } from "@/lib/order-departments";
 import { generateSequentialCode } from "@/utils/code-generator";
@@ -417,6 +417,7 @@ export async function getContracts(filters?: {
   executionStatus?: string;
   debtOnly?: boolean;
   overdueOnly?: boolean;
+  month?: string;
 }) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -470,11 +471,21 @@ export async function getContracts(filters?: {
     list = list.filter((c) => c.debt_status === "OVERDUE" || c.payment_status === "OVERDUE");
   }
 
+  if (filters?.month) {
+    list = list.filter((c) => {
+      const d = c.contract_date || (c.created_at ? c.created_at.slice(0, 10) : "");
+      return d && d.slice(0, 7) === filters.month;
+    });
+  }
+
   // Compute stats
   const allContracts: Contract[] = (data || []).map(normalizeContract);
+  const nonCancelled = allContracts.filter((c) => c.contract_status !== "CANCELLED");
   const stats = {
     total_count: allContracts.length,
     effective_count: allContracts.filter((c) => c.contract_status === "EFFECTIVE" || c.contract_status === "CONFIRMED").length,
+    total_revenue: nonCancelled.reduce((sum, c) => sum + (c.total_amount || 0), 0),
+    total_paid: nonCancelled.reduce((sum, c) => sum + (c.paid_amount || 0), 0),
     total_debt: allContracts.reduce((sum, c) => sum + c.remaining_amount, 0),
     upcoming_7days_count: allContracts.filter((c) => {
       if (!c.customers?.wedding_date) return false;
@@ -972,14 +983,27 @@ export async function recordPaymentTransaction(
 
 
 export async function cancelContract(contractId: string, reason: string, refundAmount: number = 0) {
-  await requirePermission("STUDIO_CONTRACTS", "update");
+  const user = await requireActiveUser();
+  const permissionsMap = await getUserPermissions(user.id);
+  const perm = permissionsMap.get("STUDIO_CONTRACTS");
+  const canCancel = perm?.can_update || perm?.can_delete;
+  if (!canCancel) {
+    throw new Error("PERMISSION_DENIED");
+  }
+
   const supabase = createAdminClient();
   const currentContract = await getContractById(contractId);
   if (!currentContract) return { success: false, error: "Hợp đồng không tồn tại" };
+  if (currentContract.contract_status === "CANCELLED") {
+    return { success: false, error: "Hợp đồng đã ở trạng thái Đã hủy trước đó." };
+  }
+
+  const { data: userProfile } = await supabase.from("users").select("full_name").eq("id", user.id).single();
+  const actorName = userProfile?.full_name || user.email || "Admin";
 
   const newActivity: ContractActivity = {
     id: `act-${Date.now()}`,
-    actor_name: "Admin",
+    actor_name: actorName,
     action_type: "CANCEL_CONTRACT",
     content: `Hủy hợp đồng ${currentContract.contract_code}. Lý do: ${reason}. Hoàn tiền: ${new Intl.NumberFormat("vi-VN").format(refundAmount)} ₫`,
     created_at: new Date().toISOString(),
@@ -999,7 +1023,7 @@ export async function cancelContract(contractId: string, reason: string, refundA
     contract_status: "CANCELLED" as ContractStatus,
     cancel_reason: reason,
     canceled_at: new Date().toISOString(),
-    canceled_by_name: "Admin",
+    canceled_by_name: actorName,
     refund_amount: refundAmount,
     activities: [newActivity, ...(Array.isArray(oldMeta.activities) ? oldMeta.activities : [])],
   };
@@ -1133,17 +1157,12 @@ export async function addContractDocument(contractId: string, doc: Omit<Contract
 }
 
 export async function deleteContract(id: string) {
-  await requirePermission("STUDIO_CONTRACTS", "delete");
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("contracts")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
-
-  if (error) return { success: false, error: error.message };
-
-  revalidatePath("/dashboard/contracts");
-  return { success: true };
+  // Nghiệp vụ: Hợp đồng mang tính pháp lý và tài chính, không cho phép xóa mất khỏi hệ thống.
+  // Người dùng chỉ có quyền chuyển trạng thái hợp đồng sang "Đã hủy".
+  return {
+    success: false,
+    error: "Hợp đồng không thể xóa khỏi hệ thống để bảo đảm toàn vẹn dữ liệu và chứng từ kế toán. Vui lòng chuyển trạng thái hợp đồng sang 'Đã hủy'.",
+  };
 }
 
 export async function addGarmentToContractByQR(contractId: string, qrCode: string) {

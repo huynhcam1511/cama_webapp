@@ -17,6 +17,7 @@ import {
   addContractDocument, addContractSchedule, toggleScheduleCompleted, addGarmentToContractByQR,
 } from "../actions";
 import { Contract } from "../types";
+import { usePermissions } from "@/hooks/use-permissions";
 import QRScanner from "@/components/qr-scanner";
 import InventoryPickerModal from "../_components/inventory-picker-modal";
 
@@ -28,6 +29,10 @@ interface ContractDetailViewProps {
 
 export default function ContractDetailView({ contract }: ContractDetailViewProps) {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission("STUDIO_CONTRACTS", "update");
+  const canDelete = hasPermission("STUDIO_CONTRACTS", "delete");
+  const canCancel = canUpdate || canDelete;
 
   // Tabs
   const [activeTab, setActiveTab] = useState("finance");
@@ -119,14 +124,37 @@ export default function ContractDetailView({ contract }: ContractDetailViewProps
           <button onClick={() => setIsPrintOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-colors">
             <Printer className="w-4 h-4" /> In PDF
           </button>
-          <button onClick={() => setIsEditOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg text-xs font-bold transition-colors">
-            <Edit className="w-4 h-4" /> Sửa HĐ
-          </button>
-          <button onClick={() => setIsCancelOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg text-xs font-bold transition-colors">
-            <Ban className="w-4 h-4" /> Hủy HĐ
-          </button>
+          {canUpdate && contract.contract_status !== "CANCELLED" && (
+            <button onClick={() => setIsEditOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg text-xs font-bold transition-colors">
+              <Edit className="w-4 h-4" /> Sửa HĐ
+            </button>
+          )}
+          {canCancel && contract.contract_status !== "CANCELLED" && (
+            <button onClick={() => setIsCancelOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg text-xs font-bold transition-colors">
+              <Ban className="w-4 h-4" /> Hủy HĐ
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Banner if cancelled */}
+      {contract.contract_status === "CANCELLED" && (
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start gap-3 text-rose-900 text-xs shadow-xs">
+          <Ban className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <div className="font-bold text-rose-900 text-sm">Hợp đồng này đã bị hủy</div>
+            <div>
+              <span className="font-semibold">Lý do hủy:</span> {contract.cancel_reason || "Không ghi rõ"}
+              {contract.canceled_at && <span> • <strong>Thời gian:</strong> {new Date(contract.canceled_at).toLocaleString("vi-VN")}</span>}
+              {contract.canceled_by_name && <span> • <strong>Người hủy:</strong> {contract.canceled_by_name}</span>}
+              {Boolean(contract.refund_amount) && <span> • <strong>Tiền hoàn khách:</strong> {new Intl.NumberFormat("vi-VN").format(contract.refund_amount || 0)} ₫</span>}
+            </div>
+            <p className="text-[11px] text-rose-600">
+              * Dữ liệu hợp đồng, phụ lục và chứng từ được lưu trữ nguyên vẹn trong hệ thống để bảo đảm toàn vẹn kế toán, không thể xóa mất.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <div className="flex border-b border-slate-200 overflow-x-auto hide-scrollbar">

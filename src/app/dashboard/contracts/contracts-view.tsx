@@ -23,10 +23,13 @@ import {
   MessageCircle,
   ArrowDown,
   ArrowUp,
-  Trash2,
   X,
   Package,
-  User
+  User,
+  Calendar,
+  DollarSign,
+  CreditCard,
+  AlertCircle
 } from "lucide-react";
 
 import RecordPaymentDialog from "./record-payment-dialog";
@@ -61,6 +64,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
   const [debtOnlyFilter, setDebtOnlyFilter] = useState(false);
   const [overdueOnlyFilter, setOverdueOnlyFilter] = useState(false);
+  const [monthFilter, setMonthFilter] = useState("");
 
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc'|'desc'}>({ key: 'created_at', direction: 'desc' });
   const [quickFilter, setQuickFilter] = useState('');
@@ -109,6 +113,12 @@ export default function ContractsView({ initialContracts, initialStats, customer
   const canCreate = hasPermission("STUDIO_CONTRACTS", "create");
   const canUpdate = hasPermission("STUDIO_CONTRACTS", "update");
   const canDelete = hasPermission("STUDIO_CONTRACTS", "delete");
+  const canCancel = canUpdate || canDelete;
+
+  const getContractMonth = (c: Contract) => {
+    const d = c.contract_date || (c.created_at ? c.created_at.slice(0, 10) : "");
+    return d && d.length >= 7 ? d.slice(0, 7) : "";
+  };
 
   // Client-side filtering logic
   let filteredContracts = contracts.filter((c) => {
@@ -126,6 +136,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
     const matchesPaymentStatus = !paymentStatusFilter || c.payment_status === paymentStatusFilter;
     const matchesDebt = !debtOnlyFilter || c.remaining_amount > 0;
     const matchesOverdue = !overdueOnlyFilter || c.debt_status === "OVERDUE" || c.payment_status === "OVERDUE";
+    const matchesMonth = !monthFilter || getContractMonth(c) === monthFilter;
 
     // Quick Filters
     let matchesQuick = true;
@@ -144,8 +155,18 @@ export default function ContractsView({ initialContracts, initialStats, customer
       matchesQuick = c.remaining_amount > 0 && c.debt_status === 'OVERDUE';
     }
 
-    return matchesSearch && matchesContractStatus && matchesContractType && matchesPaymentStatus && matchesDebt && matchesOverdue && matchesQuick;
+    return matchesSearch && matchesContractStatus && matchesContractType && matchesPaymentStatus && matchesDebt && matchesOverdue && matchesQuick && matchesMonth;
   });
+
+  // Dynamic summary formulas based on filtered contracts
+  const nonCancelledContracts = filteredContracts.filter((c) => c.contract_status !== "CANCELLED");
+  const summaryTargetContracts = contractStatusFilter === "CANCELLED" ? filteredContracts : nonCancelledContracts;
+
+  const totalRevenue = summaryTargetContracts.reduce((sum, c) => sum + (Number(c.total_amount) || 0), 0);
+  const totalPaid = summaryTargetContracts.reduce((sum, c) => sum + (Number(c.paid_amount) || 0), 0);
+  const totalDebt = summaryTargetContracts.reduce((sum, c) => sum + (Number(c.remaining_amount) || 0), 0);
+  const totalDebtContractsCount = summaryTargetContracts.filter((c) => c.remaining_amount > 0).length;
+  const collectionRate = totalRevenue > 0 ? Math.round((totalPaid / totalRevenue) * 100) : 0;
 
   // Sorting
   filteredContracts.sort((a, b) => {
@@ -189,6 +210,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
     setDebtOnlyFilter(false);
     setOverdueOnlyFilter(false);
     setQuickFilter("");
+    setMonthFilter("");
   };
 
   return (
@@ -277,6 +299,45 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
             {/* Desktop Filters */}
             <div className="hidden sm:flex flex-wrap items-center gap-2">
+              {/* Lọc theo tháng */}
+              <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-sm text-xs">
+                <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span className="text-slate-600 font-semibold whitespace-nowrap">Tháng:</span>
+                <input
+                  type="month"
+                  value={monthFilter}
+                  onChange={(e) => setMonthFilter(e.target.value)}
+                  className="bg-transparent text-slate-800 font-medium text-xs outline-none cursor-pointer"
+                  title="Chọn tháng hợp đồng"
+                />
+                {monthFilter && (
+                  <button
+                    type="button"
+                    onClick={() => setMonthFilter("")}
+                    className="text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100"
+                    title="Bỏ lọc tháng (Xem tất cả)"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const cur = new Date().toISOString().slice(0, 7);
+                  setMonthFilter(monthFilter === cur ? "" : cur);
+                }}
+                className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                  monthFilter === new Date().toISOString().slice(0, 7)
+                    ? "bg-blue-50 border-blue-300 text-blue-700 shadow-xs"
+                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                }`}
+                title="Lọc hợp đồng trong tháng hiện tại"
+              >
+                Tháng này
+              </button>
+
               <select
                 value={contractTypeFilter}
                 onChange={(e) => setContractTypeFilter(e.target.value)}
@@ -315,7 +376,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 <option value="OVERDUE">Quá hạn</option>
               </select>
 
-              {(searchQuery || contractTypeFilter || contractStatusFilter || paymentStatusFilter || debtOnlyFilter || overdueOnlyFilter || quickFilter !== '') && (
+              {(searchQuery || contractTypeFilter || contractStatusFilter || paymentStatusFilter || debtOnlyFilter || overdueOnlyFilter || quickFilter !== '' || monthFilter !== '') && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
@@ -353,6 +414,44 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
+                  <label className="text-xs font-bold text-slate-500">
+                    Lọc theo Tháng HĐ
+                    <div className="mt-1 flex items-center gap-2">
+                      <div className="flex-1 flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5">
+                        <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+                        <input
+                          type="month"
+                          value={monthFilter}
+                          onChange={(e) => setMonthFilter(e.target.value)}
+                          className="w-full bg-transparent text-slate-800 font-medium text-sm outline-none"
+                        />
+                        {monthFilter && (
+                          <button
+                            type="button"
+                            onClick={() => setMonthFilter("")}
+                            className="text-slate-400 hover:text-slate-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cur = new Date().toISOString().slice(0, 7);
+                          setMonthFilter(monthFilter === cur ? "" : cur);
+                        }}
+                        className={`px-3 py-2.5 rounded-xl border text-xs font-bold shrink-0 ${
+                          monthFilter === new Date().toISOString().slice(0, 7)
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-slate-100 text-slate-700 border-slate-200"
+                        }`}
+                      >
+                        Tháng này
+                      </button>
+                    </div>
+                  </label>
+
                   <label className="text-xs font-bold text-slate-500">Loại Hợp đồng
                     <select
                       value={contractTypeFilter}
@@ -403,6 +502,71 @@ export default function ContractsView({ initialContracts, initialStats, customer
               </div>
             </div>
           )}
+        </div>
+
+        {/* Dynamic Formula / Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 sm:p-4 bg-slate-50/70 border-b border-slate-200">
+          {/* Card 1: Tổng Doanh Thu */}
+          <div className="bg-white border border-blue-100 rounded-xl p-3.5 shadow-xs flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+                <span>Tổng Doanh Thu</span>
+                {monthFilter && (
+                  <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-semibold normal-case">
+                    T{monthFilter.split("-")[1]}/{monthFilter.split("-")[0]}
+                  </span>
+                )}
+              </div>
+              <div className="text-xl sm:text-2xl font-black font-mono text-blue-700 tracking-tight">
+                {new Intl.NumberFormat("vi-VN").format(totalRevenue)} ₫
+              </div>
+              <div className="text-[11px] text-slate-500 font-medium">
+                {summaryTargetContracts.length} hợp đồng có giá trị {contractStatusFilter !== "CANCELLED" && filteredContracts.length > summaryTargetContracts.length ? `(${filteredContracts.length - summaryTargetContracts.length} HĐ đã hủy)` : ""}
+              </div>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+              <DollarSign className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* Card 2: Tổng Đã Thu */}
+          <div className="bg-white border border-emerald-100 rounded-xl p-3.5 shadow-xs flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Tổng Đã Thu</span>
+              </div>
+              <div className="text-xl sm:text-2xl font-black font-mono text-emerald-600 tracking-tight">
+                {new Intl.NumberFormat("vi-VN").format(totalPaid)} ₫
+              </div>
+              <div className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                <span>Đạt {collectionRate}% tổng giá trị HĐ</span>
+              </div>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+              <CreditCard className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* Card 3: Tổng Công Nợ */}
+          <div className="bg-white border border-rose-100 rounded-xl p-3.5 shadow-xs flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <Clock className="w-3.5 h-3.5 text-rose-500" />
+                <span>Tổng Công Nợ</span>
+              </div>
+              <div className="text-xl sm:text-2xl font-black font-mono text-rose-600 tracking-tight">
+                {new Intl.NumberFormat("vi-VN").format(totalDebt)} ₫
+              </div>
+              <div className="text-[11px] text-slate-500 font-medium">
+                {totalDebtContractsCount} hợp đồng còn dư nợ
+              </div>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+          </div>
         </div>
 
         {/* Table View (Clean Light Theme) */}
@@ -619,13 +783,13 @@ export default function ContractsView({ initialContracts, initialStats, customer
         </Link>
       )}
 
-      {canDelete && (
+      {canCancel && contract.contract_status !== "CANCELLED" && (
         <button 
           onClick={() => setSelectedForCancel(contract)} 
           className="p-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 rounded-md transition-colors"
-          title="Xóa / Hủy"
+          title="Hủy hợp đồng"
         >
-          <Trash2 className="w-3.5 h-3.5"/>
+          <Ban className="w-3.5 h-3.5"/>
         </button>
       )}
     </div>
@@ -651,11 +815,64 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 </tr>
               )}
             </tbody>
+
+            {filteredContracts.length > 0 && (
+              <tfoot className="bg-slate-100/90 border-t-2 border-slate-300 font-bold text-slate-900">
+                <tr>
+                  <td colSpan={5} className="px-3.5 py-3 text-right uppercase tracking-wider text-[11px] text-slate-600">
+                    Tổng cộng ({filteredContracts.length} HĐ{monthFilter ? ` - T${monthFilter.split("-")[1]}/${monthFilter.split("-")[0]}` : ""}):
+                  </td>
+                  <td className="px-3.5 py-3 text-right font-mono text-xs sm:text-[13px] font-bold text-blue-700">
+                    {new Intl.NumberFormat("vi-VN").format(totalRevenue)} ₫
+                  </td>
+                  <td className="px-3.5 py-3 text-right font-mono text-xs sm:text-[13px] font-bold text-emerald-700">
+                    {new Intl.NumberFormat("vi-VN").format(totalPaid)} ₫
+                  </td>
+                  <td className="px-3.5 py-3 text-right font-mono text-xs sm:text-[13px] font-bold text-rose-600">
+                    {new Intl.NumberFormat("vi-VN").format(totalDebt)} ₫
+                  </td>
+                  <td colSpan={4} className="px-3.5 py-3 text-slate-500 text-right text-[11px] font-normal">
+                    {monthFilter ? `Lọc theo tháng ${monthFilter.split("-")[1]}/${monthFilter.split("-")[0]}` : "Tất cả thời gian"}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
         
         {/* Mobile Cards View */}
         <div className="md:hidden flex flex-col gap-3 p-3 pb-24 bg-slate-50">
+          {/* Mobile Summary Mini Strip */}
+          <div className="bg-white rounded-xl p-3 border border-slate-200 shadow-xs flex flex-col gap-2">
+            <div className="flex items-center justify-between text-xs border-b border-slate-100 pb-2">
+              <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                {monthFilter ? `Tháng ${monthFilter.split("-")[1]}/${monthFilter.split("-")[0]}` : "Tất cả thời gian"}
+              </span>
+              <span className="text-[11px] font-semibold text-slate-500">{filteredContracts.length} HĐ</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Doanh thu</span>
+                <span className="font-mono font-bold text-blue-700 text-xs truncate">
+                  {new Intl.NumberFormat("vi-VN").format(totalRevenue)} ₫
+                </span>
+              </div>
+              <div className="flex flex-col border-x border-slate-100">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Đã thu</span>
+                <span className="font-mono font-bold text-emerald-600 text-xs truncate">
+                  {new Intl.NumberFormat("vi-VN").format(totalPaid)} ₫
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Công nợ</span>
+                <span className="font-mono font-bold text-rose-600 text-xs truncate">
+                  {new Intl.NumberFormat("vi-VN").format(totalDebt)} ₫
+                </span>
+              </div>
+            </div>
+          </div>
+
           {filteredContracts.length === 0 ? (
              <div className="p-6 text-center text-slate-500 text-sm bg-white rounded-xl">Không tìm thấy hợp đồng nào.</div>
           ) : (
@@ -793,6 +1010,15 @@ export default function ContractsView({ initialContracts, initialStats, customer
                           <Link href={`/dashboard/contracts/${contract.id}/edit`} className="w-9 h-9 flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg shadow-sm border border-blue-200 hover:bg-blue-100 transition-colors">
                             <Edit3 className="w-4 h-4"/>
                           </Link>
+                        )}
+                        {canCancel && contract.contract_status !== "CANCELLED" && (
+                          <button
+                            onClick={() => setSelectedForCancel(contract)}
+                            className="w-9 h-9 flex items-center justify-center bg-rose-50 text-rose-600 rounded-lg shadow-sm border border-rose-200 hover:bg-rose-100 transition-colors"
+                            title="Hủy hợp đồng"
+                          >
+                            <Ban className="w-4 h-4"/>
+                          </button>
                         )}
                       </div>
                     </div>

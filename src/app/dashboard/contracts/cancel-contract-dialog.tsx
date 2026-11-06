@@ -69,7 +69,7 @@ export default function CancelContractDialog({ isOpen, onClose, contract, onSave
           <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-slate-700 flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
             <span>
-              Hợp đồng sẽ được chuyển sang trạng thái <strong>Đã Hủy</strong>. Toàn bộ lịch sử thao tác và dữ liệu sẽ được lưu trữ đầy đủ trong nhật ký hệ thống.
+              Hợp đồng sẽ được chuyển sang trạng thái <strong>Đã Hủy</strong>. Toàn bộ lịch sử thao tác, chi tiết dịch vụ và chứng từ kế toán sẽ được bảo toàn nguyên vẹn trong hệ thống (không thể xóa mất).
             </span>
           </div>
 
