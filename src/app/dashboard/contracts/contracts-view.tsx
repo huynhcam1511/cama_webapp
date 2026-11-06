@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -64,7 +64,8 @@ export default function ContractsView({ initialContracts, initialStats, customer
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
   const [debtOnlyFilter, setDebtOnlyFilter] = useState(false);
   const [overdueOnlyFilter, setOverdueOnlyFilter] = useState(false);
-  const [monthFilter, setMonthFilter] = useState("");
+  const currentMonthStr = useMemo(() => new Date().toISOString().slice(0, 7), []);
+  const [monthFilter, setMonthFilter] = useState<string>(() => new Date().toISOString().slice(0, 7));
 
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc'|'desc'}>({ key: 'created_at', direction: 'desc' });
   const [quickFilter, setQuickFilter] = useState('');
@@ -119,6 +120,30 @@ export default function ContractsView({ initialContracts, initialStats, customer
     const d = c.contract_date || (c.created_at ? c.created_at.slice(0, 10) : "");
     return d && d.length >= 7 ? d.slice(0, 7) : "";
   };
+
+  const availableMonths = useMemo(() => {
+    const monthSet = new Set<string>();
+    monthSet.add(currentMonthStr);
+
+    // Thêm các tháng trong vòng 12 tháng qua và 3 tháng tới
+    const now = new Date();
+    for (let i = -12; i <= 3; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      monthSet.add(`${y}-${m}`);
+    }
+
+    // Thêm toàn bộ các tháng có trong dữ liệu hợp đồng
+    contracts.forEach((c) => {
+      const m = getContractMonth(c);
+      if (m && m.length === 7) {
+        monthSet.add(m);
+      }
+    });
+
+    return Array.from(monthSet).sort().reverse();
+  }, [contracts, currentMonthStr]);
 
   // Client-side filtering logic
   let filteredContracts = contracts.filter((c) => {
@@ -210,7 +235,7 @@ export default function ContractsView({ initialContracts, initialStats, customer
     setDebtOnlyFilter(false);
     setOverdueOnlyFilter(false);
     setQuickFilter("");
-    setMonthFilter("");
+    setMonthFilter(currentMonthStr);
   };
 
   return (
@@ -299,44 +324,26 @@ export default function ContractsView({ initialContracts, initialStats, customer
 
             {/* Desktop Filters */}
             <div className="hidden sm:flex flex-wrap items-center gap-2">
-              {/* Lọc theo tháng */}
-              <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-sm text-xs">
-                <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span className="text-slate-600 font-semibold whitespace-nowrap">Tháng:</span>
-                <input
-                  type="month"
+              {/* Dropdown Lọc theo tháng */}
+              <div className="relative flex items-center">
+                <select
                   value={monthFilter}
                   onChange={(e) => setMonthFilter(e.target.value)}
-                  className="bg-transparent text-slate-800 font-medium text-xs outline-none cursor-pointer"
-                  title="Chọn tháng hợp đồng"
-                />
-                {monthFilter && (
-                  <button
-                    type="button"
-                    onClick={() => setMonthFilter("")}
-                    className="text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100"
-                    title="Bỏ lọc tháng (Xem tất cả)"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
+                  className="bg-white text-slate-800 font-semibold border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-xs outline-none focus:border-blue-500 shadow-sm cursor-pointer hover:border-slate-300 transition-colors"
+                >
+                  <option value="">Tất cả các tháng</option>
+                  {availableMonths.map((m) => {
+                    const [y, mon] = m.split("-");
+                    const isCur = m === currentMonthStr;
+                    return (
+                      <option key={m} value={m}>
+                        {isCur ? `Tháng ${mon}/${y} (Tháng này)` : `Tháng ${mon}/${y}`}
+                      </option>
+                    );
+                  })}
+                </select>
+                <Calendar className="w-3.5 h-3.5 text-blue-600 absolute left-2.5 pointer-events-none" />
               </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const cur = new Date().toISOString().slice(0, 7);
-                  setMonthFilter(monthFilter === cur ? "" : cur);
-                }}
-                className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-                  monthFilter === new Date().toISOString().slice(0, 7)
-                    ? "bg-blue-50 border-blue-300 text-blue-700 shadow-xs"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                }`}
-                title="Lọc hợp đồng trong tháng hiện tại"
-              >
-                Tháng này
-              </button>
 
               <select
                 value={contractTypeFilter}
@@ -376,12 +383,12 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 <option value="OVERDUE">Quá hạn</option>
               </select>
 
-              {(searchQuery || contractTypeFilter || contractStatusFilter || paymentStatusFilter || debtOnlyFilter || overdueOnlyFilter || quickFilter !== '' || monthFilter !== '') && (
+              {(searchQuery || contractTypeFilter || contractStatusFilter || paymentStatusFilter || debtOnlyFilter || overdueOnlyFilter || quickFilter !== '' || monthFilter !== currentMonthStr) && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
                   className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-700 shadow-sm transition-colors"
-                  title="Đặt lại bộ lọc"
+                  title="Đặt lại bộ lọc (Về tháng này)"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
@@ -416,40 +423,22 @@ export default function ContractsView({ initialContracts, initialStats, customer
                 <div className="grid grid-cols-1 gap-4">
                   <label className="text-xs font-bold text-slate-500">
                     Lọc theo Tháng HĐ
-                    <div className="mt-1 flex items-center gap-2">
-                      <div className="flex-1 flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5">
-                        <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
-                        <input
-                          type="month"
-                          value={monthFilter}
-                          onChange={(e) => setMonthFilter(e.target.value)}
-                          className="w-full bg-transparent text-slate-800 font-medium text-sm outline-none"
-                        />
-                        {monthFilter && (
-                          <button
-                            type="button"
-                            onClick={() => setMonthFilter("")}
-                            className="text-slate-400 hover:text-slate-600"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const cur = new Date().toISOString().slice(0, 7);
-                          setMonthFilter(monthFilter === cur ? "" : cur);
-                        }}
-                        className={`px-3 py-2.5 rounded-xl border text-xs font-bold shrink-0 ${
-                          monthFilter === new Date().toISOString().slice(0, 7)
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-slate-100 text-slate-700 border-slate-200"
-                        }`}
-                      >
-                        Tháng này
-                      </button>
-                    </div>
+                    <select
+                      value={monthFilter}
+                      onChange={(e) => setMonthFilter(e.target.value)}
+                      className="mt-1 w-full bg-white text-slate-800 font-semibold border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none"
+                    >
+                      <option value="">Tất cả các tháng</option>
+                      {availableMonths.map((m) => {
+                        const [y, mon] = m.split("-");
+                        const isCur = m === currentMonthStr;
+                        return (
+                          <option key={m} value={m}>
+                            {isCur ? `Tháng ${mon}/${y} (Tháng này)` : `Tháng ${mon}/${y}`}
+                          </option>
+                        );
+                      })}
+                    </select>
                   </label>
 
                   <label className="text-xs font-bold text-slate-500">Loại Hợp đồng
