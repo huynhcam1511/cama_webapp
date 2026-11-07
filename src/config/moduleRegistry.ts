@@ -85,10 +85,10 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "BUSINESS",
     parentCode: null,
     sortOrder: 0,
-    showInSidebar: true,
-    showOnDashboard: true,
+    showInSidebar: false,
+    showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "CUSTOMERS",
@@ -161,7 +161,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     showInSidebar: false,
     showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "OVERDUE_INVOICES",
@@ -175,7 +175,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     showInSidebar: false,
     showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "PROFIT_TRACKER",
@@ -189,7 +189,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     showInSidebar: false,
     showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "SUBSCRIPTIONS",
@@ -203,7 +203,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     showInSidebar: false,
     showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
 
   {
@@ -215,10 +215,10 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "OPERATIONS",
     parentCode: null,
     sortOrder: 0,
-    showInSidebar: true,
-    showOnDashboard: true,
+    showInSidebar: false,
+    showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "OPERATION_SCHEDULE",
@@ -232,7 +232,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     showInSidebar: false,
     showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "ORDERS",
@@ -332,7 +332,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     showInSidebar: false,
     showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
 
   // NHÂN SỰ
@@ -345,10 +345,10 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "HR",
     parentCode: null,
     sortOrder: 0,
-    showInSidebar: true,
-    showOnDashboard: true,
+    showInSidebar: false,
+    showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "STAFF_SCHEDULE",
@@ -390,7 +390,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     showInSidebar: false,
     showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "POLICIES",
@@ -418,7 +418,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     showInSidebar: false,
     showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "PAYROLL",
@@ -429,10 +429,10 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "HR",
     parentCode: null,
     sortOrder: 4,
-    showInSidebar: true,
-    showOnDashboard: true,
+    showInSidebar: false,
+    showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "TRAINING",
@@ -446,7 +446,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     showInSidebar: false,
     showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "RECRUITMENT",
@@ -460,7 +460,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     showInSidebar: false,
     showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
 
   // MARKETING
@@ -473,10 +473,10 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "MARKETING",
     parentCode: null,
     sortOrder: 0,
-    showInSidebar: true,
-    showOnDashboard: true,
+    showInSidebar: false,
+    showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "MARKETING_IDEA",
@@ -487,10 +487,10 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "MARKETING",
     parentCode: null,
     sortOrder: 1,
-    showInSidebar: true,
-    showOnDashboard: true,
+    showInSidebar: false,
+    showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "MARKETING_CONTENT",
@@ -501,10 +501,10 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "MARKETING",
     parentCode: null,
     sortOrder: 2,
-    showInSidebar: true,
-    showOnDashboard: true,
+    showInSidebar: false,
+    showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "MARKETING_MANAGER",
@@ -518,7 +518,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     showInSidebar: false,
     showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
   {
     moduleCode: "VIDEO_PERFORMANCE_REPORT",
@@ -529,10 +529,10 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
     group: "MARKETING",
     parentCode: null,
     sortOrder: 3,
-    showInSidebar: true,
-    showOnDashboard: true,
+    showInSidebar: false,
+    showOnDashboard: false,
     requiredAction: "view",
-    isActive: true
+    isActive: false
   },
 
   {

@@ -13,7 +13,7 @@ export async function getRolesAndModules() {
   
   const [rolesRes, modulesRes] = await Promise.all([
     supabase.from("roles").select("*").order("is_system_role", { ascending: false }).order("role_name"),
-    supabase.from("modules").select("*").order("sort_order")
+    supabase.from("modules").select("*").eq("is_active", true).order("sort_order")
   ]);
 
   if (rolesRes.error) console.error("Error fetching roles:", rolesRes.error);

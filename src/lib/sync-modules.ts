@@ -19,4 +19,13 @@ export async function syncModuleRegistry() {
     .upsert(modules, { onConflict: "module_code" });
 
   if (error) throw new Error(`Không thể đồng bộ danh sách module: ${error.message}`);
+
+  // Ensure any module not active in registry is deactivated in database
+  const activeCodes = MODULE_REGISTRY.filter(m => m.isActive).map(m => m.moduleCode);
+  if (activeCodes.length > 0) {
+    await supabase
+      .from("modules")
+      .update({ is_active: false })
+      .not("module_code", "in", `(${activeCodes.join(",")})`);
+  }
 }

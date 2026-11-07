@@ -132,15 +132,30 @@ export async function saveEmployee(isNew: boolean, data: any, permissions: any[]
 
     // 3. Insert specific permissions
     if (permissions && permissions.length > 0) {
-      const permsToInsert = permissions.map(p => ({
-        user_id: userId,
-        module_id: p.module_id,
-        can_view: p.can_view,
-        can_create: p.can_create,
-        can_update: p.can_update,
-        can_delete: p.can_delete
-      }));
-      await supabase.from("user_permissions").insert(permsToInsert);
+      let sensitiveModuleIds = new Set<string>();
+      if (!canManagePermissions) {
+        const { data: sensitiveMods } = await supabase
+          .from("modules")
+          .select("id")
+          .in("module_code", ["PERMISSIONS", "SYSTEM_SETTINGS"]);
+        sensitiveModuleIds = new Set((sensitiveMods || []).map(m => m.id));
+      }
+
+      const permsToInsert = permissions
+        .filter(p => canManagePermissions || !sensitiveModuleIds.has(p.module_id))
+        .map(p => ({
+          user_id: userId,
+          module_id: p.module_id,
+          can_view: Boolean(p.can_view),
+          can_create: Boolean(p.can_create),
+          can_update: canManagePermissions ? Boolean(p.can_update) : false,
+          can_delete: canManagePermissions ? Boolean(p.can_delete) : false
+        }))
+        .filter(p => p.can_view || p.can_create || p.can_update || p.can_delete);
+
+      if (permsToInsert.length > 0) {
+        await supabase.from("user_permissions").insert(permsToInsert);
+      }
     }
 
     // A newly-created account needs a password setup email. Existing Google
@@ -150,6 +165,8 @@ export async function saveEmployee(isNew: boolean, data: any, permissions: any[]
     }
 
     revalidatePath("/dashboard/employees");
+    revalidatePath("/dashboard", "layout");
+    revalidatePath("/api/me/permissions");
     return { success: true, id: userId, linkedExistingAuth: !createdNewAuthUser };
 
   } else {

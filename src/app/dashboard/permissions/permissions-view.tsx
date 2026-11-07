@@ -233,7 +233,7 @@ export default function PermissionsView({ roles, modules }: PermissionsViewProps
   const groupedModules: Record<string, Module[]> = {};
   modules.forEach(m => {
     const registryEntry = MODULE_REGISTRY.find(reg => reg.moduleCode === m.module_code);
-    if (registryEntry && registryEntry.group) {
+    if (registryEntry && registryEntry.group && registryEntry.isActive !== false) {
       const groupName = getGroupName(registryEntry.group);
       if (!groupedModules[groupName]) groupedModules[groupName] = [];
       groupedModules[groupName].push(m);

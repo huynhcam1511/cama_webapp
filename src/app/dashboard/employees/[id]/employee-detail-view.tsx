@@ -34,7 +34,9 @@ export default function EmployeeDetailView({
 
   const { hasPermission } = usePermissions();
   const canManagePermissions = hasPermission("PERMISSIONS", "update") || hasPermission("PERMISSIONS", "view");
-  const canViewPayroll = hasPermission("PAYROLL", "view");
+  const canCreateEmployee = hasPermission("EMPLOYEES", "create");
+  const canViewPayroll = canManagePermissions || hasPermission("PAYROLL", "view");
+  const showPermissionsTab = canManagePermissions || (isNew && canCreateEmployee);
 
   // Form State
   const [formData, setFormData] = useState(() => {
@@ -328,7 +330,8 @@ export default function EmployeeDetailView({
 
       const payload = { ...formData, start_date: finalStartDate || null };
 
-      const res = await saveEmployee(isNew, payload, canManagePermissions ? permissions : []);
+      const canSavePerms = canManagePermissions || (isNew && canCreateEmployee);
+      const res = await saveEmployee(isNew, payload, canSavePerms ? permissions : []);
       if (res.error) {
         setError(res.error);
       } else {
@@ -420,7 +423,7 @@ export default function EmployeeDetailView({
           >
             <Calendar className="w-4 h-4" /> Chấm công & Lịch
           </Tabs.Trigger>
-          {canManagePermissions && (
+          {showPermissionsTab && (
             <Tabs.Trigger
               value="permissions"
               className="flex-1 md:flex-none px-6 py-4 text-sm font-semibold text-slate-600 data-[state=active]:text-blue-600 data-[state=active]:bg-white data-[state=active]:border-r-2 data-[state=active]:border-blue-600 transition-all text-left flex items-center gap-3"
@@ -821,11 +824,15 @@ export default function EmployeeDetailView({
           </Tabs.Content>
 
           {/* Tab 3: Permissions */}
-          {canManagePermissions && (
+          {showPermissionsTab && (
             <Tabs.Content value="permissions" className="space-y-6 focus:outline-none">
               <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
                 <h2 className="text-lg font-bold text-slate-900">Chi tiết phân quyền</h2>
-                <p className="text-xs text-slate-500">Quyền riêng của user sẽ ghi đè quyền của Role.</p>
+                <p className="text-xs text-slate-500">
+                  {canManagePermissions 
+                    ? "Quyền riêng của user sẽ ghi đè quyền của Role." 
+                    : "Tích chọn quyền Xem và Thêm mới cho tài khoản nhân viên."}
+                </p>
               </div>
               
               <div className="overflow-x-auto rounded-xl border border-slate-200">
@@ -834,14 +841,17 @@ export default function EmployeeDetailView({
                     <tr>
                       <th className="px-4 py-3">Module Chức Năng</th>
                       <th className="px-4 py-3 text-center w-24">Xem</th>
-                      <th className="px-4 py-3 text-center w-24">Thêm</th>
-                      <th className="px-4 py-3 text-center w-24">Sửa</th>
-                      <th className="px-4 py-3 text-center w-24">Xóa</th>
+                      <th className="px-4 py-3 text-center w-24">{canManagePermissions ? "Thêm" : "Thêm mới"}</th>
+                      {canManagePermissions && <th className="px-4 py-3 text-center w-24">Sửa</th>}
+                      {canManagePermissions && <th className="px-4 py-3 text-center w-24">Xóa</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {(["DASHBOARD", "BUSINESS", "FINANCE", "OPERATIONS", "INVENTORY_GROUP", "HR", "MARKETING", "ADMIN"] as ModuleGroup[]).map(groupCode => {
-                      const groupModules = MODULE_REGISTRY.filter(m => m.group === groupCode).sort((a, b) => a.sortOrder - b.sortOrder);
+                      const groupModules = MODULE_REGISTRY
+                        .filter(m => m.group === groupCode && m.isActive !== false)
+                        .filter(m => canManagePermissions || (m.moduleCode !== "PERMISSIONS" && m.moduleCode !== "SYSTEM_SETTINGS"))
+                        .sort((a, b) => a.sortOrder - b.sortOrder);
                       if (groupModules.length === 0) return null;
                       
                       const GROUP_LABELS: Record<ModuleGroup, string> = {
@@ -858,7 +868,7 @@ export default function EmployeeDetailView({
                       return (
                         <React.Fragment key={groupCode}>
                           <tr className="bg-slate-100">
-                            <td colSpan={5} className="px-4 py-2 font-bold text-slate-900 text-xs uppercase tracking-wider bg-slate-100/80">
+                            <td colSpan={canManagePermissions ? 5 : 3} className="px-4 py-2 font-bold text-slate-900 text-xs uppercase tracking-wider bg-slate-100/80">
                               {GROUP_LABELS[groupCode]}
                             </td>
                           </tr>
@@ -872,7 +882,7 @@ export default function EmployeeDetailView({
                                   <td className="px-4 py-3 pl-8 font-medium text-slate-700">
                                     {regMod.label} <span className="text-[10px] text-red-500 ml-2 border border-red-200 px-1 py-0.5 rounded-sm">(Chưa đồng bộ DB)</span>
                                   </td>
-                                  <td colSpan={4} className="px-4 py-3 text-center text-xs text-slate-400">
+                                  <td colSpan={canManagePermissions ? 4 : 2} className="px-4 py-3 text-center text-xs text-slate-400">
                                     Module chưa có trong CSDL, không thể phân quyền
                                   </td>
                                 </tr>
@@ -902,22 +912,26 @@ export default function EmployeeDetailView({
                                     className="w-4 h-4 rounded text-emerald-600 border-slate-300"
                                   />
                                 </td>
-                                <td className="px-4 py-3 text-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={perm.can_update}
-                                    onChange={(e) => handlePermissionChange(dbMod.id, "can_update", e.target.checked)}
-                                    className="w-4 h-4 rounded text-amber-500 border-slate-300"
-                                  />
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={perm.can_delete}
-                                    onChange={(e) => handlePermissionChange(dbMod.id, "can_delete", e.target.checked)}
-                                    className="w-4 h-4 rounded text-red-500 border-slate-300"
-                                  />
-                                </td>
+                                {canManagePermissions && (
+                                  <td className="px-4 py-3 text-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={perm.can_update}
+                                      onChange={(e) => handlePermissionChange(dbMod.id, "can_update", e.target.checked)}
+                                      className="w-4 h-4 rounded text-amber-500 border-slate-300"
+                                    />
+                                  </td>
+                                )}
+                                {canManagePermissions && (
+                                  <td className="px-4 py-3 text-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={perm.can_delete}
+                                      onChange={(e) => handlePermissionChange(dbMod.id, "can_delete", e.target.checked)}
+                                      className="w-4 h-4 rounded text-red-500 border-slate-300"
+                                    />
+                                  </td>
+                                )}
                               </tr>
                             );
                           })}

@@ -88,7 +88,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return currentModule.moduleCode === moduleCode;
   };
 
-  const sidebarModules = MODULE_REGISTRY.filter(m => m.showInSidebar).sort((a, b) => a.sortOrder - b.sortOrder);
+  const sidebarModules = MODULE_REGISTRY.filter(m => m.showInSidebar && m.isActive !== false).sort((a, b) => a.sortOrder - b.sortOrder);
 
   // Determine current breadcrumb trail
   const currentModule = getModuleByRoute(pathname || "");
