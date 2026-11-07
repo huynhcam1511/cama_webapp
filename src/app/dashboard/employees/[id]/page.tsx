@@ -36,11 +36,43 @@ export default async function EmployeeDetailPage({
     }
     user = userData;
 
+    // Lấy quyền từ role và quyền ghi đè để hiển thị đúng thực tế
+    let rolePerms: any[] = [];
+    if (user.role_id) {
+      const { data: rp } = await supabase
+        .from("role_permissions")
+        .select("*")
+        .eq("role_id", user.role_id);
+      rolePerms = rp || [];
+    }
+
     const { data: perms } = await supabase
       .from("user_permissions")
       .select("*")
       .eq("user_id", params.id);
-    userPermissions = perms || [];
+    const userPerms = perms || [];
+
+    const permMap = new Map();
+    rolePerms.forEach(rp => {
+      permMap.set(rp.module_id, {
+        module_id: rp.module_id,
+        can_view: rp.can_view,
+        can_create: rp.can_create,
+        can_update: rp.can_update,
+        can_delete: rp.can_delete
+      });
+    });
+    userPerms.forEach(up => {
+      permMap.set(up.module_id, {
+        module_id: up.module_id,
+        can_view: up.can_view,
+        can_create: up.can_create,
+        can_update: up.can_update,
+        can_delete: up.can_delete
+      });
+    });
+
+    userPermissions = Array.from(permMap.values());
   }
 
   // Lấy dữ liệu tham chiếu

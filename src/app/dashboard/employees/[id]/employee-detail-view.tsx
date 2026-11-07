@@ -7,6 +7,7 @@ import Link from "next/link";
 import * as Tabs from "@radix-ui/react-tabs";
 import { saveEmployee } from "./actions";
 import { MODULE_REGISTRY, ModuleGroup } from "@/config/moduleRegistry";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function EmployeeDetailView({
   isNew,
@@ -30,6 +31,10 @@ export default function EmployeeDetailView({
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { hasPermission } = usePermissions();
+  const canManagePermissions = hasPermission("PERMISSIONS", "update") || hasPermission("PERMISSIONS", "view");
+  const canViewPayroll = hasPermission("PAYROLL", "view");
 
   // Form State
   const [formData, setFormData] = useState(() => {
@@ -293,11 +298,22 @@ export default function EmployeeDetailView({
     }));
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent default if it's in a form, but we are using a manual button. We should wrap in a form for HTML5 validation.
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) e.preventDefault();
     setIsSaving(true);
     setError(null);
     try {
+      if (!formData.full_name?.trim()) {
+        setError("Vui lòng nhập họ và tên nhân viên.");
+        setIsSaving(false);
+        return;
+      }
+      if (isNew && !formData.email?.trim()) {
+        setError("Vui lòng nhập email đăng nhập.");
+        setIsSaving(false);
+        return;
+      }
+
       // Đảm bảo lấy giá trị mới nhất từ startDateDisplay
       let finalStartDate = formData.start_date;
       if (startDateDisplay) {
@@ -312,7 +328,7 @@ export default function EmployeeDetailView({
 
       const payload = { ...formData, start_date: finalStartDate || null };
 
-      const res = await saveEmployee(isNew, payload, permissions);
+      const res = await saveEmployee(isNew, payload, canManagePermissions ? permissions : []);
       if (res.error) {
         setError(res.error);
       } else {
@@ -357,10 +373,8 @@ export default function EmployeeDetailView({
           </div>
         </div>
         <button
-          onClick={() => {
-            const form = document.querySelector('form');
-            if (form) form.requestSubmit();
-          }}
+          type="button"
+          onClick={handleSave}
           disabled={isSaving}
           className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition-all shadow-md flex items-center gap-2 disabled:opacity-70"
         >
@@ -377,7 +391,7 @@ export default function EmployeeDetailView({
       )}
 
       {/* Tabs Layout */}
-      <form onSubmit={handleSave} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row">
+      <form id="employee-form" onSubmit={handleSave} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row">
         <Tabs.Root defaultValue="info" className="w-full flex flex-col md:flex-row">
           <Tabs.List className="flex flex-row md:flex-col min-w-[240px] bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200">
           <Tabs.Trigger
@@ -386,12 +400,14 @@ export default function EmployeeDetailView({
           >
             <User className="w-4 h-4" /> Thông tin nhân sự
           </Tabs.Trigger>
-          <Tabs.Trigger
-            value="contract"
-            className="flex-1 md:flex-none px-6 py-4 text-sm font-semibold text-slate-600 data-[state=active]:text-blue-600 data-[state=active]:bg-white data-[state=active]:border-r-2 data-[state=active]:border-blue-600 transition-all text-left flex items-center gap-3"
-          >
-            <Briefcase className="w-4 h-4" /> Lương & Hợp đồng
-          </Tabs.Trigger>
+          {canViewPayroll && (
+            <Tabs.Trigger
+              value="contract"
+              className="flex-1 md:flex-none px-6 py-4 text-sm font-semibold text-slate-600 data-[state=active]:text-blue-600 data-[state=active]:bg-white data-[state=active]:border-r-2 data-[state=active]:border-blue-600 transition-all text-left flex items-center gap-3"
+            >
+              <Briefcase className="w-4 h-4" /> Lương & Hợp đồng
+            </Tabs.Trigger>
+          )}
           <Tabs.Trigger
             value="account"
             className="flex-1 md:flex-none px-6 py-4 text-sm font-semibold text-slate-600 data-[state=active]:text-blue-600 data-[state=active]:bg-white data-[state=active]:border-r-2 data-[state=active]:border-blue-600 transition-all text-left flex items-center gap-3"
@@ -404,12 +420,14 @@ export default function EmployeeDetailView({
           >
             <Calendar className="w-4 h-4" /> Chấm công & Lịch
           </Tabs.Trigger>
-          <Tabs.Trigger
-            value="permissions"
-            className="flex-1 md:flex-none px-6 py-4 text-sm font-semibold text-slate-600 data-[state=active]:text-blue-600 data-[state=active]:bg-white data-[state=active]:border-r-2 data-[state=active]:border-blue-600 transition-all text-left flex items-center gap-3"
-          >
-            <ShieldAlert className="w-4 h-4" /> Ma trận phân quyền
-          </Tabs.Trigger>
+          {canManagePermissions && (
+            <Tabs.Trigger
+              value="permissions"
+              className="flex-1 md:flex-none px-6 py-4 text-sm font-semibold text-slate-600 data-[state=active]:text-blue-600 data-[state=active]:bg-white data-[state=active]:border-r-2 data-[state=active]:border-blue-600 transition-all text-left flex items-center gap-3"
+            >
+              <ShieldAlert className="w-4 h-4" /> Ma trận phân quyền
+            </Tabs.Trigger>
+          )}
         </Tabs.List>
 
         <div className="flex-1 p-6 md:p-8">
@@ -665,71 +683,73 @@ export default function EmployeeDetailView({
           </Tabs.Content>
 
           {/* Tab: Lương & Hợp đồng */}
-          <Tabs.Content value="contract" className="space-y-6 focus:outline-none">
-            <h2 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">Thông tin hợp đồng</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Loại hợp đồng</label>
-                <select name="contract_type" value={formData.contract_info.contract_type} onChange={handleContractChange} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors">
-                  <option value="Chính thức">Chính thức</option>
-                  <option value="Thử việc">Thử việc</option>
-                  <option value="Thời vụ / CTV">Thời vụ / CTV</option>
-                </select>
+          {canViewPayroll && (
+            <Tabs.Content value="contract" className="space-y-6 focus:outline-none">
+              <h2 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">Thông tin hợp đồng</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Loại hợp đồng</label>
+                  <select name="contract_type" value={formData.contract_info.contract_type} onChange={handleContractChange} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors">
+                    <option value="Chính thức">Chính thức</option>
+                    <option value="Thử việc">Thử việc</option>
+                    <option value="Thời vụ / CTV">Thời vụ / CTV</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Tỷ lệ lương thử việc (%)</label>
+                  <input type="number" min="85" max="100" name="probation_rate" value={formData.contract_info.probation_rate} onChange={handleContractChange} placeholder="VD: 85" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Lương cơ bản (VNĐ)</label>
+                  <input type="text" name="base_salary" value={formData.contract_info.base_salary} onChange={handleContractChange} placeholder="VD: 5,000,000" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Mục tiêu KPI / Doanh thu (VNĐ)</label>
+                  <input type="text" name="kpi_target" value={formData.contract_info.kpi_target} onChange={handleContractChange} placeholder="VD: 50,000,000" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Tỷ lệ lương thử việc (%)</label>
-                <input type="number" min="85" max="100" name="probation_rate" value={formData.contract_info.probation_rate} onChange={handleContractChange} placeholder="VD: 85" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Lương cơ bản (VNĐ)</label>
-                <input type="text" name="base_salary" value={formData.contract_info.base_salary} onChange={handleContractChange} placeholder="VD: 5,000,000" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Mục tiêu KPI / Doanh thu (VNĐ)</label>
-                <input type="text" name="kpi_target" value={formData.contract_info.kpi_target} onChange={handleContractChange} placeholder="VD: 50,000,000" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
-              </div>
-            </div>
 
-            <h2 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">Phụ cấp & Hoa hồng</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Phụ cấp ăn trưa (VNĐ/tháng)</label>
-                <input type="text" name="lunch_allowance" value={formData.contract_info.lunch_allowance} onChange={handleContractChange} placeholder="VD: 700,000" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+              <h2 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">Phụ cấp & Hoa hồng</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Phụ cấp ăn trưa (VNĐ/tháng)</label>
+                  <input type="text" name="lunch_allowance" value={formData.contract_info.lunch_allowance} onChange={handleContractChange} placeholder="VD: 700,000" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Phụ cấp đi lại (VNĐ/tháng)</label>
+                  <input type="text" name="travel_allowance" value={formData.contract_info.travel_allowance} onChange={handleContractChange} placeholder="VD: 300,000" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Hoa hồng chốt Sale (%)</label>
+                  <input type="text" name="sales_commission_rate" value={formData.contract_info.sales_commission_rate} onChange={handleContractChange} placeholder="VD: 2.5" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Định mức thù lao ca phục vụ</label>
+                  <input type="text" name="service_commission_rate" value={formData.contract_info.service_commission_rate} onChange={handleContractChange} placeholder="VD: Chụp chính: 1tr, Phụ: 300k" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Phụ cấp đi lại (VNĐ/tháng)</label>
-                <input type="text" name="travel_allowance" value={formData.contract_info.travel_allowance} onChange={handleContractChange} placeholder="VD: 300,000" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Hoa hồng chốt Sale (%)</label>
-                <input type="text" name="sales_commission_rate" value={formData.contract_info.sales_commission_rate} onChange={handleContractChange} placeholder="VD: 2.5" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Định mức thù lao ca phục vụ</label>
-                <input type="text" name="service_commission_rate" value={formData.contract_info.service_commission_rate} onChange={handleContractChange} placeholder="VD: Chụp chính: 1tr, Phụ: 300k" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
-              </div>
-            </div>
 
-            <h2 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">Thông tin tài khoản & Thuế</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Tên ngân hàng - Chi nhánh</label>
-                <input type="text" name="bank_name" value={formData.contract_info.bank_name} onChange={handleContractChange} placeholder="VD: Vietcombank - CN Tân Bình" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+              <h2 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">Thông tin tài khoản & Thuế</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Tên ngân hàng - Chi nhánh</label>
+                  <input type="text" name="bank_name" value={formData.contract_info.bank_name} onChange={handleContractChange} placeholder="VD: Vietcombank - CN Tân Bình" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Số tài khoản</label>
+                  <input type="text" name="bank_account" value={formData.contract_info.bank_account} onChange={handleContractChange} placeholder="VD: 0123456789" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Mã số thuế cá nhân</label>
+                  <input type="text" name="tax_id" value={formData.contract_info.tax_id} onChange={handleContractChange} placeholder="VD: 8901234567" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Số sổ BHXH</label>
+                  <input type="text" name="social_insurance" value={formData.contract_info.social_insurance} onChange={handleContractChange} placeholder="" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Số tài khoản</label>
-                <input type="text" name="bank_account" value={formData.contract_info.bank_account} onChange={handleContractChange} placeholder="VD: 0123456789" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Mã số thuế cá nhân</label>
-                <input type="text" name="tax_id" value={formData.contract_info.tax_id} onChange={handleContractChange} placeholder="VD: 8901234567" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Số sổ BHXH</label>
-                <input type="text" name="social_insurance" value={formData.contract_info.social_insurance} onChange={handleContractChange} placeholder="" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors" />
-              </div>
-            </div>
-          </Tabs.Content>
+            </Tabs.Content>
+          )}
 
           {/* Tab 2: Account */}
           <Tabs.Content value="account" className="space-y-6 focus:outline-none">
@@ -801,112 +821,114 @@ export default function EmployeeDetailView({
           </Tabs.Content>
 
           {/* Tab 3: Permissions */}
-          <Tabs.Content value="permissions" className="space-y-6 focus:outline-none">
-            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
-              <h2 className="text-lg font-bold text-slate-900">Chi tiết phân quyền</h2>
-              <p className="text-xs text-slate-500">Quyền riêng của user sẽ ghi đè quyền của Role.</p>
-            </div>
-            
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
-                  <tr>
-                    <th className="px-4 py-3">Module Chức Năng</th>
-                    <th className="px-4 py-3 text-center w-24">Xem</th>
-                    <th className="px-4 py-3 text-center w-24">Thêm</th>
-                    <th className="px-4 py-3 text-center w-24">Sửa</th>
-                    <th className="px-4 py-3 text-center w-24">Xóa</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {(["DASHBOARD", "BUSINESS", "FINANCE", "OPERATIONS", "INVENTORY_GROUP", "HR", "MARKETING", "ADMIN"] as ModuleGroup[]).map(groupCode => {
-                    const groupModules = MODULE_REGISTRY.filter(m => m.group === groupCode).sort((a, b) => a.sortOrder - b.sortOrder);
-                    if (groupModules.length === 0) return null;
-                    
-                    const GROUP_LABELS: Record<ModuleGroup, string> = {
-                      DASHBOARD: "TỔNG QUAN",
-                      BUSINESS: "KINH DOANH",
-                      FINANCE: "TÀI CHÍNH",
-                      OPERATIONS: "VẬN HÀNH",
-                      INVENTORY_GROUP: "KHO TÀI SẢN",
-                      HR: "NHÂN SỰ & ĐÀO TẠO",
-                      ADMIN: "QUẢN TRỊ",
-                      MARKETING: "MARKETING"
-                    };
+          {canManagePermissions && (
+            <Tabs.Content value="permissions" className="space-y-6 focus:outline-none">
+              <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
+                <h2 className="text-lg font-bold text-slate-900">Chi tiết phân quyền</h2>
+                <p className="text-xs text-slate-500">Quyền riêng của user sẽ ghi đè quyền của Role.</p>
+              </div>
+              
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
+                    <tr>
+                      <th className="px-4 py-3">Module Chức Năng</th>
+                      <th className="px-4 py-3 text-center w-24">Xem</th>
+                      <th className="px-4 py-3 text-center w-24">Thêm</th>
+                      <th className="px-4 py-3 text-center w-24">Sửa</th>
+                      <th className="px-4 py-3 text-center w-24">Xóa</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(["DASHBOARD", "BUSINESS", "FINANCE", "OPERATIONS", "INVENTORY_GROUP", "HR", "MARKETING", "ADMIN"] as ModuleGroup[]).map(groupCode => {
+                      const groupModules = MODULE_REGISTRY.filter(m => m.group === groupCode).sort((a, b) => a.sortOrder - b.sortOrder);
+                      if (groupModules.length === 0) return null;
+                      
+                      const GROUP_LABELS: Record<ModuleGroup, string> = {
+                        DASHBOARD: "TỔNG QUAN",
+                        BUSINESS: "KINH DOANH",
+                        FINANCE: "TÀI CHÍNH",
+                        OPERATIONS: "VẬN HÀNH",
+                        INVENTORY_GROUP: "KHO TÀI SẢN",
+                        HR: "NHÂN SỰ & ĐÀO TẠO",
+                        ADMIN: "QUẢN TRỊ",
+                        MARKETING: "MARKETING"
+                      };
 
-                    return (
-                      <React.Fragment key={groupCode}>
-                        <tr className="bg-slate-100">
-                          <td colSpan={5} className="px-4 py-2 font-bold text-slate-900 text-xs uppercase tracking-wider bg-slate-100/80">
-                            {GROUP_LABELS[groupCode]}
-                          </td>
-                        </tr>
-                        {groupModules.map(regMod => {
-                          const dbMod = modules.find(m => m.module_code === regMod.moduleCode);
-                          
-                          // If module doesn't exist in DB yet, show it as disabled (requires DB sync script)
-                          if (!dbMod) {
+                      return (
+                        <React.Fragment key={groupCode}>
+                          <tr className="bg-slate-100">
+                            <td colSpan={5} className="px-4 py-2 font-bold text-slate-900 text-xs uppercase tracking-wider bg-slate-100/80">
+                              {GROUP_LABELS[groupCode]}
+                            </td>
+                          </tr>
+                          {groupModules.map(regMod => {
+                            const dbMod = modules.find(m => m.module_code === regMod.moduleCode);
+                            
+                            // If module doesn't exist in DB yet, show it as disabled (requires DB sync script)
+                            if (!dbMod) {
+                              return (
+                                <tr key={regMod.moduleCode} className="hover:bg-slate-50/50 opacity-50 bg-slate-50">
+                                  <td className="px-4 py-3 pl-8 font-medium text-slate-700">
+                                    {regMod.label} <span className="text-[10px] text-red-500 ml-2 border border-red-200 px-1 py-0.5 rounded-sm">(Chưa đồng bộ DB)</span>
+                                  </td>
+                                  <td colSpan={4} className="px-4 py-3 text-center text-xs text-slate-400">
+                                    Module chưa có trong CSDL, không thể phân quyền
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            const perm = permissions.find((p) => p.module_id === dbMod.id) || {
+                              can_view: false, can_create: false, can_update: false, can_delete: false
+                            };
+                            
                             return (
-                              <tr key={regMod.moduleCode} className="hover:bg-slate-50/50 opacity-50 bg-slate-50">
-                                <td className="px-4 py-3 pl-8 font-medium text-slate-700">
-                                  {regMod.label} <span className="text-[10px] text-red-500 ml-2 border border-red-200 px-1 py-0.5 rounded-sm">(Chưa đồng bộ DB)</span>
+                              <tr key={regMod.moduleCode} className="hover:bg-slate-50/50">
+                                <td className="px-4 py-3 pl-8 font-medium text-slate-700">{regMod.label}</td>
+                                <td className="px-4 py-3 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={perm.can_view}
+                                    onChange={(e) => handlePermissionChange(dbMod.id, "can_view", e.target.checked)}
+                                    className="w-4 h-4 rounded text-blue-600 border-slate-300"
+                                  />
                                 </td>
-                                <td colSpan={4} className="px-4 py-3 text-center text-xs text-slate-400">
-                                  Module chưa có trong CSDL, không thể phân quyền
+                                <td className="px-4 py-3 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={perm.can_create}
+                                    onChange={(e) => handlePermissionChange(dbMod.id, "can_create", e.target.checked)}
+                                    className="w-4 h-4 rounded text-emerald-600 border-slate-300"
+                                  />
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={perm.can_update}
+                                    onChange={(e) => handlePermissionChange(dbMod.id, "can_update", e.target.checked)}
+                                    className="w-4 h-4 rounded text-amber-500 border-slate-300"
+                                  />
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={perm.can_delete}
+                                    onChange={(e) => handlePermissionChange(dbMod.id, "can_delete", e.target.checked)}
+                                    className="w-4 h-4 rounded text-red-500 border-slate-300"
+                                  />
                                 </td>
                               </tr>
                             );
-                          }
-
-                          const perm = permissions.find((p) => p.module_id === dbMod.id) || {
-                            can_view: false, can_create: false, can_update: false, can_delete: false
-                          };
-                          
-                          return (
-                            <tr key={regMod.moduleCode} className="hover:bg-slate-50/50">
-                              <td className="px-4 py-3 pl-8 font-medium text-slate-700">{regMod.label}</td>
-                              <td className="px-4 py-3 text-center">
-                                <input
-                                  type="checkbox"
-                                  checked={perm.can_view}
-                                  onChange={(e) => handlePermissionChange(dbMod.id, "can_view", e.target.checked)}
-                                  className="w-4 h-4 rounded text-blue-600 border-slate-300"
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <input
-                                  type="checkbox"
-                                  checked={perm.can_create}
-                                  onChange={(e) => handlePermissionChange(dbMod.id, "can_create", e.target.checked)}
-                                  className="w-4 h-4 rounded text-emerald-600 border-slate-300"
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <input
-                                  type="checkbox"
-                                  checked={perm.can_update}
-                                  onChange={(e) => handlePermissionChange(dbMod.id, "can_update", e.target.checked)}
-                                  className="w-4 h-4 rounded text-amber-500 border-slate-300"
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <input
-                                  type="checkbox"
-                                  checked={perm.can_delete}
-                                  onChange={(e) => handlePermissionChange(dbMod.id, "can_delete", e.target.checked)}
-                                  className="w-4 h-4 rounded text-red-500 border-slate-300"
-                                />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </React.Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Tabs.Content>
+                          })}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Tabs.Content>
+          )}
         </div>
         </Tabs.Root>
       </form>

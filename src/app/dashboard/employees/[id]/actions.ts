@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requirePermission, requireActiveUser } from "@/lib/rbac";
+import { requirePermission, requireActiveUser, getUserPermissions } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 
 async function findAuthUserByEmail(
@@ -28,9 +28,12 @@ async function findAuthUserByEmail(
 }
 
 export async function saveEmployee(isNew: boolean, data: any, permissions: any[]) {
-  await requireActiveUser();
+  const actor = await requireActiveUser();
   const supabase = createAdminClient();
   const adminClient = createAdminClient();
+
+  const actorPermissions = await getUserPermissions(actor.id);
+  const canManagePermissions = actorPermissions.get("PERMISSIONS")?.can_update;
 
   if (isNew) {
     await requirePermission("EMPLOYEES", "create");
@@ -180,22 +183,26 @@ export async function saveEmployee(isNew: boolean, data: any, permissions: any[]
       return { error: "Không thể cập nhật thông tin: " + dbError.message };
     }
 
-    // Update permissions (delete all old, insert new)
-    await supabase.from("user_permissions").delete().eq("user_id", userId);
-    
-    if (permissions && permissions.length > 0) {
-      const permsToInsert = permissions.map(p => ({
-        user_id: userId,
-        module_id: p.module_id,
-        can_view: p.can_view,
-        can_create: p.can_create,
-        can_update: p.can_update,
-        can_delete: p.can_delete
-      }));
-      await supabase.from("user_permissions").insert(permsToInsert);
+    // Update permissions only if the actor is permitted to manage permissions
+    if (canManagePermissions) {
+      await supabase.from("user_permissions").delete().eq("user_id", userId);
+      
+      if (permissions && permissions.length > 0) {
+        const permsToInsert = permissions.map(p => ({
+          user_id: userId,
+          module_id: p.module_id,
+          can_view: p.can_view,
+          can_create: p.can_create,
+          can_update: p.can_update,
+          can_delete: p.can_delete
+        }));
+        await supabase.from("user_permissions").insert(permsToInsert);
+      }
     }
 
     revalidatePath("/dashboard/employees");
+    revalidatePath("/dashboard", "layout");
+    revalidatePath("/api/me/permissions");
     return { success: true };
   }
 }
